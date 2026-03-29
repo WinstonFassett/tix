@@ -9,7 +9,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
@@ -21,11 +23,13 @@
     "svelte-check": "^4.4.5",
     "tailwindcss": "^4.2.2",
     "typescript": "~5.9.3",
-    "vite": "^8.0.1"
+    "vite": "^8.0.1",
+    "vitest": "^4.1.2"
   },
   "dependencies": {
-    "gray-matter": "^4.0.3",
     "@winstonfassett/web-dev-mcp-gateway": "file:/Users/winston/dev/tries/2026-03-22-vite-live-dev-mcp/packages/gateway",
-    "@winstonfassett/web-dev-mcp-vite": "file:/Users/winston/dev/tries/2026-03-22-vite-live-dev-mcp/packages/adapter-vite"
+    "@winstonfassett/web-dev-mcp-vite": "file:/Users/winston/dev/tries/2026-03-22-vite-live-dev-mcp/packages/adapter-vite",
+    "gray-matter": "^4.0.3",
+    "marked": "^17.0.5"
   }
 }

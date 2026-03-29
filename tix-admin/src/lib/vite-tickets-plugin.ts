@@ -1,8 +1,10 @@
 import type { Plugin, ViteDevServer } from 'vite'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
 import { glob } from 'node:fs/promises'
 import matter from 'gray-matter'
+import { handleStatusUpdate } from './status-api'
 
 function resolveTicketsDir(): string {
   return process.env.TICKETS_DIR
@@ -50,9 +52,11 @@ export function ticketsPlugin(): Plugin {
 
     configureServer(server: ViteDevServer) {
       // API middleware — must run before Vite's SPA fallback
-      server.middlewares.use((req, res, next) => {
-        const url = req.url?.split('?')[0]
-        if (url === '/api/tickets') {
+      server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
+        const url = req.url?.split('?')[0] || ''
+
+        // GET /api/tickets
+        if (url === '/api/tickets' && req.method === 'GET') {
           parseTickets(ticketsDir).then(tickets => {
             res.setHeader('Content-Type', 'application/json')
             res.end(JSON.stringify(tickets))
@@ -62,6 +66,32 @@ export function ticketsPlugin(): Plugin {
           })
           return
         }
+
+        // POST /api/tickets/:id/status
+        const statusMatch = url.match(/^\/api\/tickets\/([a-f0-9]+)\/status$/)
+        if (statusMatch && req.method === 'POST') {
+          const ticketId = statusMatch[1]
+          let body = ''
+          req.on('data', (chunk: Buffer) => { body += chunk.toString() })
+          req.on('end', async () => {
+            try {
+              const { status } = JSON.parse(body)
+              const result = await handleStatusUpdate(ticketsDir, ticketId, status)
+              res.setHeader('Content-Type', 'application/json')
+              if (result.ok) {
+                res.end(JSON.stringify({ ok: true }))
+              } else {
+                res.statusCode = 400
+                res.end(JSON.stringify({ error: result.error }))
+              }
+            } catch {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'Invalid request body' }))
+            }
+          })
+          return
+        }
+
         next()
       })
 

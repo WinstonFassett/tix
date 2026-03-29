@@ -1,13 +1,25 @@
 <script lang="ts">
   import type { Ticket } from '../types'
+  import { markdownToHtml } from '../markdown'
 
-  let { ticket }: { ticket: Ticket } = $props()
+  let { ticket, onStatusChange }: { ticket: Ticket, onStatusChange?: (status: string) => void } = $props()
 
   const statusBadge: Record<string, string> = {
     'open': 'badge-primary',
     'in-progress': 'badge-warning',
     'done': 'badge-success',
     'closed': 'badge-ghost',
+  }
+
+  const transitions: Record<string, { label: string, status: string }[]> = {
+    'open': [{ label: 'Start', status: 'in-progress' }],
+    'in-progress': [{ label: 'Done', status: 'done' }, { label: 'Close', status: 'closed' }],
+    'done': [{ label: 'Reopen', status: 'open' }],
+    'closed': [{ label: 'Reopen', status: 'open' }],
+  }
+
+  function handleStatusChange(newStatus: string) {
+    onStatusChange?.(newStatus)
   }
 </script>
 
@@ -62,6 +74,16 @@
         </div>
       {/if}
 
+      {#if onStatusChange && transitions[ticket.status]?.length}
+        <div class="flex gap-2 mt-3">
+          {#each transitions[ticket.status] as t}
+            <button class="btn btn-sm btn-outline" onclick={() => handleStatusChange(t.status)}>
+              {t.label}
+            </button>
+          {/each}
+        </div>
+      {/if}
+
       <div class="divider"></div>
 
       <div class="prose prose-sm max-w-none">
@@ -70,28 +92,3 @@
     </div>
   </div>
 </div>
-
-<script lang="ts" module>
-  // Simple markdown-to-html (good enough for v1, no heavy dep)
-  function markdownToHtml(md: string): string {
-    return md
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/`(.+?)`/g, '<code>$1</code>')
-      .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>')
-      .replace(/^- (.+)$/gm, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/^(.+)$/gm, (line) => {
-        if (line.startsWith('<')) return line
-        return line
-      })
-      .replace(/\n/g, '<br>')
-  }
-</script>

@@ -7,6 +7,19 @@
   const store = useTickets()
 
   const ticket = $derived(store.tickets.find(t => String(t.id) === ticketId))
+
+  async function changeStatus(newStatus: string) {
+    const res = await fetch(`/api/tickets/${ticketId}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: 'Unknown error' }))
+      alert(`Failed: ${data.error}`)
+    }
+    // File watcher will trigger a refresh automatically
+  }
 </script>
 
 {#if store.loading}
@@ -19,5 +32,5 @@
     <a href="#/" class="btn btn-sm btn-ghost mt-4">← Back to dashboard</a>
   </div>
 {:else}
-  <TicketDetail {ticket} />
+  <TicketDetail {ticket} onStatusChange={changeStatus} />
 {/if}
