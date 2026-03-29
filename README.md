@@ -1,22 +1,53 @@
 # tix
 
-A ticket tracker that lives in your repo. Tickets are Markdown files with YAML frontmatter, stored in `./tickets/`, versioned with Git, readable in any editor.
+A Markdown ticket tracker in a shell script.
 
-## Philosophy
+- Tickets are Markdown files with YAML frontmatter in `./tickets/`
+- No server, no database — just files that diff, merge, and grep like code
+- Works in any editor: Vim, VS Code, Obsidian
+- Dependency tracking, kanban views, auto-archiving
+- Versioned with your code in Git
 
-No server. No database. No web app you need to keep running.
+## How It Works
 
-Tickets are just files. They diff, merge, and grep like any other source file. Open them in Vim, VS Code, or Obsidian. They travel with your code because they *are* your code's metadata.
+Each ticket is a Markdown file named like `Fix The Login Bug (a1b2).md`. The 4-character hex ID is embedded in the filename.
 
-tix works like Git: run `tix create` in any directory and a `tickets/` folder appears. Everything stays local and portable.
+```yaml
+---
+id: a1b2
+title: "Fix the login bug"
+status: open
+priority: 2
+type: bug
+assignee: Winston
+deps: []
+tags: [auth]
+created: 2026-03-29T12:00:00Z
+---
+```
 
-## Quick Start
+The body is freeform Markdown — description, design notes, acceptance criteria.
+
+When a ticket is marked `done` or `closed`, it moves to `archive/YYYY-MM-DD/` automatically.
+
+## Install
+
+One-liner:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/WinstonFassett/tix/main/install.sh | bash
 ```
 
-This clones tix to `~/.tix`, downloads its vendored dependencies (yq, jq), and symlinks `tix` into your PATH.
+Or clone and install manually:
+
+```bash
+git clone https://github.com/WinstonFassett/tix.git ~/.tix
+~/.tix/setup-deps && ~/.tix/install-tix
+```
+
+Both clone to `~/.tix`, download vendored dependencies (yq, jq), and symlink `tix` into your PATH.
+
+## Quick Start
 
 ```bash
 cd your-project
@@ -86,30 +117,6 @@ tix check <id> <n>          Toggle AC checkbox
 tix vault open              Open workspace as an Obsidian vault
 tix vault init              Set up .obsidian config for tickets
 ```
-
-## How It Works
-
-Each ticket is a Markdown file named like `Fix The Login Bug (a1b2).md`. The 4-character hex ID is embedded in the filename.
-
-The file has YAML frontmatter at the top:
-
-```yaml
----
-id: a1b2
-title: "Fix the login bug"
-status: open
-priority: 2
-type: bug
-assignee: Winston
-deps: []
-tags: [auth]
-created: 2026-03-29T12:00:00Z
----
-```
-
-The body is freeform Markdown — description, design notes, acceptance criteria, whatever you need.
-
-When a ticket is marked `done` or `closed`, it moves to `archive/YYYY-MM-DD/` automatically.
 
 ## Configuration
 
