@@ -9,11 +9,27 @@ LIB_DIR="$SCRIPT_DIR/lib"
 
 mkdir -p "$LIB_DIR"
 
-echo "Checking dependencies..."
+# Detect platform
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+ARCH="$(uname -m)"
+
+case "$OS" in
+    darwin) OS_YQ="darwin"; OS_JQ="macos" ;;
+    linux)  OS_YQ="linux";  OS_JQ="linux" ;;
+    *)      echo "✗ Unsupported OS: $OS"; exit 1 ;;
+esac
+
+case "$ARCH" in
+    x86_64|amd64)  ARCH_YQ="amd64"; ARCH_JQ="amd64" ;;
+    arm64|aarch64) ARCH_YQ="arm64"; ARCH_JQ="arm64" ;;
+    *)             echo "✗ Unsupported architecture: $ARCH"; exit 1 ;;
+esac
+
+echo "Checking dependencies (${OS}/${ARCH})..."
 
 # Download yq (portable YAML processor)
 YQ_VERSION="v4.44.2"
-YQ_URL="https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_darwin_amd64"
+YQ_URL="https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_${OS_YQ}_${ARCH_YQ}"
 
 if [[ ! -f "$LIB_DIR/yq" ]] || [[ ! -x "$LIB_DIR/yq" ]]; then
     echo "Downloading yq..."
@@ -33,7 +49,7 @@ JQ_VERSION="1.7.1"
 
 if [[ ! -f "$LIB_DIR/jq" ]] || [[ ! -x "$LIB_DIR/jq" ]]; then
     echo "Downloading jq..."
-    
+
     # Try to find jq locally first (homebrew, system, etc)
     if command -v jq >/dev/null 2>&1; then
         echo "Found jq locally, copying..."
@@ -41,14 +57,15 @@ if [[ ! -f "$LIB_DIR/jq" ]] || [[ ! -x "$LIB_DIR/jq" ]]; then
         chmod +x "$LIB_DIR/jq"
         echo "✓ jq installed (copied from system)"
     else
-        # Fallback: try downloading from primary source
-        JQ_URL="https://github.com/jqlang/jq/releases/download/jq-${JQ_VERSION}/jq-darwin-amd64"
+        # jq uses different naming: jq-macos-amd64, jq-linux-amd64, etc.
+        # arm64 on macOS: jq-macos-arm64
+        JQ_URL="https://github.com/jqlang/jq/releases/download/jq-${JQ_VERSION}/jq-${OS_JQ}-${ARCH_JQ}"
         if curl -f -L "$JQ_URL" -o "$LIB_DIR/jq"; then
             chmod +x "$LIB_DIR/jq"
             echo "✓ jq installed (downloaded)"
         else
             echo "✗ Failed to download jq"
-            echo "  Install jq manually: brew install jq"
+            echo "  Install jq manually: brew install jq (macOS) or apt install jq (Linux)"
             echo "  Then run: cp \$(which jq) $LIB_DIR/jq"
             exit 1
         fi
@@ -70,5 +87,5 @@ fi
 
 echo ""
 echo "✓ All dependencies ready and verified!"
-echo "  Binaries are self-contained in scripts/lib/"
+echo "  Binaries are self-contained in lib/"
 echo "  No system-level installation required."
