@@ -18,7 +18,7 @@ async function parseTickets(ticketsDir: string) {
       const raw = fs.readFileSync(filepath, 'utf-8')
       const { data, content } = matter(raw)
       tickets.push({
-        id: data.id || '',
+        id: String(data.id || ''),
         title: data.title || '',
         status: data.status || 'open',
         deps: data.deps || [],

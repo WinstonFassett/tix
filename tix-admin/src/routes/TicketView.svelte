@@ -6,7 +6,7 @@
 
   const store = useTickets()
 
-  const ticket = $derived(store.tickets.find(t => t.id === ticketId))
+  const ticket = $derived(store.tickets.find(t => String(t.id) === ticketId))
 </script>
 
 {#if store.loading}
