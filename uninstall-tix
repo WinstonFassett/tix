@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# uninstall-tix - Remove tix symlinks and optionally the installation directory
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+echo "Uninstalling tix..."
+
+# Remove symlinks from both possible locations
+for dir in "$HOME/.local/bin" "/usr/local/bin"; do
+    for cmd in tix ticket; do
+        link="$dir/$cmd"
+        if [[ -L "$link" ]]; then
+            rm "$link"
+            echo "Removed $link"
+        fi
+    done
+done
+
+echo "Symlinks removed."
+echo ""
+
+# Offer to remove the installation directory
+if [[ "$SCRIPT_DIR" == "$HOME/.tix" ]]; then
+    read -rp "Also remove $SCRIPT_DIR? [y/N] " answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        rm -rf "$SCRIPT_DIR"
+        echo "Removed $SCRIPT_DIR"
+    else
+        echo "Kept $SCRIPT_DIR (you can remove it manually with: rm -rf $SCRIPT_DIR)"
+    fi
+fi
+
+echo "tix uninstalled."
