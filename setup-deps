@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# setup-deps - Ensure required binaries are available
+# Run automatically on first use, or manually to update dependencies
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="$SCRIPT_DIR/lib"
+
+mkdir -p "$LIB_DIR"
+
+echo "Checking dependencies..."
+
+# Download yq (portable YAML processor)
+YQ_VERSION="v4.44.2"
+YQ_URL="https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_darwin_amd64"
+
+if [[ ! -f "$LIB_DIR/yq" ]] || [[ ! -x "$LIB_DIR/yq" ]]; then
+    echo "Downloading yq..."
+    if curl -f -L "$YQ_URL" -o "$LIB_DIR/yq"; then
+        chmod +x "$LIB_DIR/yq"
+        echo "✓ yq installed"
+    else
+        echo "✗ Failed to download yq"
+        exit 1
+    fi
+else
+    echo "✓ yq already exists"
+fi
+
+# Download jq (JSON processor) - try multiple sources
+JQ_VERSION="1.7.1"
+
+if [[ ! -f "$LIB_DIR/jq" ]] || [[ ! -x "$LIB_DIR/jq" ]]; then
+    echo "Downloading jq..."
+    
+    # Try to find jq locally first (homebrew, system, etc)
+    if command -v jq >/dev/null 2>&1; then
+        echo "Found jq locally, copying..."
+        cp "$(command -v jq)" "$LIB_DIR/jq"
+        chmod +x "$LIB_DIR/jq"
+        echo "✓ jq installed (copied from system)"
+    else
+        # Fallback: try downloading from primary source
+        JQ_URL="https://github.com/jqlang/jq/releases/download/jq-${JQ_VERSION}/jq-darwin-amd64"
+        if curl -f -L "$JQ_URL" -o "$LIB_DIR/jq"; then
+            chmod +x "$LIB_DIR/jq"
+            echo "✓ jq installed (downloaded)"
+        else
+            echo "✗ Failed to download jq"
+            echo "  Install jq manually: brew install jq"
+            echo "  Then run: cp \$(which jq) $LIB_DIR/jq"
+            exit 1
+        fi
+    fi
+else
+    echo "✓ jq already exists"
+fi
+
+# Verify binaries work
+if ! "$LIB_DIR/yq" --version >/dev/null 2>&1; then
+    echo "✗ yq verification failed"
+    exit 1
+fi
+
+if ! "$LIB_DIR/jq" --version >/dev/null 2>&1; then
+    echo "✗ jq verification failed"
+    exit 1
+fi
+
+echo ""
+echo "✓ All dependencies ready and verified!"
+echo "  Binaries are self-contained in scripts/lib/"
+echo "  No system-level installation required."

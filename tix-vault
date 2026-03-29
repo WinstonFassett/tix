@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# tix-vault - Open workspace as Obsidian vault
+# Wrapper script that calls the vault command from the main tix CLI
+
+# Find the script's directory (follow symlinks, macOS compatible)
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+    SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ $SOURCE != /* ]] && SOURCE="$SCRIPT_DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+# If no arguments, default to 'open' for backward compatibility
+if [[ $# -eq 0 ]]; then
+    exec "$SCRIPT_DIR/tix" vault open
+else
+    exec "$SCRIPT_DIR/tix" vault "$@"
+fi

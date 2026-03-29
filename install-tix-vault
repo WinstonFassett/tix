@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# install-tix-vault - Install tix-vault globally like Git
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INSTALL_DIR="/usr/local/bin"
+
+echo "Installing tix-vault globally..."
+
+# Check if running with sudo for system install
+if [[ $EUID -ne 0 ]]; then
+    echo "Note: Installing for current user only"
+    INSTALL_DIR="$HOME/.local/bin"
+    mkdir -p "$INSTALL_DIR"
+
+    # Add to PATH if not already there
+    if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+        echo ""
+        echo "Add $HOME/.local/bin to your PATH:"
+        echo "   export PATH=\"\$HOME/.local/bin:\$PATH\""
+        echo "   Add this to ~/.zshrc or ~/.bashrc"
+    fi
+fi
+
+# Create symbolic link to the tix-vault script
+if ln -sf "$SCRIPT_DIR/tix-vault" "$INSTALL_DIR/tix-vault"; then
+    echo "tix-vault installed to $INSTALL_DIR/tix-vault"
+else
+    echo "Installation failed"
+    exit 1
+fi
+
+# Create backward-compat symlink for 'ticket-vault' command
+if ln -sf "$SCRIPT_DIR/ticket-vault" "$INSTALL_DIR/ticket-vault"; then
+    echo "ticket-vault compat wrapper installed to $INSTALL_DIR/ticket-vault"
+fi
+
+# Verify installation
+if command -v "$INSTALL_DIR/tix-vault" >/dev/null 2>&1; then
+    echo "Installation verified"
+else
+    echo "Installation verification failed"
+    exit 1
+fi
+
+echo ""
+echo "tix-vault is now installed globally!"
+echo ""
+echo "Usage:"
+echo "  tix-vault               # Open workspace in Obsidian"
+echo "  tix-vault <ticket-id>    # Open specific ticket in Obsidian"
+echo ""
+echo "Works with any ticket workspace - opens as Obsidian vault"
