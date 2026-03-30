@@ -24,4 +24,7 @@ export default defineConfig({
     port: 5175,
     open: true,
   },
+  test: {
+    sequence: { concurrent: false },
+  },
 })
