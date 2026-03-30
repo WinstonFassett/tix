@@ -27,9 +27,15 @@
     "vitest": "^4.1.2"
   },
   "dependencies": {
-    "@winstonfassett/web-dev-mcp-gateway": "file:/Users/winston/dev/tries/2026-03-22-vite-live-dev-mcp/packages/gateway",
-    "@winstonfassett/web-dev-mcp-vite": "file:/Users/winston/dev/tries/2026-03-22-vite-live-dev-mcp/packages/adapter-vite",
     "gray-matter": "^4.0.3",
     "marked": "^17.0.5"
+  },
+  "peerDependencies": {
+    "@winstonfassett/web-dev-mcp-gateway": ">=0.1.0",
+    "@winstonfassett/web-dev-mcp-vite": ">=0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@winstonfassett/web-dev-mcp-gateway": { "optional": true },
+    "@winstonfassett/web-dev-mcp-vite": { "optional": true }
   }
 }
