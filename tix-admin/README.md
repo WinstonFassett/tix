@@ -19,12 +19,6 @@ To point at a different workspace:
 TIX_WORKSPACE=/path/to/project npm run dev
 ```
 
-Or use the CLI directly:
-
-```bash
-npx tix-admin
-```
-
 ## Usage
 
 The dashboard shows all active tickets in two views:

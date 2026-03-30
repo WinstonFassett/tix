@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# install-tix-admin - Install tix-admin dependencies and symlink the CLI
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ADMIN_DIR="$SCRIPT_DIR/tix-admin"
+
+if ! command -v node >/dev/null 2>&1; then
+    echo "Skipping tix-admin: node not found"
+    exit 0
+fi
+
+echo "Installing tix-admin dependencies..."
+(cd "$ADMIN_DIR" && npm install --silent)
+
+INSTALL_DIR="/usr/local/bin"
+if [[ $EUID -ne 0 ]]; then
+    INSTALL_DIR="$HOME/.local/bin"
+    mkdir -p "$INSTALL_DIR"
+fi
+
+chmod +x "$ADMIN_DIR/bin/cli.js"
+ln -sf "$ADMIN_DIR/bin/cli.js" "$INSTALL_DIR/tix-admin"
+echo "tix-admin installed to $INSTALL_DIR/tix-admin"
