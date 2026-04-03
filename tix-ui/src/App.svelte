@@ -73,9 +73,9 @@
 
 <div class="flex h-svh bg-background text-foreground overflow-hidden">
   <!-- Sidebar -->
-  <aside class="{sidebar.open ? 'w-60' : 'w-0'} shrink-0 flex flex-col bg-background transition-[width] duration-200 overflow-hidden">
+  <aside class="{sidebar.open ? 'w-60' : 'w-0'} shrink-0 flex flex-col bg-background transition-[width] duration-200 overflow-hidden lg:py-2">
     <!-- Sidebar header -->
-    <div class="h-10 flex items-center px-4 border-b min-w-60">
+    <div class="h-10 flex items-center px-4 min-w-60">
       <a href="#/" class="text-sm font-semibold font-mono tracking-tight" onclick={() => filters.clearAll()}>tix</a>
     </div>
 
