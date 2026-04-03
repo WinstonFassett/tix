@@ -44,6 +44,11 @@ else
     exit 1
 fi
 
+# Install tix-ui if node is available
+if [[ -x "$SCRIPT_DIR/install-tix-ui" ]]; then
+    "$SCRIPT_DIR/install-tix-ui"
+fi
+
 echo ""
 echo "tix is now installed globally!"
 echo ""
