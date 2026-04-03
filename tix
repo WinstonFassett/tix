@@ -289,8 +289,7 @@ cmd_create() {
     local title="" description="" design="" acceptance="" folder=""
     local priority=2 issue_type="task" assignee="" external_ref="" parent="" tags=""
 
-    # Default assignee to git user.name if available
-    assignee=$(git config user.name 2>/dev/null || true)
+    # No default assignee — use -a/--assignee to set one
 
     # Parse args
     while [[ $# -gt 0 ]]; do
