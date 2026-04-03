@@ -404,9 +404,9 @@ cmd_create() {
 }
 
 # Valid statuses
-VALID_STATUSES="open in-progress done closed"
+VALID_STATUSES="open in-progress on-hold done closed"
 TERMINAL_STATUSES="done closed"
-ACTIVE_STATUSES="open in-progress"
+ACTIVE_STATUSES="open in-progress on-hold"
 
 # Normalize status aliases to canonical values
 # Returns canonical status on stdout, returns 1 if unrecognized
@@ -415,6 +415,7 @@ normalize_status() {
     case "$s" in
         open) echo "open" ;;
         in-progress|in_progress) echo "in-progress" ;;
+        on-hold|on_hold|paused|hold) echo "on-hold" ;;
         done|completed|finished|resolved) echo "done" ;;
         closed|cancelled|canceled|wontfix) echo "closed" ;;
         *) return 1 ;;
@@ -478,6 +479,18 @@ cmd_start() {
     file=$(ticket_path "$id") || return 1
     update_yaml_field "$file" "status" "in-progress"
     echo "Ticket $id set to in-progress."
+}
+
+cmd_hold() {
+    if [[ $# -lt 1 ]]; then
+        echo "Usage: $(basename "$0") hold <id>" >&2
+        return 1
+    fi
+    local id="$1"
+    local file
+    file=$(ticket_path "$id") || return 1
+    update_yaml_field "$file" "status" "on-hold"
+    echo "Ticket $id set to on-hold. ⏸"
 }
 
 cmd_done() {
@@ -2313,7 +2326,7 @@ Commands:
     Example: tix create "Maybe later" --folder backlog
 
     ls [--status=<status>] [--all] [--deep] [-a <assignee>] [-T <tag>]
-        List active tickets (open, in-progress) by default. Use --all to include done/closed.
+        List active tickets (open, in-progress, on-hold) by default. Use --all to include done/closed.
         Use --deep to include tickets from subfolders and prefix nested results with [folder/path].
         Filters by status, assignee, or tag. Shows assignees in output.
         Examples: tix ls --status=in-progress -a "Winston", tix ls --deep --all
@@ -2323,12 +2336,15 @@ Commands:
     Example: tix show w-abcd
 
   status <id> <status>
-    Update a ticket's status. Valid: open, in-progress, done, closed.
+    Update a ticket's status. Valid: open, in-progress, on-hold, done, closed.
     Auto-archives if status is terminal (done/closed).
     Example: tix status w-abcd in-progress
 
   start <id>
     Set ticket status to 'in-progress'.
+
+  hold <id>  (alias: pause)
+    Set ticket status to 'on-hold'. ⏸
 
   done <id>
     Set ticket status to 'done' (completed) and move to archive.
@@ -2429,6 +2445,7 @@ main() {
         show) cmd_show "$@" ;;
         status) cmd_status "$@" ;;
         start) cmd_start "$@" ;;
+        hold|pause) cmd_hold "$@" ;;
         done) cmd_done "$@" ;;
         close) cmd_close "$@" ;;
         reopen) cmd_reopen "$@" ;;
