@@ -76,25 +76,18 @@
 
 <div class="flex h-svh bg-background text-foreground overflow-hidden">
   <!-- Sidebar -->
-  <aside class="{sidebarOpen ? 'w-60' : 'w-12'} shrink-0 flex flex-col bg-background transition-all duration-200 overflow-hidden">
+  {#if sidebarOpen}
+  <aside class="w-60 shrink-0 flex flex-col bg-background">
     <!-- Sidebar header -->
-    <div class="h-10 flex items-center {sidebarOpen ? 'px-4 justify-between' : 'justify-center'} border-b">
-      {#if sidebarOpen}
-        <a href="#/" class="text-sm font-semibold font-mono tracking-tight" onclick={() => filters.clearAll()}>tix</a>
-      {/if}
-      <button class="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-accent transition-colors text-muted-foreground" onclick={toggleSidebar}>
-        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          {#if sidebarOpen}
-            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/>
-          {:else}
-            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/>
-          {/if}
-        </svg>
+    <div class="h-10 flex items-center px-4 justify-between border-b">
+      <a href="#/" class="text-sm font-semibold font-mono tracking-tight" onclick={() => filters.clearAll()}>tix</a>
+      <button class="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-accent transition-colors text-muted-foreground" onclick={toggleSidebar} title="Collapse sidebar">
+        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
       </button>
     </div>
 
     <!-- Nav sections -->
-    <nav class="flex-1 overflow-y-auto py-2 {sidebarOpen ? '' : 'hidden'}">
+    <nav class="flex-1 overflow-y-auto py-2">
       <!-- All Issues -->
       <div class="px-2 mb-1">
         <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -151,7 +144,7 @@
     </nav>
 
     <!-- Sidebar footer -->
-    <div class="border-t p-2 flex items-center {sidebarOpen ? 'justify-between' : 'justify-center'}">
+    <div class="border-t p-2 flex items-center justify-between">
       <Button variant="ghost" size="icon" class="h-8 w-8" onclick={toggleTheme}>
         {#if dark}
           <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -161,10 +154,20 @@
       </Button>
     </div>
   </aside>
+  {/if}
 
   <!-- Main content area -->
   <div class="flex-1 h-svh overflow-hidden lg:p-2">
-    <div class="lg:border lg:rounded-md overflow-hidden flex flex-col h-full bg-background">
+    <div class="lg:border lg:rounded-md overflow-hidden flex flex-col h-full bg-background relative">
+      {#if !sidebarOpen}
+        <button
+          class="absolute top-2 left-2 z-10 h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent transition-colors text-muted-foreground"
+          onclick={toggleSidebar}
+          title="Expand sidebar"
+        >
+          <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </button>
+      {/if}
       {#if route.view === 'ticket' && route.ticketId}
         <TicketView ticketId={route.ticketId} />
       {:else}
