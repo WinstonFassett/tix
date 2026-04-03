@@ -7,8 +7,12 @@
 
   let { ticket, onUpdate }: {
     ticket: Ticket,
-    onUpdate?: (updates: Record<string, any>) => void
+    onUpdate?: (updates: Record<string, any>) => Promise<void> | void
   } = $props()
+
+  // Save state indicator: 'idle' | 'saving' | 'saved' | 'error'
+  let saveState = $state<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  let savedTimer: ReturnType<typeof setTimeout> | null = null
 
   // Fetch tickets dir for file path links
   let ticketsDir = $state('')
@@ -34,8 +38,16 @@
   let saveTimer: ReturnType<typeof setTimeout> | null = null
   function save(updates: Record<string, any>) {
     if (saveTimer) clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => {
-      onUpdate?.(updates)
+    saveState = 'saving'
+    if (savedTimer) clearTimeout(savedTimer)
+    saveTimer = setTimeout(async () => {
+      try {
+        await onUpdate?.(updates)
+        saveState = 'saved'
+        savedTimer = setTimeout(() => { saveState = 'idle' }, 2000)
+      } catch {
+        saveState = 'error'
+      }
     }, 500)
   }
 
@@ -74,6 +86,7 @@
 
   onDestroy(() => {
     if (saveTimer) clearTimeout(saveTimer)
+    if (savedTimer) clearTimeout(savedTimer)
     crepe?.destroy()
   })
 
@@ -100,6 +113,13 @@
       <span class="text-xs text-muted-foreground">
         {new Date(ticket.created).toLocaleDateString()}
       </span>
+    {/if}
+    {#if saveState === 'saving'}
+      <span class="text-xs text-muted-foreground">Saving...</span>
+    {:else if saveState === 'saved'}
+      <span class="text-xs text-muted-foreground">Saved</span>
+    {:else if saveState === 'error'}
+      <span class="text-xs text-destructive">Save failed</span>
     {/if}
   </div>
   {#if filePath}
