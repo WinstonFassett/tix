@@ -1,19 +1,21 @@
 <script lang="ts">
   import { useTickets } from '../lib/data/tickets.svelte'
   import { useFilters } from '../lib/data/filters.svelte'
+  import { useViewSettings } from '../lib/data/view-settings.svelte'
   import { filterTickets } from '../lib/filter'
   import type { Ticket } from '../lib/types'
   import KanbanBoard from '../lib/components/KanbanBoard.svelte'
   import TicketTable from '../lib/components/TicketTable.svelte'
-  import { Button, Input, Select, Dialog } from '../lib/components/ui'
+  import { Button, Input, Select, Dialog, Popover } from '../lib/components/ui'
 
   const store = useTickets()
   const filters = useFilters()
+  const view = useViewSettings()
 
-  let viewMode = $state<'board' | 'list'>('list')
   let search = $state('')
   let showCreate = $state(false)
   let showSearch = $state(false)
+  let showDisplay = $state(false)
   let creating = $state(false)
 
   // New ticket form
@@ -28,19 +30,42 @@
     tag: filters.tagFilter || undefined,
   }))
 
+  const sorted = $derived.by(() => {
+    const dir = view.sortDir === 'asc' ? 1 : -1
+    return [...filtered].sort((a, b) => {
+      const av = a[view.sortBy]
+      const bv = b[view.sortBy]
+      if (av < bv) return -1 * dir
+      if (av > bv) return 1 * dir
+      return 0
+    })
+  })
+
+  const grouped = $derived.by(() => {
+    if (view.groupBy === 'none') return { '': sorted }
+    const groups: Record<string, Ticket[]> = {}
+    for (const t of sorted) {
+      const key = String(t[view.groupBy] ?? '')
+      if (!groups[key]) groups[key] = []
+      groups[key].push(t)
+    }
+    return groups
+  })
+
   const filteredByStatus = $derived.by(() => {
     const groups: Record<string, Ticket[]> = {
-      'open': [],
-      'in-progress': [],
-      'done': [],
-      'closed': [],
+      'open': [], 'in-progress': [], 'done': [], 'closed': [],
     }
-    for (const t of filtered) {
+    for (const t of sorted) {
       const key = t.status in groups ? t.status : 'open'
       groups[key].push(t)
     }
     return groups
   })
+
+  const isDisplayChanged = $derived(
+    view.groupBy !== 'status' || view.sortBy !== 'priority' || view.sortDir !== 'asc'
+  )
 
   async function createTicket() {
     if (!newTitle.trim()) return
@@ -134,24 +159,68 @@
   </div>
 
   <div class="flex items-center gap-1">
-    <Button
-      variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-      size="sm"
-      class="h-7 px-2 text-xs gap-1"
-      onclick={() => viewMode = 'list'}
-    >
-      <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      List
-    </Button>
-    <Button
-      variant={viewMode === 'board' ? 'secondary' : 'ghost'}
-      size="sm"
-      class="h-7 px-2 text-xs gap-1"
-      onclick={() => viewMode = 'board'}
-    >
-      <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      Board
-    </Button>
+    <!-- Display settings popover -->
+    <Popover bind:open={showDisplay} align="end" class="w-56 p-3">
+      {#snippet trigger()}
+        <Button variant="secondary" size="sm" class="h-7 px-2 text-xs gap-1 relative">
+          <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></svg>
+          Display
+          {#if isDisplayChanged}
+            <span class="absolute -right-0.5 -top-0.5 w-2 h-2 bg-primary rounded-full"></span>
+          {/if}
+        </Button>
+      {/snippet}
+
+      <div class="space-y-3">
+        <div>
+          <span class="text-xs font-medium text-muted-foreground mb-1 block">Group by</span>
+          <Select class="h-7 text-xs" value={view.groupBy} onchange={(e) => view.groupBy = (e.target as HTMLSelectElement).value as any}>
+            <option value="status">Status</option>
+            <option value="priority">Priority</option>
+            <option value="type">Type</option>
+            <option value="none">None</option>
+          </Select>
+        </div>
+        <div>
+          <span class="text-xs font-medium text-muted-foreground mb-1 block">Sort by</span>
+          <div class="flex gap-1">
+            <Select class="h-7 text-xs flex-1" value={view.sortBy} onchange={(e) => view.sortBy = (e.target as HTMLSelectElement).value as any}>
+              <option value="priority">Priority</option>
+              <option value="title">Title</option>
+              <option value="created">Created</option>
+              <option value="status">Status</option>
+            </Select>
+            <Button variant="outline" size="sm" class="h-7 px-2 text-xs shrink-0" onclick={() => view.toggleSortDir()}>
+              {view.sortDir === 'asc' ? '↑' : '↓'}
+            </Button>
+          </div>
+        </div>
+        <hr class="border-border" />
+        <div>
+          <span class="text-xs font-medium text-muted-foreground mb-1 block">View</span>
+          <div class="flex gap-1">
+            <Button
+              variant={view.viewMode === 'list' ? 'secondary' : 'outline'}
+              size="sm"
+              class="h-7 px-2 text-xs flex-1 gap-1"
+              onclick={() => view.viewMode = 'list'}
+            >
+              <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              List
+            </Button>
+            <Button
+              variant={view.viewMode === 'board' ? 'secondary' : 'outline'}
+              size="sm"
+              class="h-7 px-2 text-xs flex-1 gap-1"
+              onclick={() => view.viewMode = 'board'}
+            >
+              <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              Board
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Popover>
   </div>
 </div>
 
@@ -219,8 +288,8 @@
     <div class="text-center py-16 text-muted-foreground">
       <p>No matching tickets</p>
     </div>
-  {:else if viewMode === 'list'}
-    <TicketTable tickets={filtered} onUpdate={updateTicket} />
+  {:else if view.viewMode === 'list'}
+    <TicketTable tickets={sorted} {grouped} groupBy={view.groupBy} onUpdate={updateTicket} />
   {:else}
     <KanbanBoard byStatus={filteredByStatus} />
   {/if}

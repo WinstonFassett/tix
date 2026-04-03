@@ -4,11 +4,13 @@
 
   let {
     open = $bindable(false),
+    align = 'start' as 'start' | 'end',
     class: className = '',
     trigger,
     children,
   }: {
     open?: boolean
+    align?: 'start' | 'end'
     class?: string
     trigger: Snippet
     children?: Snippet
@@ -25,7 +27,7 @@
     if (!open) {
       const rect = triggerEl.getBoundingClientRect()
       top = rect.bottom + 4
-      left = rect.left
+      left = align === 'end' ? rect.right : rect.left
     }
     open = !open
   }
@@ -67,7 +69,7 @@
       'fixed z-50 min-w-40 rounded-md border bg-popover p-1 text-popover-foreground shadow-md',
       className
     )}
-    style="top: {top}px; left: {left}px;"
+    style="top: {top}px; {align === 'end' ? `right: ${window.innerWidth - left}px` : `left: ${left}px`};"
     onclick={handlePopoverClick}
   >
     {#if children}{@render children()}{/if}

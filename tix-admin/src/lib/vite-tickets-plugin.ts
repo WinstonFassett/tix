@@ -62,6 +62,13 @@ export function ticketsPlugin(): Plugin {
       server.middlewares.use(async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
         const url = req.url?.split('?')[0] || ''
 
+        // GET /api/config
+        if (url === '/api/config' && req.method === 'GET') {
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ ticketsDir: path.resolve(ticketsDir) }))
+          return
+        }
+
         // GET /api/tickets
         if (url === '/api/tickets' && req.method === 'GET') {
           try {

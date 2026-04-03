@@ -1,16 +1,18 @@
 <script lang="ts">
   import type { Ticket } from '../types'
+  import type { GroupBy } from '../data/view-settings.svelte'
   import { Badge } from './ui'
   import StatusIcon from './icons/StatusIcon.svelte'
+  import PriorityIcon from './icons/PriorityIcon.svelte'
   import StatusSelector from './StatusSelector.svelte'
   import PrioritySelector from './PrioritySelector.svelte'
 
-  let { tickets, onUpdate }: {
+  let { tickets, grouped, groupBy, onUpdate }: {
     tickets: Ticket[]
+    grouped: Record<string, Ticket[]>
+    groupBy: GroupBy
     onUpdate?: (ticketId: string, updates: Record<string, any>) => void
   } = $props()
-
-  const statuses = ['open', 'in-progress', 'done', 'closed']
 
   const statusColors: Record<string, string> = {
     'open': '#f97316',
@@ -19,39 +21,65 @@
     'closed': '#94a3b8',
   }
 
-  // Group by status
-  const grouped = $derived.by(() => {
-    const groups: { status: string; label: string; tickets: Ticket[] }[] = []
-    for (const s of statuses) {
-      const items = tickets.filter(t => t.status === s)
-      if (items.length > 0) {
-        groups.push({
-          status: s,
-          label: s === 'in-progress' ? 'In Progress' : s.charAt(0).toUpperCase() + s.slice(1),
-          tickets: items,
-        })
-      }
+  const statusLabels: Record<string, string> = {
+    'open': 'Open',
+    'in-progress': 'In Progress',
+    'done': 'Done',
+    'closed': 'Closed',
+  }
+
+  const priorityLabels: Record<string, string> = {
+    '0': 'P0 Urgent', '1': 'P1 High', '2': 'P2 Medium', '3': 'P3 Low', '4': 'P4 None',
+  }
+
+  // Order groups sensibly depending on groupBy
+  const orderedGroups = $derived.by(() => {
+    const keys = Object.keys(grouped)
+    if (groupBy === 'status') {
+      const order = ['open', 'in-progress', 'done', 'closed']
+      return order.filter(k => keys.includes(k))
     }
-    return groups
+    if (groupBy === 'priority') {
+      return ['0', '1', '2', '3', '4'].filter(k => keys.includes(k))
+    }
+    return keys.sort()
   })
+
+  function groupLabel(key: string): string {
+    if (groupBy === 'status') return statusLabels[key] || key
+    if (groupBy === 'priority') return priorityLabels[key] || `P${key}`
+    if (groupBy === 'type') return key.charAt(0).toUpperCase() + key.slice(1)
+    return key
+  }
+
+  function groupColor(key: string): string {
+    if (groupBy === 'status') return statusColors[key] || '#94a3b8'
+    return '#94a3b8'
+  }
 </script>
 
 <div class="w-full">
-  {#each grouped as group}
-    <!-- Status group header -->
-    <div
-      class="sticky top-0 z-10 w-full h-10 flex items-center justify-between px-6"
-      style="background-color: {statusColors[group.status]}08"
-    >
-      <div class="flex items-center gap-2">
-        <StatusIcon status={group.status} />
-        <span class="text-sm font-medium">{group.label}</span>
-        <span class="text-sm text-muted-foreground">{group.tickets.length}</span>
+  {#each orderedGroups as groupKey}
+    {#if groupBy !== 'none'}
+      <!-- Group header -->
+      <div
+        class="sticky top-0 z-10 w-full h-10 flex items-center justify-between px-6"
+        style="background-color: {groupColor(groupKey)}08"
+      >
+        <div class="flex items-center gap-2">
+          {#if groupBy === 'status'}
+            <StatusIcon status={groupKey} />
+          {:else if groupBy === 'priority'}
+            <PriorityIcon priority={Number(groupKey)} size={14} />
+          {/if}
+          <span class="text-sm font-medium">{groupLabel(groupKey)}</span>
+          <span class="text-sm text-muted-foreground">{grouped[groupKey].length}</span>
+        </div>
       </div>
-    </div>
+    {/if}
 
     <!-- Issue rows -->
-    {#each group.tickets as ticket (ticket.id)}
+    {#each grouped[groupKey] as ticket (ticket.id)}
       <div
         class="w-full flex items-center justify-start h-11 px-6 hover:bg-accent/50 cursor-pointer transition-colors"
         onclick={() => location.hash = `#/ticket/${ticket.id}`}

@@ -10,6 +10,22 @@
     onUpdate?: (updates: Record<string, any>) => void
   } = $props()
 
+  // Fetch tickets dir for file path links
+  let ticketsDir = $state('')
+  onMount(async () => {
+    try {
+      const res = await fetch('/api/config')
+      const data = await res.json()
+      ticketsDir = data.ticketsDir || ''
+    } catch {}
+  })
+
+  const filePath = $derived(ticketsDir && ticket.filename ? `${ticketsDir}/${ticket.filename}` : '')
+
+  function copyPath() {
+    if (filePath) navigator.clipboard.writeText(filePath)
+  }
+
   const statuses = ['open', 'in-progress', 'done', 'closed']
   const types = ['task', 'bug', 'feature', 'epic']
   const priorities = [0, 1, 2, 3, 4]
@@ -86,6 +102,20 @@
       </span>
     {/if}
   </div>
+  {#if filePath}
+    <div class="flex items-center gap-1 ml-auto">
+      <span class="text-xs text-muted-foreground font-mono truncate max-w-80" title={filePath}>{ticket.filename}</span>
+      <Button variant="ghost" size="icon" class="h-6 w-6 shrink-0" onclick={copyPath} title="Copy file path">
+        <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </Button>
+      <Button variant="ghost" size="icon" class="h-6 w-6 shrink-0" onclick={() => window.open(`vscode://file/${filePath}`)} title="Open in VS Code">
+        <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </Button>
+      <Button variant="ghost" size="icon" class="h-6 w-6 shrink-0" onclick={() => window.open(`vscode://file/${ticketsDir}`)} title="Reveal in Finder">
+        <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      </Button>
+    </div>
+  {/if}
 </div>
 
 <!-- Detail content -->
