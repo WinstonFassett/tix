@@ -87,38 +87,45 @@
         tabindex="0"
         onkeydown={(e) => { if (e.key === 'Enter') location.hash = `#/ticket/${ticket.id}` }}
       >
-        <!-- Left: priority selector, id, status selector -->
-        <div class="flex items-center gap-0.5 shrink-0">
+        <!-- Priority -->
+        <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+        <span class="w-8 shrink-0 flex items-center justify-center" onclick={(e) => e.stopPropagation()}>
           <PrioritySelector
             priority={ticket.priority}
             onSelect={(p) => onUpdate?.(ticket.id, { priority: p })}
+            compact
           />
-          <span class="text-sm hidden sm:inline-block text-muted-foreground font-medium w-16 truncate shrink-0 mr-0.5">
-            {ticket.id}
-          </span>
+        </span>
+
+        <!-- ID -->
+        <span class="w-14 shrink-0 text-sm hidden sm:inline-block text-muted-foreground font-medium font-mono truncate">
+          {ticket.id}
+        </span>
+
+        <!-- Status -->
+        <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+        <span class="w-8 shrink-0 flex items-center justify-center" onclick={(e) => e.stopPropagation()}>
           <StatusSelector
             status={ticket.status}
             onSelect={(s) => onUpdate?.(ticket.id, { status: s })}
+            compact
           />
-        </div>
+        </span>
 
         <!-- Title -->
-        <span class="min-w-0 flex items-center justify-start mr-1 ml-0.5">
-          <span class="text-xs sm:text-sm font-medium sm:font-semibold truncate">
-            {ticket.title}
-          </span>
+        <span class="min-w-0 flex-1 truncate text-xs sm:text-sm font-medium sm:font-semibold">
+          {ticket.title}
         </span>
 
         <!-- Right: tags, date, assignee -->
-        <div class="flex items-center justify-end gap-2 ml-auto shrink-0">
-          <div class="w-3 shrink-0"></div>
+        <div class="flex items-center justify-end gap-2 ml-2 shrink-0">
           <div class="items-center justify-end hidden sm:flex gap-1">
             {#each ticket.tags.slice(0, 3) as tag}
               <Badge variant="outline" class="text-[10px] px-1.5 py-0 rounded-full">{tag}</Badge>
             {/each}
           </div>
           {#if ticket.created}
-            <span class="text-xs text-muted-foreground shrink-0 hidden sm:inline-block">
+            <span class="text-xs text-muted-foreground shrink-0 hidden sm:inline-block w-16 text-right">
               {new Date(ticket.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
           {/if}

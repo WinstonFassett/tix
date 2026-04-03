@@ -6,7 +6,7 @@ import { ticketsPlugin } from './src/lib/vite-tickets-plugin'
 export default defineConfig(async ({ command }) => {
   const plugins = [svelte(), tailwindcss(), ticketsPlugin()]
 
-  if (command === 'serve') {
+  if (command === 'serve' || process.env.NODE_ENV !== 'production') {
     try {
       const { webDevMcp } = await import('@winstonfassett/web-dev-mcp-vite')
       plugins.push(webDevMcp() as Plugin)

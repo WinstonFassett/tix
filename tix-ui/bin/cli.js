@@ -7,6 +7,9 @@ import { createServer } from 'vite'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+// Ensure dev mode so vite plugins (e.g. web-dev-mcp) activate
+if (!process.env.NODE_ENV) process.env.NODE_ENV = 'development'
+
 // Resolve tickets directory
 const ticketsDir = process.env.TICKETS_DIR
   || resolve(process.env.TIX_WORKSPACE || process.env.TICKET_WORKSPACE || process.cwd(), 'tickets')

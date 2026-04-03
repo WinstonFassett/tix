@@ -2,9 +2,10 @@
   import PriorityIcon from './icons/PriorityIcon.svelte'
   import Popover from './ui/Popover.svelte'
 
-  let { priority, onSelect }: {
+  let { priority, onSelect, compact = false }: {
     priority: number
     onSelect: (priority: number) => void
+    compact?: boolean
   } = $props()
 
   let open = $state(false)
@@ -26,10 +27,13 @@
 <Popover bind:open>
   {#snippet trigger()}
     <button
-      class="h-7 inline-flex items-center gap-1.5 rounded-md bg-secondary px-2 text-sm hover:bg-accent transition-colors"
+      class="h-7 inline-flex items-center gap-1.5 rounded-md {compact ? 'px-1.5 hover:bg-accent' : 'bg-secondary px-2 hover:bg-accent'} text-sm transition-colors"
+      title={priorities.find(p => p.value === priority)?.label ?? `P${priority}`}
     >
-      <PriorityIcon {priority} size={12} />
-      <span>{priorities.find(p => p.value === priority)?.label ?? `P${priority}`}</span>
+      <PriorityIcon {priority} size={compact ? 14 : 12} />
+      {#if !compact}
+        <span>{priorities.find(p => p.value === priority)?.label ?? `P${priority}`}</span>
+      {/if}
     </button>
   {/snippet}
 

@@ -2,9 +2,10 @@
   import StatusIcon from './icons/StatusIcon.svelte'
   import Popover from './ui/Popover.svelte'
 
-  let { status, onSelect }: {
+  let { status, onSelect, compact = false }: {
     status: string
     onSelect: (status: string) => void
+    compact?: boolean
   } = $props()
 
   let open = $state(false)
@@ -26,10 +27,13 @@
 <Popover bind:open>
   {#snippet trigger()}
     <button
-      class="h-7 inline-flex items-center gap-1.5 rounded-md bg-secondary px-2 text-sm hover:bg-accent transition-colors"
+      class="h-7 inline-flex items-center gap-1.5 rounded-md {compact ? 'px-1.5 hover:bg-accent' : 'bg-secondary px-2 hover:bg-accent'} text-sm transition-colors"
+      title={statuses.find(s => s.id === status)?.label ?? status}
     >
-      <StatusIcon {status} size={12} />
-      <span>{statuses.find(s => s.id === status)?.label ?? status}</span>
+      <StatusIcon {status} size={compact ? 14 : 12} />
+      {#if !compact}
+        <span>{statuses.find(s => s.id === status)?.label ?? status}</span>
+      {/if}
     </button>
   {/snippet}
 

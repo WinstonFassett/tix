@@ -254,12 +254,26 @@
 </div>
 
 <!-- Create ticket dialog -->
+<!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
 <Dialog open={showCreate} onClose={() => showCreate = false} class="sm:max-w-[750px] p-0">
-  <form onsubmit={(e) => { e.preventDefault(); createTicket() }}>
+  <form
+    onsubmit={(e) => { e.preventDefault(); createTicket() }}
+    onkeydown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); createTicket() } }}
+  >
+    <!-- Close button -->
+    <button
+      type="button"
+      class="absolute top-3 right-3 h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent transition-colors text-muted-foreground"
+      onclick={() => showCreate = false}
+      aria-label="Close"
+    >
+      <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
     <div class="px-4 pt-4 pb-0 space-y-3">
       <input
         type="text"
-        class="w-full bg-transparent text-2xl font-medium border-none outline-none placeholder:text-muted-foreground"
+        class="w-full bg-transparent text-2xl font-medium border-none outline-none placeholder:text-muted-foreground pr-8"
         bind:value={newTitle}
         placeholder="Issue title"
         use:focus
@@ -280,13 +294,25 @@
       </div>
     </div>
     <div class="flex items-center justify-between py-2.5 px-4 border-t mt-3">
-      <label class="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none">
-        <input type="checkbox" class="rounded" bind:checked={createMore} />
-        Create more
-      </label>
-      <Button type="submit" size="sm" disabled={!newTitle.trim() || creating}>
-        {creating ? 'Creating…' : 'Create issue'}
-      </Button>
+      <button
+        type="button"
+        class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors {createMore ? 'bg-primary' : 'bg-input'}"
+        role="switch"
+        aria-checked={createMore}
+        onclick={() => createMore = !createMore}
+      >
+        <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-sm ring-0 transition-transform {createMore ? 'translate-x-4' : 'translate-x-0'}"></span>
+      </button>
+      <span class="text-sm text-muted-foreground ml-2 mr-auto select-none cursor-pointer" onclick={() => createMore = !createMore}>Create more</span>
+      <div class="flex items-center gap-2">
+        <Button type="button" variant="outline" size="sm" onclick={() => showCreate = false}>
+          Cancel
+        </Button>
+        <Button type="submit" size="sm" disabled={!newTitle.trim() || creating}>
+          {creating ? 'Creating…' : 'Create issue'}
+          <kbd class="ml-1.5 text-[10px] opacity-60 font-mono">{navigator?.platform?.includes('Mac') ? '⌘' : 'Ctrl'}↵</kbd>
+        </Button>
+      </div>
     </div>
   </form>
 </Dialog>

@@ -21,4 +21,11 @@
   commands={items}
   placeholder="Type a command or search..."
   shortcut="$mod+k"
+  overlayClass="cp-overlay-themed"
+  paletteWrapperInnerClass="cp-container-themed"
+  inputClass="cp-input-themed"
+  resultsContainerClass="cp-results-themed"
+  resultContainerClass="cp-result-themed"
+  optionSelectedClass="cp-result-active"
+  unstyled
 />

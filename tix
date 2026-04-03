@@ -2430,7 +2430,8 @@ EOF
 
 main() {
     if [[ $# -eq 0 ]]; then
-        main_help
+        cmd_ls
+        printf '\n  %s\n' "Run 'tix help' for usage info."
         return 0
     fi
 

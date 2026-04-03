@@ -90,6 +90,148 @@
 }
 
 /* Milkdown dark theme */
+/* Command palette: match app theme */
+.cp-overlay-themed {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 10vh 1rem 1rem;
+  animation: cp-fade 0.15s ease-out;
+}
+
+@keyframes cp-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cp-slide {
+  from { opacity: 0; transform: scale(0.96) translateY(-10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+:global(.cp-wrapper) {
+  width: 100%;
+  max-width: 640px;
+  animation: cp-slide 0.2s ease-out;
+}
+
+.cp-container-themed {
+  width: 100%;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.cp-container-themed form {
+  width: 100%;
+  border-bottom: 1px solid var(--border);
+}
+
+.cp-container-themed .cp-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+}
+
+.cp-container-themed .cp-search-icon {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+
+.cp-input-themed {
+  flex: 1;
+  font-size: 1rem;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--foreground);
+}
+
+.cp-input-themed::placeholder {
+  color: var(--muted-foreground);
+}
+
+.cp-results-themed {
+  width: 100%;
+  overflow-y: auto;
+  max-height: calc(70vh - 60px);
+  padding: 0.5rem;
+}
+
+.cp-results-themed .cp-group-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+  padding: 0.75rem 0.75rem 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.cp-results-themed .cp-group-header:first-child {
+  margin-top: 0;
+}
+
+.cp-result-themed {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.cp-result-themed:hover,
+.cp-result-active {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.cp-result-themed .cp-action-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.cp-result-themed .cp-action-subtitle,
+.cp-result-themed .cp-action-description {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+/* Keyboard button in command palette */
+.cp-container-themed .keyboard-button,
+.cp-container-themed kbd {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 4px);
+  padding: 0.125rem 0.375rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+}
+
+/* Empty state */
+.cp-container-themed .cp-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: var(--muted-foreground);
+}
+
 .dark .milkdown {
   --crepe-color-on-background: #e6e6e6 !important;
   --crepe-color-surface: #121212 !important;
