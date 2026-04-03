@@ -19,8 +19,9 @@
   const filters = useFilters()
   const view = useViewSettings()
 
+  let { showCreate = $bindable(false) }: { showCreate?: boolean } = $props()
+
   let search = $state('')
-  let showCreate = $state(false)
   let showSearch = $state(false)
   let showDisplay = $state(false)
   let creating = $state(false)

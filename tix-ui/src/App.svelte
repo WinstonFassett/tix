@@ -7,16 +7,66 @@
   import { useFilters } from './lib/data/filters.svelte'
   import StatusIcon from './lib/components/icons/StatusIcon.svelte'
   import { useSidebar } from './lib/data/sidebar.svelte'
+  import { useViewSettings } from './lib/data/view-settings.svelte'
+  import CommandPalette from './lib/components/CommandPalette.svelte'
+  import type { PaletteCallbacks } from './lib/data/palette-items'
 
   let route = $state<Route>(parseHash(location.hash))
   let dark = $state(localStorage.getItem('tix-theme') === 'dark')
   const sidebar = useSidebar()
+  const viewSettings = useViewSettings()
 
   // Apply persisted theme on load
   if (dark) document.documentElement.classList.add('dark')
 
   const store = useTickets()
   const filters = useFilters()
+
+  let showCreate = $state(false)
+
+  // Current ticket (derived from route)
+  const currentTicket = $derived(
+    route.view === 'ticket' && route.ticketId
+      ? store.tickets.find(t => String(t.id) === route.ticketId)
+      : undefined
+  )
+
+  // Tickets dir for file operations
+  let ticketsDir = $state('')
+  fetch('/api/config').then(r => r.json()).then(d => ticketsDir = d.ticketsDir || '').catch(() => {})
+
+  const currentFilePath = $derived(
+    ticketsDir && currentTicket?.filename ? `${ticketsDir}/${currentTicket.filename}` : ''
+  )
+
+  async function updateCurrentTicket(updates: Record<string, any>) {
+    if (!currentTicket) return
+    const res = await fetch(`/api/tickets/${currentTicket.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: 'Unknown error' }))
+      console.error('Save failed:', data.error)
+    }
+  }
+
+  const paletteCallbacks: PaletteCallbacks = $derived({
+    toggleTheme,
+    toggleSidebar: () => sidebar.toggle(),
+    openCreate: () => { showCreate = true },
+    setViewMode: (m) => { viewSettings.viewMode = m },
+    setGroupBy: (g) => { viewSettings.groupBy = g },
+    setSortBy: (s) => { viewSettings.sortBy = s },
+    toggleSortDir: () => viewSettings.toggleSortDir(),
+    ...(currentTicket ? {
+      updateTicket: (updates: Record<string, any>) => updateCurrentTicket(updates),
+      copyFilePath: currentFilePath ? () => navigator.clipboard.writeText(currentFilePath) : undefined,
+      openInVSCode: currentFilePath ? () => window.open(`vscode://file/${currentFilePath}`) : undefined,
+      revealInFinder: ticketsDir ? () => window.open(`vscode://file/${ticketsDir}`) : undefined,
+    } : {}),
+  })
 
   // Derive tag counts from tickets
   const tagCounts = $derived.by(() => {
@@ -73,9 +123,9 @@
 
 <div class="flex h-svh bg-background text-foreground overflow-hidden">
   <!-- Sidebar -->
-  <aside class="{sidebar.open ? 'w-60' : 'w-0'} shrink-0 flex flex-col bg-background transition-[width] duration-200 overflow-hidden">
+  <aside class="{sidebar.open ? 'w-60' : 'w-0'} shrink-0 flex flex-col bg-background transition-[width] duration-200 overflow-hidden lg:py-2">
     <!-- Sidebar header -->
-    <div class="h-10 flex items-center px-4 border-b min-w-60">
+    <div class="h-10 flex items-center px-4 min-w-60">
       <a href="#/" class="text-sm font-semibold font-mono tracking-tight" onclick={() => filters.clearAll()}>tix</a>
     </div>
 
@@ -154,8 +204,14 @@
       {#if route.view === 'ticket' && route.ticketId}
         <TicketView ticketId={route.ticketId} />
       {:else}
-        <DashboardView />
+        <DashboardView bind:showCreate />
       {/if}
     </div>
   </div>
 </div>
+
+<CommandPalette
+  tickets={store.tickets}
+  {route}
+  callbacks={paletteCallbacks}
+/>
