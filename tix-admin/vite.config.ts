@@ -25,6 +25,7 @@ export default defineConfig({
     open: true,
   },
   test: {
+    environment: 'jsdom',
     sequence: { concurrent: false },
   },
 })

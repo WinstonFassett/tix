@@ -2,7 +2,8 @@
   import type { Ticket } from '../types'
   import { Badge } from './ui'
   import StatusIcon from './icons/StatusIcon.svelte'
-  import PriorityIcon from './icons/PriorityIcon.svelte'
+  import StatusSelector from './StatusSelector.svelte'
+  import PrioritySelector from './PrioritySelector.svelte'
 
   let { tickets, onUpdate }: {
     tickets: Ticket[]
@@ -10,7 +11,6 @@
   } = $props()
 
   const statuses = ['open', 'in-progress', 'done', 'closed']
-  const priorities = [0, 1, 2, 3, 4]
 
   const statusColors: Record<string, string> = {
     'open': '#f97316',
@@ -34,19 +34,6 @@
     }
     return groups
   })
-
-  function cycleStatus(e: MouseEvent, ticket: Ticket) {
-    e.stopPropagation()
-    const idx = statuses.indexOf(ticket.status)
-    const next = statuses[(idx + 1) % statuses.length]
-    onUpdate?.(ticket.id, { status: next })
-  }
-
-  function cyclePriority(e: MouseEvent, ticket: Ticket) {
-    e.stopPropagation()
-    const next = (ticket.priority + 1) % 5
-    onUpdate?.(ticket.id, { priority: next })
-  }
 </script>
 
 <div class="w-full">
@@ -72,25 +59,19 @@
         tabindex="0"
         onkeydown={(e) => { if (e.key === 'Enter') location.hash = `#/ticket/${ticket.id}` }}
       >
-        <!-- Left: priority (clickable), id, status (clickable) -->
+        <!-- Left: priority selector, id, status selector -->
         <div class="flex items-center gap-0.5 shrink-0">
-          <button
-            class="w-7 h-7 inline-flex items-center justify-center rounded hover:bg-accent transition-colors"
-            title="Cycle priority (P{ticket.priority})"
-            onclick={(e) => cyclePriority(e, ticket)}
-          >
-            <PriorityIcon priority={ticket.priority} />
-          </button>
+          <PrioritySelector
+            priority={ticket.priority}
+            onSelect={(p) => onUpdate?.(ticket.id, { priority: p })}
+          />
           <span class="text-sm hidden sm:inline-block text-muted-foreground font-medium w-16 truncate shrink-0 mr-0.5">
             {ticket.id}
           </span>
-          <button
-            class="w-7 h-7 inline-flex items-center justify-center rounded hover:bg-accent transition-colors"
-            title="Cycle status ({ticket.status})"
-            onclick={(e) => cycleStatus(e, ticket)}
-          >
-            <StatusIcon status={ticket.status} />
-          </button>
+          <StatusSelector
+            status={ticket.status}
+            onSelect={(s) => onUpdate?.(ticket.id, { status: s })}
+          />
         </div>
 
         <!-- Title -->
