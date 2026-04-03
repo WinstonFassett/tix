@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
   import type { Ticket } from '../types'
-  import { Button, Card, Input, Select } from './ui'
+  import { Button, Input, Select } from './ui'
+  import StatusIcon from './icons/StatusIcon.svelte'
+  import PriorityIcon from './icons/PriorityIcon.svelte'
 
   let { ticket, onUpdate }: {
     ticket: Ticket,
@@ -70,32 +72,40 @@
   }
 </script>
 
-<div class="max-w-3xl mx-auto">
-  <div class="flex items-center gap-2 mb-4">
-    <Button variant="ghost" size="sm" onclick={() => location.hash = '#/'}>← Back</Button>
-    <span class="font-mono text-sm text-muted-foreground">{ticket.id}</span>
-    <span class="text-xs text-muted-foreground">
-      {#if ticket.created}
-        Created {new Date(ticket.created).toLocaleDateString()}
-      {/if}
-    </span>
+<!-- Detail header -->
+<div class="w-full flex items-center border-b py-1.5 px-6 h-10">
+  <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs" onclick={() => location.hash = '#/'}>
+    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    Back
+  </Button>
+  <div class="flex items-center gap-2 ml-3">
+    <span class="font-mono text-xs text-muted-foreground">{ticket.id}</span>
+    {#if ticket.created}
+      <span class="text-xs text-muted-foreground">
+        {new Date(ticket.created).toLocaleDateString()}
+      </span>
+    {/if}
   </div>
+</div>
 
-  <Card class="p-6">
-    <div class="space-y-4">
-      <!-- Title -->
-      <input
-        type="text"
-        class="w-full bg-transparent text-2xl font-bold border-none outline-none placeholder:text-muted-foreground"
-        value={ticket.title}
-        onchange={(e) => handleFieldChange('title', (e.target as HTMLInputElement).value)}
-        placeholder="Ticket title"
-      />
+<!-- Detail content -->
+<div class="flex-1 overflow-auto">
+  <div class="max-w-3xl mx-auto py-6 px-6">
+    <!-- Title -->
+    <input
+      type="text"
+      class="w-full bg-transparent text-2xl font-bold border-none outline-none placeholder:text-muted-foreground mb-4"
+      value={ticket.title}
+      onchange={(e) => handleFieldChange('title', (e.target as HTMLInputElement).value)}
+      placeholder="Ticket title"
+    />
 
-      <!-- Metadata row -->
-      <div class="flex flex-wrap items-center gap-2">
+    <!-- Metadata row -->
+    <div class="flex flex-wrap items-center gap-2 mb-4">
+      <div class="flex items-center gap-1.5 border rounded-md px-2 h-8">
+        <StatusIcon status={ticket.status} />
         <Select
-          class="w-auto h-8 text-sm"
+          class="w-auto h-7 text-sm border-none shadow-none bg-transparent px-0"
           value={ticket.status}
           onchange={(e) => handleFieldChange('status', (e.target as HTMLSelectElement).value)}
         >
@@ -103,9 +113,12 @@
             <option value={s}>{s}</option>
           {/each}
         </Select>
+      </div>
 
+      <div class="flex items-center gap-1.5 border rounded-md px-2 h-8">
+        <PriorityIcon priority={ticket.priority} size={14} />
         <Select
-          class="w-auto h-8 text-sm"
+          class="w-auto h-7 text-sm border-none shadow-none bg-transparent px-0"
           value={ticket.priority}
           onchange={(e) => handleFieldChange('priority', Number((e.target as HTMLSelectElement).value))}
         >
@@ -113,63 +126,63 @@
             <option value={p}>P{p}</option>
           {/each}
         </Select>
-
-        <Select
-          class="w-auto h-8 text-sm"
-          value={ticket.type}
-          onchange={(e) => handleFieldChange('type', (e.target as HTMLSelectElement).value)}
-        >
-          {#each types as t}
-            <option value={t}>{t}</option>
-          {/each}
-        </Select>
-
-        <Input
-          type="text"
-          class="w-40 h-8 text-sm"
-          value={ticket.assignee}
-          onchange={(e) => handleFieldChange('assignee', (e.target as HTMLInputElement).value)}
-          placeholder="Assignee"
-        />
       </div>
 
-      <!-- Tags -->
-      <div class="flex items-center gap-2">
-        <span class="text-xs text-muted-foreground">Tags:</span>
-        <Input
-          type="text"
-          class="flex-1 h-8 text-sm"
-          value={ticket.tags.join(', ')}
-          onchange={handleTagsChange}
-          placeholder="tag1, tag2, ..."
-        />
-      </div>
+      <Select
+        class="w-auto h-8 text-sm"
+        value={ticket.type}
+        onchange={(e) => handleFieldChange('type', (e.target as HTMLSelectElement).value)}
+      >
+        {#each types as t}
+          <option value={t}>{t}</option>
+        {/each}
+      </Select>
 
-      <!-- Dependencies / Links (read-only for now) -->
-      {#if ticket.deps.length > 0}
-        <div class="text-sm">
-          <span class="text-muted-foreground">Dependencies:</span>
-          {#each ticket.deps as dep}
-            <a href="#/ticket/{dep}" class="text-primary underline underline-offset-4 font-mono ml-1">{dep}</a>
-          {/each}
-        </div>
-      {/if}
-
-      {#if ticket.links.length > 0}
-        <div class="text-sm">
-          <span class="text-muted-foreground">Links:</span>
-          {#each ticket.links as link}
-            <a href="#/ticket/{link}" class="text-primary underline underline-offset-4 font-mono ml-1">{link}</a>
-          {/each}
-        </div>
-      {/if}
-
-      <hr class="border-border" />
-
-      <!-- Milkdown editor -->
-      <div bind:this={editorContainer} class="milkdown-editor prose prose-sm max-w-none min-h-50 dark:prose-invert"></div>
+      <Input
+        type="text"
+        class="w-40 h-8 text-sm"
+        value={ticket.assignee}
+        onchange={(e) => handleFieldChange('assignee', (e.target as HTMLInputElement).value)}
+        placeholder="Assignee"
+      />
     </div>
-  </Card>
+
+    <!-- Tags -->
+    <div class="flex items-center gap-2 mb-4">
+      <span class="text-xs text-muted-foreground">Tags:</span>
+      <Input
+        type="text"
+        class="flex-1 h-8 text-sm"
+        value={ticket.tags.join(', ')}
+        onchange={handleTagsChange}
+        placeholder="tag1, tag2, ..."
+      />
+    </div>
+
+    <!-- Dependencies / Links -->
+    {#if ticket.deps.length > 0}
+      <div class="text-sm mb-2">
+        <span class="text-muted-foreground">Dependencies:</span>
+        {#each ticket.deps as dep}
+          <a href="#/ticket/{dep}" class="text-primary underline underline-offset-4 font-mono ml-1">{dep}</a>
+        {/each}
+      </div>
+    {/if}
+
+    {#if ticket.links.length > 0}
+      <div class="text-sm mb-2">
+        <span class="text-muted-foreground">Links:</span>
+        {#each ticket.links as link}
+          <a href="#/ticket/{link}" class="text-primary underline underline-offset-4 font-mono ml-1">{link}</a>
+        {/each}
+      </div>
+    {/if}
+
+    <hr class="border-border my-4" />
+
+    <!-- Milkdown editor -->
+    <div bind:this={editorContainer} class="milkdown-editor prose prose-sm max-w-none min-h-50 dark:prose-invert"></div>
+  </div>
 </div>
 
 <style>

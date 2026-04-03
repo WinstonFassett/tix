@@ -3,6 +3,7 @@ import type { Ticket } from './types'
 export interface FilterOptions {
   search?: string
   status?: string
+  tag?: string
 }
 
 export function filterTickets(tickets: Ticket[], opts: FilterOptions): Ticket[] {
@@ -10,6 +11,10 @@ export function filterTickets(tickets: Ticket[], opts: FilterOptions): Ticket[] 
 
   if (opts.status) {
     result = result.filter(t => t.status === opts.status)
+  }
+
+  if (opts.tag) {
+    result = result.filter(t => t.tags.includes(opts.tag!))
   }
 
   if (opts.search) {

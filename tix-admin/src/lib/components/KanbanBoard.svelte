@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Ticket } from '../types'
   import TicketCard from './TicketCard.svelte'
-  import { Badge } from './ui'
+  import StatusIcon from './icons/StatusIcon.svelte'
 
   let { byStatus }: { byStatus: Record<string, Ticket[]> } = $props()
 
@@ -13,21 +13,37 @@
     'done': 'Done',
     'closed': 'Closed',
   }
+
+  const statusColors: Record<string, string> = {
+    'open': '#f97316',
+    'in-progress': '#facc15',
+    'done': '#8b5cf6',
+    'closed': '#94a3b8',
+  }
 </script>
 
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="flex h-full gap-3 px-3 py-3 overflow-x-auto">
   {#each columns as col}
-    <div class="flex flex-col gap-2">
-      <div class="flex items-center gap-2 border-b pb-2">
-        <h2 class="font-semibold text-sm">{columnLabels[col]}</h2>
-        <Badge variant="secondary" class="text-[10px] px-1.5 py-0">{byStatus[col]?.length || 0}</Badge>
+    <div class="shrink-0 w-72 flex flex-col rounded-md overflow-hidden">
+      <!-- Column header -->
+      <div
+        class="h-10 flex items-center justify-between px-3 rounded-t-md"
+        style="background-color: {statusColors[col]}10"
+      >
+        <div class="flex items-center gap-2">
+          <StatusIcon status={col} />
+          <span class="text-sm font-medium">{columnLabels[col]}</span>
+          <span class="text-sm text-muted-foreground">{byStatus[col]?.length || 0}</span>
+        </div>
       </div>
-      <div class="flex flex-col gap-2 min-h-24">
+
+      <!-- Cards -->
+      <div class="flex-1 overflow-y-auto p-2 space-y-2 bg-muted/30 rounded-b-md">
         {#each byStatus[col] || [] as ticket (ticket.id)}
           <TicketCard {ticket} />
         {/each}
         {#if !byStatus[col]?.length}
-          <div class="text-center text-sm text-muted-foreground py-8">No tickets</div>
+          <div class="text-center text-xs text-muted-foreground py-8">No tickets</div>
         {/if}
       </div>
     </div>
