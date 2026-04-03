@@ -26,10 +26,10 @@
 <Popover bind:open>
   {#snippet trigger()}
     <button
-      class="w-7 h-7 inline-flex items-center justify-center rounded hover:bg-accent transition-colors"
-      title="P{priority}"
+      class="h-7 inline-flex items-center gap-1.5 rounded-md bg-secondary px-2 text-sm hover:bg-accent transition-colors"
     >
-      <PriorityIcon {priority} />
+      <PriorityIcon {priority} size={12} />
+      <span>{priorities.find(p => p.value === priority)?.label ?? `P${priority}`}</span>
     </button>
   {/snippet}
 

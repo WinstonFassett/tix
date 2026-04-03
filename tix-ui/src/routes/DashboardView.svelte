@@ -8,6 +8,9 @@
   import TicketTable from '../lib/components/TicketTable.svelte'
   import { Button, Input, Select, Dialog, Popover } from '../lib/components/ui'
   import MilkdownEditor from '../lib/components/MilkdownEditor.svelte'
+  import StatusSelector from '../lib/components/StatusSelector.svelte'
+  import PrioritySelector from '../lib/components/PrioritySelector.svelte'
+  import TypeSelector from '../lib/components/TypeSelector.svelte'
 
   const store = useTickets()
   const filters = useFilters()
@@ -22,9 +25,11 @@
   // New ticket form
   let newTitle = $state('')
   let newDescription = $state('')
+  let newStatus = $state('open')
   let newType = $state('task')
   let newPriority = $state(2)
   let newAssignee = $state('')
+  let createMore = $state(false)
 
   const filtered = $derived(filterTickets(store.tickets, {
     search: search || undefined,
@@ -86,13 +91,18 @@
       })
       const data = await res.json()
       if (data.ok && data.id) {
-        showCreate = false
         newTitle = ''
         newDescription = ''
+        newStatus = 'open'
         newType = 'task'
         newPriority = 2
         newAssignee = ''
-        location.hash = `#/ticket/${data.id}`
+        if (createMore) {
+          // Stay in dialog for next ticket
+        } else {
+          showCreate = false
+          location.hash = `#/ticket/${data.id}`
+        }
       } else {
         alert(`Failed: ${data.error || 'Unknown error'}`)
       }
@@ -231,42 +241,36 @@
 </div>
 
 <!-- Create ticket dialog -->
-<Dialog open={showCreate} onClose={() => showCreate = false} class="sm:max-w-150">
-  <h3 class="text-lg font-semibold mb-4">New Ticket</h3>
+<Dialog open={showCreate} onClose={() => showCreate = false} class="sm:max-w-[750px] p-0">
   <form onsubmit={(e) => { e.preventDefault(); createTicket() }}>
-    <input
-      type="text"
-      class="w-full bg-transparent text-xl font-medium border-none outline-none placeholder:text-muted-foreground mb-2"
-      bind:value={newTitle}
-      placeholder="Issue title"
-      use:focus
-    />
-    <div class="flex flex-wrap items-center gap-2 mb-4">
-      <Select class="w-auto h-8 text-sm" bind:value={newType}>
-        <option value="task">Task</option>
-        <option value="bug">Bug</option>
-        <option value="feature">Feature</option>
-        <option value="epic">Epic</option>
-      </Select>
-      <Select class="w-auto h-8 text-sm" bind:value={newPriority}>
-        <option value={0}>P0 Urgent</option>
-        <option value={1}>P1 High</option>
-        <option value={2}>P2 Medium</option>
-        <option value={3}>P3 Low</option>
-        <option value={4}>P4 None</option>
-      </Select>
-      <Input
+    <div class="px-4 pt-4 pb-0 space-y-3">
+      <input
         type="text"
-        placeholder="Assignee (optional)"
-        class="w-40 h-8 text-sm"
-        bind:value={newAssignee}
+        class="w-full bg-transparent text-2xl font-medium border-none outline-none placeholder:text-muted-foreground"
+        bind:value={newTitle}
+        placeholder="Issue title"
+        use:focus
       />
+      <div class="min-h-24">
+        <MilkdownEditor onChange={(md) => newDescription = md} />
+      </div>
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <StatusSelector status={newStatus} onSelect={(s) => newStatus = s} />
+        <PrioritySelector priority={newPriority} onSelect={(p) => newPriority = p} />
+        <TypeSelector type={newType} onSelect={(t) => newType = t} />
+        <Input
+          type="text"
+          placeholder="Assignee"
+          class="w-32 h-7 text-sm"
+          bind:value={newAssignee}
+        />
+      </div>
     </div>
-    <div class="min-h-32 mb-4">
-      <MilkdownEditor onChange={(md) => newDescription = md} />
-    </div>
-    <div class="flex justify-end gap-2 border-t pt-3">
-      <Button type="button" variant="ghost" size="sm" onclick={() => showCreate = false}>Cancel</Button>
+    <div class="flex items-center justify-between py-2.5 px-4 border-t mt-3">
+      <label class="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none">
+        <input type="checkbox" class="rounded" bind:checked={createMore} />
+        Create more
+      </label>
       <Button type="submit" size="sm" disabled={!newTitle.trim() || creating}>
         {creating ? 'Creating…' : 'Create issue'}
       </Button>
