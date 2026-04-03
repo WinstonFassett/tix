@@ -1,4 +1,4 @@
-/** Minimal hash router for tix-admin */
+/** Minimal hash router for tix-ui */
 
 export interface Route {
   view: 'dashboard' | 'ticket'

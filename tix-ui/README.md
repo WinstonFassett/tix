@@ -1,10 +1,10 @@
-# tix-admin
+# tix-ui
 
 Web dashboard for browsing tix tickets. Kanban board and table views, dark mode, live reload during development.
 
 ## Quick Start
 
-From the `tix-admin/` directory:
+From the `tix-ui/` directory:
 
 ```bash
 npm install

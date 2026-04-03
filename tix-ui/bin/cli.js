@@ -17,7 +17,7 @@ if (!existsSync(ticketsDir)) {
   process.exit(1)
 }
 
-console.log(`tix-admin: serving ${ticketsDir}`)
+console.log(`tix-ui: serving ${ticketsDir}`)
 
 const server = await createServer({
   root: resolve(__dirname, '..'),

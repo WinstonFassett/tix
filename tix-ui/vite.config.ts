@@ -11,7 +11,7 @@ if (process.env.WEB_DEV_MCP) {
     const { webDevMcp } = await import('@winstonfassett/web-dev-mcp-vite')
     plugins.push(webDevMcp())
   } catch {
-    console.log('[tix-admin] web-dev-mcp not available')
+    console.log('[tix-ui] web-dev-mcp not available')
   }
 }
 

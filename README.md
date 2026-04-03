@@ -135,7 +135,7 @@ bats test/                # Run the test suite (requires bats-core)
 
 ## See Also
 
-- [tix-admin](tix-admin/) — Web dashboard for browsing tickets (Svelte + Vite)
+- [tix-ui](tix-ui/) — Web dashboard for browsing tickets (Svelte + Vite)
 - [skills/tix](skills/tix/) — Agent skill definition for AI-assisted ticket management
 
 ## Uninstall
