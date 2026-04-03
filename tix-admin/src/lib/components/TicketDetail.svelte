@@ -23,10 +23,16 @@
     // nothing pending in the field inputs — they save on change
   }
 
+  // Strip leading # Title from body for display (title shown in input instead)
+  function stripLeadingTitle(body: string): string {
+    return body.replace(/^\s*#\s+[^\n]*\n*/, '')
+  }
+
   // Milkdown Crepe
   let editorContainer: HTMLDivElement
   let crepe: any = null
-  let lastBody = ticket.body
+  let displayBody = stripLeadingTitle(ticket.body || '')
+  let lastBody = displayBody
 
   onMount(async () => {
     const { Crepe } = await import('@milkdown/crepe')
@@ -35,7 +41,7 @@
 
     crepe = new Crepe({
       root: editorContainer,
-      defaultValue: ticket.body || '',
+      defaultValue: displayBody,
     })
 
     crepe.on((listener: any) => {
