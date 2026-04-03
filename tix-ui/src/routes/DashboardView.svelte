@@ -20,6 +20,7 @@
 
   // New ticket form
   let newTitle = $state('')
+  let newDescription = $state('')
   let newType = $state('task')
   let newPriority = $state(2)
   let newAssignee = $state('')
@@ -76,6 +77,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: newTitle.trim(),
+          description: newDescription.trim() || undefined,
           type: newType,
           priority: newPriority,
           assignee: newAssignee.trim() || undefined,
@@ -85,6 +87,7 @@
       if (data.ok && data.id) {
         showCreate = false
         newTitle = ''
+        newDescription = ''
         newType = 'task'
         newPriority = 2
         newAssignee = ''
@@ -256,6 +259,11 @@
         bind:value={newAssignee}
       />
     </div>
+    <textarea
+      class="w-full min-h-32 rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y mb-4"
+      bind:value={newDescription}
+      placeholder="Description (markdown)"
+    ></textarea>
     <div class="flex justify-end gap-2 border-t pt-3">
       <Button type="button" variant="ghost" size="sm" onclick={() => showCreate = false}>Cancel</Button>
       <Button type="submit" size="sm" disabled={!newTitle.trim() || creating}>

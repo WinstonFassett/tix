@@ -108,13 +108,14 @@ export function ticketsPlugin(): Plugin {
         if (url === '/api/tickets' && req.method === 'POST') {
           try {
             const body = await readBody(req)
-            const { title, type, priority, assignee } = JSON.parse(body)
+            const { title, description, type, priority, assignee } = JSON.parse(body)
             if (!title) {
               res.statusCode = 400
               res.end(JSON.stringify({ error: 'Title is required' }))
               return
             }
             const args = ['create', title]
+            if (description) args.push('-d', description)
             if (type) args.push('--type', type)
             if (priority !== undefined) args.push('--priority', String(priority))
             if (assignee) args.push('--assignee', assignee)
