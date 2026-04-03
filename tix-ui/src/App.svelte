@@ -146,8 +146,8 @@
   </aside>
 
   <!-- Main content area -->
-  <div class="flex-1 h-svh overflow-hidden lg:p-2">
-    <div class="lg:border lg:rounded-md overflow-hidden flex flex-col h-full bg-background">
+  <div class="flex-1 h-svh overflow-hidden lg:pt-2 lg:pb-2">
+    <div class="lg:border-t lg:border-b lg:border-l lg:rounded-tl-md overflow-hidden flex flex-col h-full bg-background">
       {#if route.view === 'ticket' && route.ticketId}
         <TicketView ticketId={route.ticketId} />
       {:else}
