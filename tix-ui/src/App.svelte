@@ -8,7 +8,10 @@
   import StatusIcon from './lib/components/icons/StatusIcon.svelte'
 
   let route = $state<Route>(parseHash(location.hash))
-  let dark = $state(false)
+  let dark = $state(localStorage.getItem('tix-theme') === 'dark')
+
+  // Apply persisted theme on load
+  if (dark) document.documentElement.classList.add('dark')
 
   const store = useTickets()
   const filters = useFilters()
@@ -49,6 +52,7 @@
   function toggleTheme() {
     dark = !dark
     document.documentElement.classList.toggle('dark', dark)
+    localStorage.setItem('tix-theme', dark ? 'dark' : 'light')
   }
 
   function toggleStatusFilter(status: string) {
@@ -66,7 +70,7 @@
 
 <div class="flex h-svh bg-background text-foreground overflow-hidden">
   <!-- Sidebar -->
-  <aside class="w-60 shrink-0 flex flex-col border-r bg-background">
+  <aside class="w-60 shrink-0 flex flex-col bg-background">
     <!-- Sidebar header -->
     <div class="h-10 flex items-center px-4 border-b">
       <a href="#/" class="text-sm font-semibold font-mono tracking-tight" onclick={() => filters.clearAll()}>tix</a>
