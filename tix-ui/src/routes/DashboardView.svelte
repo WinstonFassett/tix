@@ -7,6 +7,7 @@
   import KanbanBoard from '../lib/components/KanbanBoard.svelte'
   import TicketTable from '../lib/components/TicketTable.svelte'
   import { Button, Input, Select, Dialog, Popover } from '../lib/components/ui'
+  import MilkdownEditor from '../lib/components/MilkdownEditor.svelte'
 
   const store = useTickets()
   const filters = useFilters()
@@ -259,11 +260,9 @@
         bind:value={newAssignee}
       />
     </div>
-    <textarea
-      class="w-full min-h-32 rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y mb-4"
-      bind:value={newDescription}
-      placeholder="Description (markdown)"
-    ></textarea>
+    <div class="min-h-32 mb-4">
+      <MilkdownEditor onChange={(md) => newDescription = md} />
+    </div>
     <div class="flex justify-end gap-2 border-t pt-3">
       <Button type="button" variant="ghost" size="sm" onclick={() => showCreate = false}>Cancel</Button>
       <Button type="submit" size="sm" disabled={!newTitle.trim() || creating}>

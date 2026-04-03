@@ -4,6 +4,7 @@
   import { Button, Input, Select } from './ui'
   import StatusIcon from './icons/StatusIcon.svelte'
   import PriorityIcon from './icons/PriorityIcon.svelte'
+  import MilkdownEditor from './MilkdownEditor.svelte'
 
   let { ticket, onUpdate }: {
     ticket: Ticket,
@@ -56,38 +57,11 @@
     return body.replace(/^\s*#\s+[^\n]*\n*/, '')
   }
 
-  // Milkdown Crepe
-  let editorContainer: HTMLDivElement
-  let crepe: any = null
-  let displayBody = stripLeadingTitle(ticket.body || '')
-  let lastBody = displayBody
-
-  onMount(async () => {
-    const { Crepe } = await import('@milkdown/crepe')
-    await import('@milkdown/crepe/theme/common/style.css')
-    await import('@milkdown/crepe/theme/frame.css')
-
-    crepe = new Crepe({
-      root: editorContainer,
-      defaultValue: displayBody,
-    })
-
-    crepe.on((listener: any) => {
-      listener.markdownUpdated((_ctx: any, markdown: string) => {
-        if (markdown !== lastBody) {
-          lastBody = markdown
-          save({ body: markdown })
-        }
-      })
-    })
-
-    await crepe.create()
-  })
+  const displayBody = stripLeadingTitle(ticket.body || '')
 
   onDestroy(() => {
     if (saveTimer) clearTimeout(saveTimer)
     if (savedTimer) clearTimeout(savedTimer)
-    crepe?.destroy()
   })
 
   function handleFieldChange(field: string, value: any) {
@@ -231,17 +205,8 @@
     <hr class="border-border my-4" />
 
     <!-- Milkdown editor -->
-    <div bind:this={editorContainer} class="milkdown-editor prose prose-sm max-w-none min-h-50 dark:prose-invert"></div>
+    <div class="min-h-50">
+      <MilkdownEditor defaultValue={displayBody} onChange={(md) => save({ body: md })} />
+    </div>
   </div>
 </div>
-
-<style>
-  .milkdown-editor :global(.milkdown) {
-    outline: none;
-    background: transparent;
-    padding: 8px 0;
-  }
-  .milkdown-editor :global(.milkdown .editor) {
-    padding: 0;
-  }
-</style>
