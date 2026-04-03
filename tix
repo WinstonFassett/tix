@@ -376,9 +376,9 @@ cmd_create() {
         [[ -n "$external_ref" ]] && echo "external-ref: $external_ref"
         [[ -n "$parent" ]] && echo "parent: $parent"
         if [[ -n "$tags" ]]; then
-            echo "tags: [task, ${tags//,/, }]"
+            echo "tags: [${tags//,/, }]"
         else
-            echo "tags: [task]"
+            echo "tags: []"
         fi
         echo "---"
         echo "# $clean_title"
