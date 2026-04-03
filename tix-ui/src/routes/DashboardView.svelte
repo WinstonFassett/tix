@@ -12,6 +12,9 @@
   import PrioritySelector from '../lib/components/PrioritySelector.svelte'
   import TypeSelector from '../lib/components/TypeSelector.svelte'
   import { useSidebar } from '../lib/data/sidebar.svelte'
+  import { createStoreMethods } from 'svelte-command-palette'
+
+  const { openPalette } = createStoreMethods()
 
   const sidebar = useSidebar()
 
@@ -21,8 +24,6 @@
 
   let { showCreate = $bindable(false) }: { showCreate?: boolean } = $props()
 
-  let search = $state('')
-  let showSearch = $state(false)
   let showDisplay = $state(false)
   let creating = $state(false)
 
@@ -36,7 +37,6 @@
   let createMore = $state(false)
 
   const filtered = $derived(filterTickets(store.tickets, {
-    search: search || undefined,
     status: filters.statusFilter || undefined,
     tag: filters.tagFilter || undefined,
   }))
@@ -129,11 +129,6 @@
     }
   }
 
-  function toggleSearch() {
-    showSearch = !showSearch
-    if (!showSearch) search = ''
-  }
-
   function focus(node: HTMLElement) { node.focus() }
 </script>
 
@@ -150,23 +145,9 @@
     <span class="text-sm font-medium">All Issues</span>
   </div>
   <div class="flex items-center gap-1">
-    {#if showSearch}
-      <div class="relative flex items-center w-64 transition-all duration-200">
-        <svg class="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <Input
-          type="search"
-          placeholder="Search issues..."
-          class="pl-8 h-7 text-sm"
-          bind:value={search}
-          autofocus
-          onkeydown={(e) => { if (e.key === 'Escape') { if (!search) toggleSearch(); else search = '' } }}
-        />
-      </div>
-    {:else}
-      <Button variant="ghost" size="icon" class="h-8 w-8" onclick={toggleSearch}>
-        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      </Button>
-    {/if}
+    <Button variant="ghost" size="icon" class="h-8 w-8" onclick={openPalette} title="Search (⌘K)">
+      <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    </Button>
     <Button variant="ghost" size="icon" class="h-8 w-8" onclick={() => showCreate = true}>
       <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </Button>
