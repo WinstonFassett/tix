@@ -5,6 +5,9 @@
   import StatusIcon from './icons/StatusIcon.svelte'
   import PriorityIcon from './icons/PriorityIcon.svelte'
   import MilkdownEditor from './MilkdownEditor.svelte'
+  import { useSidebar } from '../data/sidebar.svelte'
+
+  const sidebar = useSidebar()
 
   let { ticket, onUpdate }: {
     ticket: Ticket,
@@ -77,6 +80,13 @@
 
 <!-- Detail header -->
 <div class="w-full flex items-center border-b py-1.5 px-6 h-10">
+  <button
+    class="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent transition-colors text-muted-foreground"
+    onclick={() => sidebar.toggle()}
+    title="Toggle sidebar"
+  >
+    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+  </button>
   <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs" onclick={() => location.hash = '#/'}>
     <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
     Back

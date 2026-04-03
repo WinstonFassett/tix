@@ -6,10 +6,11 @@
   import { useTickets } from './lib/data/tickets.svelte'
   import { useFilters } from './lib/data/filters.svelte'
   import StatusIcon from './lib/components/icons/StatusIcon.svelte'
+  import { useSidebar } from './lib/data/sidebar.svelte'
 
   let route = $state<Route>(parseHash(location.hash))
   let dark = $state(localStorage.getItem('tix-theme') === 'dark')
-  let sidebarOpen = $state(localStorage.getItem('tix-sidebar') !== 'collapsed')
+  const sidebar = useSidebar()
 
   // Apply persisted theme on load
   if (dark) document.documentElement.classList.add('dark')
@@ -56,10 +57,6 @@
     localStorage.setItem('tix-theme', dark ? 'dark' : 'light')
   }
 
-  function toggleSidebar() {
-    sidebarOpen = !sidebarOpen
-    localStorage.setItem('tix-sidebar', sidebarOpen ? 'open' : 'collapsed')
-  }
 
   function toggleStatusFilter(status: string) {
     filters.tagFilter = ''
@@ -76,14 +73,10 @@
 
 <div class="flex h-svh bg-background text-foreground overflow-hidden">
   <!-- Sidebar -->
-  {#if sidebarOpen}
-  <aside class="w-60 shrink-0 flex flex-col bg-background">
+  <aside class="{sidebar.open ? 'w-60' : 'w-0'} shrink-0 flex flex-col bg-background transition-[width] duration-200 overflow-hidden">
     <!-- Sidebar header -->
-    <div class="h-10 flex items-center px-4 justify-between border-b">
+    <div class="h-10 flex items-center px-4 border-b min-w-60">
       <a href="#/" class="text-sm font-semibold font-mono tracking-tight" onclick={() => filters.clearAll()}>tix</a>
-      <button class="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-accent transition-colors text-muted-foreground" onclick={toggleSidebar} title="Collapse sidebar">
-        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-      </button>
     </div>
 
     <!-- Nav sections -->
@@ -154,20 +147,10 @@
       </Button>
     </div>
   </aside>
-  {/if}
 
   <!-- Main content area -->
   <div class="flex-1 h-svh overflow-hidden lg:p-2">
-    <div class="lg:border lg:rounded-md overflow-hidden flex flex-col h-full bg-background relative">
-      {#if !sidebarOpen}
-        <button
-          class="absolute top-2 left-2 z-10 h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent transition-colors text-muted-foreground"
-          onclick={toggleSidebar}
-          title="Expand sidebar"
-        >
-          <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-        </button>
-      {/if}
+    <div class="lg:border lg:rounded-md overflow-hidden flex flex-col h-full bg-background">
       {#if route.view === 'ticket' && route.ticketId}
         <TicketView ticketId={route.ticketId} />
       {:else}
