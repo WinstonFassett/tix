@@ -1,3 +1,12 @@
 tickets
 archive
 *.local.*
+
+.web-dev-mcp
+
+.cursor
+.windsurf
+
+.mcp.json
+
+.vite
