@@ -119,6 +119,8 @@
     showSearch = !showSearch
     if (!showSearch) search = ''
   }
+
+  function focus(node: HTMLElement) { node.focus() }
 </script>
 
 <!-- Header row 1: nav -->
@@ -237,7 +239,7 @@
       class="w-full bg-transparent text-xl font-medium border-none outline-none placeholder:text-muted-foreground mb-2"
       bind:value={newTitle}
       placeholder="Issue title"
-      autofocus
+      use:focus
     />
     <div class="flex flex-wrap items-center gap-2 mb-4">
       <Select class="w-auto h-8 text-sm" bind:value={newType}>
