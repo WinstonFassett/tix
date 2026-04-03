@@ -1,5 +1,6 @@
 import type { Plugin, ViteDevServer } from 'vite'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { execFile } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import matter from 'gray-matter'
@@ -92,6 +93,42 @@ export function ticketsPlugin(): Plugin {
           } catch {
             res.statusCode = 400
             res.end(JSON.stringify({ error: 'Invalid request body' }))
+          }
+          return
+        }
+
+        // POST /api/tickets — create new ticket via tix CLI
+        if (url === '/api/tickets' && req.method === 'POST') {
+          try {
+            const body = await readBody(req)
+            const { title, type, priority, assignee } = JSON.parse(body)
+            if (!title) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'Title is required' }))
+              return
+            }
+            const args = ['create', title]
+            if (type) args.push('--type', type)
+            if (priority !== undefined) args.push('--priority', String(priority))
+            if (assignee) args.push('--assignee', assignee)
+
+            const workspace = process.env.TIX_WORKSPACE || process.env.TICKET_WORKSPACE || process.cwd()
+            await new Promise<void>((resolve, reject) => {
+              execFile('tix', args, { cwd: workspace }, (err, stdout, stderr) => {
+                if (err) {
+                  reject(new Error(stderr || err.message))
+                } else {
+                  res.setHeader('Content-Type', 'application/json')
+                  // Parse ID from tix output (e.g. "Created ticket abcd: ...")
+                  const idMatch = stdout.match(/([a-f0-9]{4})/)
+                  res.end(JSON.stringify({ ok: true, id: idMatch?.[1] || null, output: stdout.trim() }))
+                  resolve()
+                }
+              })
+            })
+          } catch (e: any) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: e.message || 'Failed to create ticket' }))
           }
           return
         }
