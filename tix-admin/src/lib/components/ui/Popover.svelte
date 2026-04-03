@@ -64,7 +64,7 @@
   <div
     bind:this={popoverEl}
     class={cn(
-      'fixed z-9999 min-w-40 rounded-md border bg-popover p-1 text-popover-foreground shadow-md',
+      'fixed z-50 min-w-40 rounded-md border bg-popover p-1 text-popover-foreground shadow-md',
       className
     )}
     style="top: {top}px; left: {left}px;"
