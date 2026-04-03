@@ -82,9 +82,11 @@
   }
 }
 
-/* Milkdown: transparent bg to blend with card */
+/* Milkdown: transparent bg, sans-serif headings to match app style */
 .milkdown {
   --crepe-color-background: transparent !important;
+  --crepe-font-title: inherit !important;
+  --crepe-font-default: inherit !important;
 }
 
 /* Milkdown dark theme */
