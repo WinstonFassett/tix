@@ -698,11 +698,12 @@ cmd_dep_tree_single() {
     BEGIN { FS=": "; in_front=0 }
     FNR==1 {
         if (prev_file) store()
-        id=""; status=""; title=""; deps=""; in_front=0
+        id=""; status=""; title=""; fm_title=""; deps=""; in_front=0
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
     in_front && /^id:/ { id = $2 }
+    in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2 }
     in_front && /^deps:/ {
         deps = $2
@@ -710,6 +711,7 @@ cmd_dep_tree_single() {
     }
     !in_front && /^# / && title == "" { title = substr($0, 3) }
     function store() {
+        if (title == "" && fm_title != "") title = fm_title
         if (id != "") {
             statuses[id] = status
             titles[id] = title
@@ -903,11 +905,12 @@ cmd_dep_cycle() {
     BEGIN { FS=": "; in_front=0 }
     FNR==1 {
         if (prev_file) store()
-        id=""; status=""; title=""; deps=""; in_front=0
+        id=""; status=""; title=""; fm_title=""; deps=""; in_front=0
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
     in_front && /^id:/ { id = $2 }
+    in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2 }
     in_front && /^deps:/ {
         deps = $2
@@ -918,6 +921,7 @@ cmd_dep_cycle() {
         return (s == "done" || s == "closed" || s == "completed" || s == "finished" || s == "resolved" || s == "cancelled" || s == "canceled" || s == "wontfix")
     }
     function store() {
+        if (title == "" && fm_title != "") title = fm_title
         if (id != "" && !is_terminal(status)) {
             statuses[id] = status
             titles[id] = title
@@ -1100,11 +1104,12 @@ cmd_ls() {
     BEGIN { FS=": "; in_front=0 }
     FNR==1 {
         if (prev_file) emit()
-        id=""; status=""; title=""; deps=""; assignee=""; tags=""; in_front=0
+        id=""; status=""; title=""; fm_title=""; deps=""; assignee=""; tags=""; in_front=0
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
     in_front && /^id:/ { id = $2; gsub(/"/, "", id) }
+    in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2; gsub(/"/, "", status) }
     in_front && /^assignee:/ { assignee = $2; gsub(/"/, "", assignee) }
     in_front && /^tags:/ { tags = $2; gsub(/[\[\]"]/, "", tags) }
@@ -1129,6 +1134,7 @@ cmd_ls() {
         return ""
     }
     function emit() {
+        if (title == "" && fm_title != "") title = fm_title
         is_term = (status == "done" || status == "closed" || status == "completed" || status == "finished" || status == "resolved" || status == "cancelled" || status == "canceled" || status == "wontfix")
         status_match = (status_filter == "" ? (show_all ? 1 : !is_term) : (status == status_filter))
         if (id != "" && status_match && (assignee_filter == "" || assignee == assignee_filter) && (tag_filter == "" || has_tag(tags, tag_filter))) {
@@ -1167,11 +1173,12 @@ cmd_ready() {
     BEGIN { FS=": "; in_front=0 }
     FNR==1 {
         if (prev_file) store()
-        id=""; status=""; title=""; deps=""; priority=""; assignee=""; tags=""; in_front=0
+        id=""; status=""; title=""; fm_title=""; deps=""; priority=""; assignee=""; tags=""; in_front=0
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
     in_front && /^id:/ { id = $2 }
+    in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2 }
     in_front && /^priority:/ { priority = $2 }
     in_front && /^assignee:/ { assignee = $2 }
@@ -1199,6 +1206,7 @@ cmd_ready() {
         return (s == "done" || s == "closed" || s == "completed" || s == "finished" || s == "resolved" || s == "cancelled" || s == "canceled" || s == "wontfix")
     }
     function store() {
+        if (title == "" && fm_title != "") title = fm_title
         if (id != "") {
             statuses[id] = status
             titles[id] = title
@@ -1372,11 +1380,12 @@ cmd_closed() {
     BEGIN { FS=": "; in_front=0 }
     FNR==1 {
         if (prev_file) emit()
-        id=""; status=""; title=""; assignee=""; tags=""; mtime=""; in_front=0
+        id=""; status=""; title=""; fm_title=""; assignee=""; tags=""; mtime=""; in_front=0
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
     in_front && /^id:/ { id = $2; gsub(/"/, "", id) }
+    in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2; gsub(/"/, "", status) }
     in_front && /^assignee:/ { assignee = $2; gsub(/"/, "", assignee) }
     in_front && /^tags:/ { tags = $2; gsub(/[\[\]"]/, "", tags) }
@@ -1399,6 +1408,7 @@ cmd_closed() {
         return (s == "done" || s == "closed" || s == "completed" || s == "finished" || s == "resolved" || s == "cancelled" || s == "canceled" || s == "wontfix")
     }
     function emit() {
+        if (title == "" && fm_title != "") title = fm_title
         if (id != "" && is_terminal(status) &&
             (assignee_filter == "" || assignee == assignee_filter) &&
             (tag_filter == "" || has_tag(tags, tag_filter))) {
@@ -1471,11 +1481,12 @@ cmd_blocked() {
     BEGIN { FS=": "; in_front=0 }
     FNR==1 {
         if (prev_file) store()
-        id=""; status=""; title=""; deps=""; priority=""; assignee=""; tags=""; in_front=0
+        id=""; status=""; title=""; fm_title=""; deps=""; priority=""; assignee=""; tags=""; in_front=0
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
     in_front && /^id:/ { id = $2 }
+    in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2 }
     in_front && /^priority:/ { priority = $2 }
     in_front && /^assignee:/ { assignee = $2 }
@@ -1503,6 +1514,7 @@ cmd_blocked() {
         return (s == "done" || s == "closed" || s == "completed" || s == "finished" || s == "resolved" || s == "cancelled" || s == "canceled" || s == "wontfix")
     }
     function store() {
+        if (title == "" && fm_title != "") title = fm_title
         if (id != "") {
             statuses[id] = status
             titles[id] = title
@@ -1951,11 +1963,12 @@ cmd_show() {
     # First pass: collect all ticket metadata
     FNR==1 {
         if (prev_file) store()
-        id=""; status=""; title=""; deps=""; links=""; parent=""; in_front=0
+        id=""; status=""; title=""; fm_title=""; deps=""; links=""; parent=""; in_front=0
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
     in_front && /^id:/ { id = $2 }
+    in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2 }
     in_front && /^deps:/ { deps = $2; gsub(/[\[\] ]/, "", deps) }
     in_front && /^links:/ { links = $2; gsub(/[\[\] ]/, "", links) }
@@ -1966,6 +1979,7 @@ cmd_show() {
         return (s == "done" || s == "closed" || s == "completed" || s == "finished" || s == "resolved" || s == "cancelled" || s == "canceled" || s == "wontfix")
     }
     function store() {
+        if (title == "" && fm_title != "") title = fm_title
         if (id != "") {
             statuses[id] = status
             titles[id] = title
