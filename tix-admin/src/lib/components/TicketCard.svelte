@@ -1,42 +1,45 @@
 <script lang="ts">
   import type { Ticket } from '../types'
+  import { Badge, Card } from './ui'
 
   let { ticket }: { ticket: Ticket } = $props()
 
-  const priorityBadge: Record<number, string> = {
-    0: 'badge-error',
-    1: 'badge-warning',
-    2: 'badge-info',
-    3: 'badge-ghost',
-    4: 'badge-ghost opacity-50',
+  type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline'
+
+  const priorityVariant: Record<number, BadgeVariant> = {
+    0: 'destructive',
+    1: 'default',
+    2: 'secondary',
+    3: 'outline',
+    4: 'outline',
   }
 
-  const statusBadge: Record<string, string> = {
-    'open': 'badge-primary',
-    'in-progress': 'badge-warning',
-    'done': 'badge-success',
-    'closed': 'badge-ghost',
+  const statusVariant: Record<string, BadgeVariant> = {
+    'open': 'default',
+    'in-progress': 'secondary',
+    'done': 'outline',
+    'closed': 'outline',
   }
 </script>
 
-<a href="#/ticket/{ticket.id}" class="card bg-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-  <div class="card-body p-3 gap-1">
-    <div class="flex items-center gap-2">
-      <span class="font-mono text-xs opacity-60">{ticket.id}</span>
-      <span class="badge badge-xs {priorityBadge[ticket.priority] || 'badge-ghost'}">P{ticket.priority}</span>
+<a href="#/ticket/{ticket.id}" class="block group">
+  <Card class="p-3 transition-colors hover:bg-accent/50">
+    <div class="flex items-center gap-2 mb-1">
+      <span class="font-mono text-xs text-muted-foreground">{ticket.id}</span>
+      <Badge variant={priorityVariant[ticket.priority] ?? 'outline'} class="text-[10px] px-1.5 py-0">P{ticket.priority}</Badge>
     </div>
-    <h3 class="card-title text-sm">{ticket.title}</h3>
-    <div class="flex items-center gap-1 flex-wrap">
-      <span class="badge badge-sm {statusBadge[ticket.status] || 'badge-ghost'}">{ticket.status}</span>
+    <h3 class="text-sm font-medium leading-snug">{ticket.title}</h3>
+    <div class="flex items-center gap-1 flex-wrap mt-1.5">
+      <Badge variant={statusVariant[ticket.status] ?? 'outline'} class="text-[10px] px-1.5 py-0">{ticket.status}</Badge>
       {#if ticket.assignee}
-        <span class="badge badge-sm badge-outline">{ticket.assignee}</span>
+        <Badge variant="outline" class="text-[10px] px-1.5 py-0">{ticket.assignee}</Badge>
       {/if}
       {#each ticket.tags as tag}
-        <span class="badge badge-sm badge-outline opacity-60">{tag}</span>
+        <Badge variant="outline" class="text-[10px] px-1.5 py-0 opacity-60">{tag}</Badge>
       {/each}
     </div>
     {#if ticket.deps.length > 0}
-      <div class="text-xs opacity-50 mt-1">deps: {ticket.deps.join(', ')}</div>
+      <div class="text-xs text-muted-foreground mt-1">deps: {ticket.deps.join(', ')}</div>
     {/if}
-  </div>
+  </Card>
 </a>

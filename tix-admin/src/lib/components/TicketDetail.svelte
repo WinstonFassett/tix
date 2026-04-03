@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
   import type { Ticket } from '../types'
+  import { Button, Card, Input, Select } from './ui'
 
   let { ticket, onUpdate }: {
     ticket: Ticket,
@@ -18,9 +19,6 @@
     saveTimer = setTimeout(() => {
       onUpdate?.(updates)
     }, 500)
-  }
-  function flushSave() {
-    // nothing pending in the field inputs — they save on change
   }
 
   // Strip leading # Title from body for display (title shown in input instead)
@@ -74,21 +72,21 @@
 
 <div class="max-w-3xl mx-auto">
   <div class="flex items-center gap-2 mb-4">
-    <a href="#/" class="btn btn-sm btn-ghost">← Back</a>
-    <span class="font-mono text-sm opacity-40">{ticket.id}</span>
-    <span class="text-xs opacity-30">
+    <Button variant="ghost" size="sm" onclick={() => location.hash = '#/'}>← Back</Button>
+    <span class="font-mono text-sm text-muted-foreground">{ticket.id}</span>
+    <span class="text-xs text-muted-foreground">
       {#if ticket.created}
         Created {new Date(ticket.created).toLocaleDateString()}
       {/if}
     </span>
   </div>
 
-  <div class="card bg-base-200">
-    <div class="card-body gap-3">
+  <Card class="p-6">
+    <div class="space-y-4">
       <!-- Title -->
       <input
         type="text"
-        class="input input-lg input-ghost text-2xl font-bold w-full p-0"
+        class="w-full bg-transparent text-2xl font-bold border-none outline-none placeholder:text-muted-foreground"
         value={ticket.title}
         onchange={(e) => handleFieldChange('title', (e.target as HTMLInputElement).value)}
         placeholder="Ticket title"
@@ -96,39 +94,39 @@
 
       <!-- Metadata row -->
       <div class="flex flex-wrap items-center gap-2">
-        <select
-          class="select select-sm select-bordered"
+        <Select
+          class="w-auto h-8 text-sm"
           value={ticket.status}
           onchange={(e) => handleFieldChange('status', (e.target as HTMLSelectElement).value)}
         >
           {#each statuses as s}
             <option value={s}>{s}</option>
           {/each}
-        </select>
+        </Select>
 
-        <select
-          class="select select-sm select-bordered"
+        <Select
+          class="w-auto h-8 text-sm"
           value={ticket.priority}
           onchange={(e) => handleFieldChange('priority', Number((e.target as HTMLSelectElement).value))}
         >
           {#each priorities as p}
             <option value={p}>P{p}</option>
           {/each}
-        </select>
+        </Select>
 
-        <select
-          class="select select-sm select-bordered"
+        <Select
+          class="w-auto h-8 text-sm"
           value={ticket.type}
           onchange={(e) => handleFieldChange('type', (e.target as HTMLSelectElement).value)}
         >
           {#each types as t}
             <option value={t}>{t}</option>
           {/each}
-        </select>
+        </Select>
 
-        <input
+        <Input
           type="text"
-          class="input input-sm input-bordered w-40"
+          class="w-40 h-8 text-sm"
           value={ticket.assignee}
           onchange={(e) => handleFieldChange('assignee', (e.target as HTMLInputElement).value)}
           placeholder="Assignee"
@@ -137,10 +135,10 @@
 
       <!-- Tags -->
       <div class="flex items-center gap-2">
-        <span class="text-xs opacity-50">Tags:</span>
-        <input
+        <span class="text-xs text-muted-foreground">Tags:</span>
+        <Input
           type="text"
-          class="input input-sm input-bordered flex-1"
+          class="flex-1 h-8 text-sm"
           value={ticket.tags.join(', ')}
           onchange={handleTagsChange}
           placeholder="tag1, tag2, ..."
@@ -150,28 +148,28 @@
       <!-- Dependencies / Links (read-only for now) -->
       {#if ticket.deps.length > 0}
         <div class="text-sm">
-          <span class="opacity-50">Dependencies:</span>
+          <span class="text-muted-foreground">Dependencies:</span>
           {#each ticket.deps as dep}
-            <a href="#/ticket/{dep}" class="link link-primary font-mono ml-1">{dep}</a>
+            <a href="#/ticket/{dep}" class="text-primary underline underline-offset-4 font-mono ml-1">{dep}</a>
           {/each}
         </div>
       {/if}
 
       {#if ticket.links.length > 0}
         <div class="text-sm">
-          <span class="opacity-50">Links:</span>
+          <span class="text-muted-foreground">Links:</span>
           {#each ticket.links as link}
-            <a href="#/ticket/{link}" class="link link-primary font-mono ml-1">{link}</a>
+            <a href="#/ticket/{link}" class="text-primary underline underline-offset-4 font-mono ml-1">{link}</a>
           {/each}
         </div>
       {/if}
 
-      <div class="divider my-1"></div>
+      <hr class="border-border" />
 
       <!-- Milkdown editor -->
-      <div bind:this={editorContainer} class="milkdown-editor prose prose-sm max-w-none min-h-50"></div>
+      <div bind:this={editorContainer} class="milkdown-editor prose prose-sm max-w-none min-h-50 dark:prose-invert"></div>
     </div>
-  </div>
+  </Card>
 </div>
 
 <style>

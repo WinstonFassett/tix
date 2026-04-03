@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Ticket } from '../types'
+  import { Badge } from './ui'
 
   let { tickets }: { tickets: Ticket[] } = $props()
 
@@ -25,37 +26,39 @@
     }
   }
 
-  const statusBadge: Record<string, string> = {
-    'open': 'badge-primary',
-    'in-progress': 'badge-warning',
-    'done': 'badge-success',
-    'closed': 'badge-ghost',
+  type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline'
+
+  const statusVariant: Record<string, BadgeVariant> = {
+    'open': 'default',
+    'in-progress': 'secondary',
+    'done': 'outline',
+    'closed': 'outline',
   }
 </script>
 
-<div class="overflow-x-auto">
-  <table class="table table-sm">
+<div class="overflow-x-auto rounded-md border">
+  <table class="w-full text-sm">
     <thead>
-      <tr>
-        <th class="cursor-pointer" onclick={() => toggleSort('id')}>ID {sortKey === 'id' ? (sortAsc ? '↑' : '↓') : ''}</th>
-        <th class="cursor-pointer" onclick={() => toggleSort('title')}>Title {sortKey === 'title' ? (sortAsc ? '↑' : '↓') : ''}</th>
-        <th class="cursor-pointer" onclick={() => toggleSort('status')}>Status {sortKey === 'status' ? (sortAsc ? '↑' : '↓') : ''}</th>
-        <th class="cursor-pointer" onclick={() => toggleSort('priority')}>Pri {sortKey === 'priority' ? (sortAsc ? '↑' : '↓') : ''}</th>
-        <th class="cursor-pointer" onclick={() => toggleSort('assignee')}>Assignee {sortKey === 'assignee' ? (sortAsc ? '↑' : '↓') : ''}</th>
-        <th>Tags</th>
+      <tr class="border-b bg-muted/50">
+        <th class="cursor-pointer px-3 py-2 text-left font-medium text-muted-foreground" onclick={() => toggleSort('id')}>ID {sortKey === 'id' ? (sortAsc ? '↑' : '↓') : ''}</th>
+        <th class="cursor-pointer px-3 py-2 text-left font-medium text-muted-foreground" onclick={() => toggleSort('title')}>Title {sortKey === 'title' ? (sortAsc ? '↑' : '↓') : ''}</th>
+        <th class="cursor-pointer px-3 py-2 text-left font-medium text-muted-foreground" onclick={() => toggleSort('status')}>Status {sortKey === 'status' ? (sortAsc ? '↑' : '↓') : ''}</th>
+        <th class="cursor-pointer px-3 py-2 text-left font-medium text-muted-foreground" onclick={() => toggleSort('priority')}>Pri {sortKey === 'priority' ? (sortAsc ? '↑' : '↓') : ''}</th>
+        <th class="cursor-pointer px-3 py-2 text-left font-medium text-muted-foreground" onclick={() => toggleSort('assignee')}>Assignee {sortKey === 'assignee' ? (sortAsc ? '↑' : '↓') : ''}</th>
+        <th class="px-3 py-2 text-left font-medium text-muted-foreground">Tags</th>
       </tr>
     </thead>
     <tbody>
       {#each sorted as ticket (ticket.id)}
-        <tr class="hover cursor-pointer" onclick={() => location.hash = `#/ticket/${ticket.id}`}>
-          <td class="font-mono text-xs">{ticket.id}</td>
-          <td>{ticket.title}</td>
-          <td><span class="badge badge-sm {statusBadge[ticket.status] || 'badge-ghost'}">{ticket.status}</span></td>
-          <td>P{ticket.priority}</td>
-          <td class="text-sm">{ticket.assignee || '—'}</td>
-          <td>
+        <tr class="border-b transition-colors hover:bg-muted/50 cursor-pointer" onclick={() => location.hash = `#/ticket/${ticket.id}`}>
+          <td class="px-3 py-2 font-mono text-xs text-muted-foreground">{ticket.id}</td>
+          <td class="px-3 py-2">{ticket.title}</td>
+          <td class="px-3 py-2"><Badge variant={statusVariant[ticket.status] ?? 'outline'} class="text-[10px] px-1.5 py-0">{ticket.status}</Badge></td>
+          <td class="px-3 py-2">P{ticket.priority}</td>
+          <td class="px-3 py-2 text-muted-foreground">{ticket.assignee || '—'}</td>
+          <td class="px-3 py-2">
             {#each ticket.tags as tag}
-              <span class="badge badge-xs badge-outline">{tag}</span>
+              <Badge variant="outline" class="text-[10px] px-1.5 py-0 mr-1">{tag}</Badge>
             {/each}
           </td>
         </tr>
