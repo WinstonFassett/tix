@@ -54,7 +54,7 @@
 
   const filteredByStatus = $derived.by(() => {
     const groups: Record<string, Ticket[]> = {
-      'open': [], 'in-progress': [], 'done': [], 'closed': [],
+      'open': [], 'in-progress': [], 'on-hold': [], 'done': [], 'closed': [],
     }
     for (const t of sorted) {
       const key = t.status in groups ? t.status : 'open'

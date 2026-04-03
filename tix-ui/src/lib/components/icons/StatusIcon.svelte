@@ -1,9 +1,10 @@
 <script lang="ts">
   let { status, size = 14 }: { status: string; size?: number } = $props()
 
-  const config: Record<string, { color: string; progress: number; dashed?: boolean; check?: boolean }> = {
+  const config: Record<string, { color: string; progress: number; dashed?: boolean; check?: boolean; pause?: boolean }> = {
     'open':        { color: '#f97316', progress: 0, dashed: false },
     'in-progress': { color: '#facc15', progress: 0.33 },
+    'on-hold':     { color: '#94a3b8', progress: 0, pause: true },
     'done':        { color: '#8b5cf6', progress: 1, check: true },
     'closed':      { color: '#94a3b8', progress: 0, dashed: true },
   }
@@ -31,6 +32,9 @@
       stroke-linecap="round"
       stroke-linejoin="round"
     />
+  {:else if c.pause}
+    <rect x="5" y="4.5" width="1.5" height="5" rx="0.5" fill={c.color} />
+    <rect x="7.5" y="4.5" width="1.5" height="5" rx="0.5" fill={c.color} />
   {:else}
     <circle
       cx="7" cy="7" r={r}

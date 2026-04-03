@@ -12,6 +12,7 @@
   const statuses = [
     { id: 'open', label: 'Open' },
     { id: 'in-progress', label: 'In Progress' },
+    { id: 'on-hold', label: 'On Hold' },
     { id: 'done', label: 'Done' },
     { id: 'closed', label: 'Closed' },
   ]

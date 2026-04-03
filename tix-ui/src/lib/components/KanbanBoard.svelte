@@ -5,11 +5,12 @@
 
   let { byStatus }: { byStatus: Record<string, Ticket[]> } = $props()
 
-  const columns = ['open', 'in-progress', 'done', 'closed'] as const
+  const columns = ['open', 'in-progress', 'on-hold', 'done', 'closed'] as const
 
   const columnLabels: Record<string, string> = {
     'open': 'Open',
     'in-progress': 'In Progress',
+    'on-hold': 'On Hold',
     'done': 'Done',
     'closed': 'Closed',
   }
@@ -17,6 +18,7 @@
   const statusColors: Record<string, string> = {
     'open': '#f97316',
     'in-progress': '#facc15',
+    'on-hold': '#94a3b8',
     'done': '#8b5cf6',
     'closed': '#94a3b8',
   }

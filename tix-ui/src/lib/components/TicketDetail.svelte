@@ -26,7 +26,7 @@
     if (filePath) navigator.clipboard.writeText(filePath)
   }
 
-  const statuses = ['open', 'in-progress', 'done', 'closed']
+  const statuses = ['open', 'in-progress', 'on-hold', 'done', 'closed']
   const types = ['task', 'bug', 'feature', 'epic']
   const priorities = [0, 1, 2, 3, 4]
 

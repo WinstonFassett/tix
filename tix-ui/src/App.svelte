@@ -25,7 +25,7 @@
   })
 
   const statusCounts = $derived.by(() => {
-    const counts: Record<string, number> = { open: 0, 'in-progress': 0, done: 0, closed: 0 }
+    const counts: Record<string, number> = { open: 0, 'in-progress': 0, 'on-hold': 0, done: 0, closed: 0 }
     for (const t of store.tickets) {
       if (t.status in counts) counts[t.status]++
     }
@@ -35,6 +35,7 @@
   const statusLabels: Record<string, string> = {
     'open': 'Open',
     'in-progress': 'In Progress',
+    'on-hold': 'On Hold',
     'done': 'Done',
     'closed': 'Closed',
   }

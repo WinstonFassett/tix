@@ -20,8 +20,9 @@ The `tix` CLI supports the following commands. For detailed usage and options, r
 *   **`start <id>`**: Set ticket status to `in-progress`.
 *   **`done <id>`**: Set ticket status to `done` (completed work; auto-archives).
 *   **`close <id>`**: Set ticket status to `closed` (cancelled/won't-do).
+*   **`hold <id>`** (alias: `pause`): Set ticket status to `on-hold`.
 *   **`reopen <id>`**: Set ticket status to `open`.
-*   **`status <id> <status>`**: Update status (open|in-progress|done|closed).
+*   **`status <id> <status>`**: Update status (open|in-progress|on-hold|done|closed).
 
 ### Dependency Management
 

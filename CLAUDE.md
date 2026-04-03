@@ -32,7 +32,7 @@ bats test/basic_operations.bats   # single test file
 
 ## Ticket Format
 
-Files named `Title Case (4hex).md` in `tickets/`. Frontmatter fields: `id`, `title`, `status`, `deps`, `links`, `created`, `type`, `priority` (0-4), `assignee`, `tags`. IDs are 4-char hex. Statuses: `open`, `in-progress`, `done`, `closed`. Done/closed tickets auto-archive to `tickets/archive/YYYY-MM-DD/`.
+Files named `Title Case (4hex).md` in `tickets/`. Frontmatter fields: `id`, `title`, `status`, `deps`, `links`, `created`, `type`, `priority` (0-4), `assignee`, `tags`. IDs are 4-char hex. Statuses: `open`, `in-progress`, `on-hold`, `done`, `closed`. Done/closed tickets auto-archive to `tickets/archive/YYYY-MM-DD/`.
 
 ## Environment Variables
 
