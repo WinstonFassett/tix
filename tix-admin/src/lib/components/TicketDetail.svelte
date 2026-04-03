@@ -171,5 +171,10 @@
 <style>
   .milkdown-editor :global(.milkdown) {
     outline: none;
+    background: transparent;
+    padding: 8px 0;
+  }
+  .milkdown-editor :global(.milkdown .editor) {
+    padding: 0;
   }
 </style>
