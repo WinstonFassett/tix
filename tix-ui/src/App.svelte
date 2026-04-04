@@ -101,6 +101,18 @@
     return () => window.removeEventListener('hashchange', onHash)
   })
 
+  $effect(() => {
+    if (route.view === 'ticket' && currentTicket) {
+      document.title = `tix | ${currentTicket.id} ${currentTicket.title}`
+    } else if (filters.statusFilter) {
+      document.title = `tix | ${statusLabels[filters.statusFilter] ?? filters.statusFilter}`
+    } else if (filters.tagFilter) {
+      document.title = `tix | #${filters.tagFilter}`
+    } else {
+      document.title = 'tix | All Issues'
+    }
+  })
+
   function toggleTheme() {
     dark = !dark
     document.documentElement.classList.toggle('dark', dark)

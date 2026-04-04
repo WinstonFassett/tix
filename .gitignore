@@ -10,3 +10,7 @@ archive
 .mcp.json
 
 .vite
+
+# Vendored binaries (downloaded by setup-deps)
+lib/yq
+lib/jq
