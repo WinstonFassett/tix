@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Command } from 'cmdk'
 import type { Ticket } from '@/lib/types'
-import { STATUSES, STATUS_LABELS, PRIORITIES, PRIORITY_FULL_LABELS, TYPES, TYPE_LABELS } from '@/lib/types'
+import { STATUSES, STATUS_LABELS, PRIORITIES, PRIORITY_FULL_LABELS, TYPES, TYPE_LABELS, PRIORITY_LABELS } from '@/lib/types'
 import type { GroupBy, SortBy, ViewMode } from '@/lib/types'
 import { useNavigate, useLocation } from '@tanstack/react-router'
+import { StatusIcon } from './icons/StatusIcon'
+import { TypeIcon } from './icons/TypeIcon'
+import { PriorityIcon } from './icons/PriorityIcon'
+import { Badge } from './ui'
 
 export interface PaletteCallbacks {
   toggleTheme: () => void
@@ -53,13 +57,17 @@ export function CommandPalette({ tickets, callbacks, isTicketView }: CommandPale
     <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-start justify-center pt-[10vh] px-4" onClick={close}>
       <div className="w-full max-w-[640px] animate-in fade-in slide-in-from-top-2" onClick={e => e.stopPropagation()}>
         <Command className="bg-popover text-popover-foreground border rounded-lg shadow-2xl overflow-hidden max-h-[70vh] flex flex-col" shouldFilter={true}>
-          <Command.Input
-            autoFocus
-            value={search}
-            onValueChange={setSearch}
-            placeholder="Type a command or search..."
-            className="w-full px-4 py-3 text-base border-b border-border bg-transparent outline-none placeholder:text-muted-foreground"
-          />
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted-foreground"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <Command.Input
+              autoFocus
+              value={search}
+              onValueChange={setSearch}
+              placeholder="Type a command or search..."
+              className="flex-1 text-base bg-transparent outline-none placeholder:text-muted-foreground"
+            />
+            <kbd className="shrink-0 text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border font-mono">Esc</kbd>
+          </div>
           <Command.List className="overflow-y-auto p-2 max-h-[calc(70vh-60px)]">
             <Command.Empty className="flex items-center justify-center py-12 text-muted-foreground">
               No results found
@@ -72,10 +80,32 @@ export function CommandPalette({ tickets, callbacks, isTicketView }: CommandPale
                   key={`nav-${t.id}`}
                   value={`${t.title} ${t.id} ${t.assignee} ${t.tags.join(' ')} ${t.type} ${t.status}`}
                   onSelect={() => { close(); navigate({ to: '/ticket/$ticketId', params: { ticketId: t.id } }) }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer text-sm data-[selected=true]:bg-accent"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-sm data-[selected=true]:bg-accent border border-transparent data-[selected=true]:border-border"
                 >
-                  <span className="font-medium">{t.title}</span>
-                  <span className="text-xs text-muted-foreground ml-auto">{t.id} · {t.status} · {t.type}</span>
+                  <StatusIcon status={t.status} size={14} />
+                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium truncate">{t.title}</span>
+                      <span className="ml-auto shrink-0"><TypeIcon type={t.type} size={13} /></span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <span className="font-mono">{t.id}</span>
+                      <span>·</span>
+                      <span>{STATUS_LABELS[t.status]}</span>
+                      <span>·</span>
+                      <span>{TYPE_LABELS[t.type] || t.type}</span>
+                      <span>·</span>
+                      <span>{PRIORITY_LABELS[t.priority] || `P${t.priority}`}</span>
+                      {t.tags.length > 0 && (
+                        <>
+                          <span className="ml-auto" />
+                          {t.tags.slice(0, 2).map(tag => (
+                            <Badge key={tag} variant="outline" className="text-[9px] px-1 py-0 rounded-full leading-tight">{tag}</Badge>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </Command.Item>
               ))}
               {isTicketView && (
