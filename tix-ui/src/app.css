@@ -195,7 +195,8 @@
 }
 
 .cp-result-themed:hover,
-.cp-result-active {
+.cp-result-active,
+.cp-result-themed[aria-selected="true"] {
   background: var(--accent);
   color: var(--accent-foreground);
 }
