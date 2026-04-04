@@ -33,7 +33,11 @@
 
   // Tickets dir for file operations
   let ticketsDir = $state('')
-  fetch('/api/config').then(r => r.json()).then(d => ticketsDir = d.ticketsDir || '').catch(() => {})
+  let workspaceName = $state('')
+  fetch('/api/config').then(r => r.json()).then(d => {
+    ticketsDir = d.ticketsDir || ''
+    workspaceName = d.workspaceName || ''
+  }).catch(() => {})
 
   const currentFilePath = $derived(
     ticketsDir && currentTicket?.filename ? `${ticketsDir}/${currentTicket.filename}` : ''
@@ -137,8 +141,11 @@
   <!-- Sidebar -->
   <aside class="{sidebar.open ? 'w-60' : 'w-0'} shrink-0 flex flex-col bg-background transition-[width] duration-200 overflow-hidden lg:py-2">
     <!-- Sidebar header -->
-    <div class="h-10 flex items-center px-4 min-w-60">
+    <div class="flex flex-col px-4 min-w-60 py-2">
       <a href="#/" class="text-sm font-semibold font-mono tracking-tight" onclick={() => filters.clearAll()}>tix</a>
+      {#if workspaceName}
+        <span class="text-xs text-muted-foreground truncate">{workspaceName}</span>
+      {/if}
     </div>
 
     <!-- Nav sections -->

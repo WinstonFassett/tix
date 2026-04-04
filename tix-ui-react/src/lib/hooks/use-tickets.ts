@@ -7,7 +7,7 @@ async function fetchTickets(): Promise<Ticket[]> {
   return res.json()
 }
 
-async function fetchConfig(): Promise<{ ticketsDir: string }> {
+async function fetchConfig(): Promise<{ ticketsDir: string; workspaceName: string; workspacePath: string }> {
   const res = await fetch('/api/config')
   return res.json()
 }

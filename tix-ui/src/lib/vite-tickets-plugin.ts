@@ -65,7 +65,9 @@ export function ticketsPlugin(): Plugin {
         // GET /api/config
         if (url === '/api/config' && req.method === 'GET') {
           res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify({ ticketsDir: path.resolve(ticketsDir) }))
+          const resolvedDir = path.resolve(ticketsDir)
+          const workspacePath = path.dirname(resolvedDir)
+          res.end(JSON.stringify({ ticketsDir: resolvedDir, workspaceName: path.basename(workspacePath), workspacePath }))
           return
         }
 

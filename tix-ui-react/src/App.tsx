@@ -106,8 +106,11 @@ function AppLayout() {
     <div className="flex h-svh bg-background text-foreground overflow-hidden">
       {/* Sidebar */}
       <aside className={`${sidebar.open ? 'w-60' : 'w-0'} shrink-0 flex flex-col bg-background transition-[width] duration-200 overflow-hidden lg:py-2`}>
-        <div className="h-10 flex items-center px-4 min-w-60">
+        <div className="flex flex-col px-4 min-w-60 py-2">
           <a href="/" className="text-sm font-semibold font-mono tracking-tight" onClick={(e) => { e.preventDefault(); filters.clearAll(); window.location.hash = '' }}>tix</a>
+          {config?.workspaceName && (
+            <span className="text-xs text-muted-foreground truncate">{config.workspaceName}</span>
+          )}
         </div>
         <nav className="flex-1 overflow-y-auto py-2">
           <div className="px-2 mb-1">
