@@ -5,8 +5,10 @@ import type { GroupBy, SortBy, SortDir, ViewMode } from './types'
 interface FiltersState {
   statusFilter: string
   tagFilter: string
+  typeFilter: string
   setStatusFilter: (v: string) => void
   setTagFilter: (v: string) => void
+  setTypeFilter: (v: string) => void
   clearAll: () => void
 }
 
@@ -82,7 +84,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Filters
   const [statusFilter, setStatusFilter] = useState('')
   const [tagFilter, setTagFilter] = useState('')
-  const clearAll = useCallback(() => { setStatusFilter(''); setTagFilter('') }, [])
+  const [typeFilter, setTypeFilter] = useState('')
+  const clearAll = useCallback(() => { setStatusFilter(''); setTagFilter(''); setTypeFilter('') }, [])
 
   // Sidebar
   const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('tix-sidebar') !== 'collapsed')
@@ -122,7 +125,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value: AppContextValue = {
-    filters: { statusFilter, tagFilter, setStatusFilter, setTagFilter, clearAll },
+    filters: { statusFilter, tagFilter, typeFilter, setStatusFilter, setTagFilter, setTypeFilter, clearAll },
     sidebar: { open: sidebarOpen, toggle: toggleSidebar },
     theme: { dark, toggle: toggleTheme },
     viewSettings: { ...vs, update: updateVS, toggleSortDir },

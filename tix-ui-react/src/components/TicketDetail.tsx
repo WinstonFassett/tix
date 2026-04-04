@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Ticket } from '@/lib/types'
-import { TYPES } from '@/lib/types'
-import { Button, Input, Select } from './ui'
+import { Button, Input } from './ui'
 import { StatusSelector } from './StatusSelector'
 import { PrioritySelector } from './PrioritySelector'
+import { TypeSelector } from './TypeSelector'
 import { MilkdownEditor } from './MilkdownEditor'
 import { useConfig } from '@/lib/hooks/use-tickets'
 import { useSidebar } from '@/lib/AppContext'
@@ -119,13 +119,7 @@ export function TicketDetail({ ticket, onUpdate }: TicketDetailProps) {
             <StatusSelector status={ticket.status} onSelect={(s) => handleFieldChange('status', s)} />
             <PrioritySelector priority={ticket.priority} onSelect={(p) => handleFieldChange('priority', p)} />
 
-            <Select
-              className="w-auto h-8 text-sm"
-              defaultValue={ticket.type}
-              onChange={(e) => handleFieldChange('type', e.target.value)}
-            >
-              {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-            </Select>
+            <TypeSelector type={ticket.type} onSelect={(t) => handleFieldChange('type', t)} />
 
             <Input
               type="text"

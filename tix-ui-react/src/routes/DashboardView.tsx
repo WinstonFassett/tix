@@ -35,7 +35,8 @@ export function DashboardView() {
   const filtered = useMemo(() => filterTickets(tickets, {
     status: filters.statusFilter || undefined,
     tag: filters.tagFilter || undefined,
-  }), [tickets, filters.statusFilter, filters.tagFilter])
+    type: filters.typeFilter || undefined,
+  }), [tickets, filters.statusFilter, filters.tagFilter, filters.typeFilter])
 
   const sorted = useMemo(() => {
     const dir = view.sortDir === 'asc' ? 1 : -1
@@ -126,11 +127,11 @@ export function DashboardView() {
       {/* Header row 2 */}
       <div className="w-full flex justify-between items-center border-b py-1.5 px-6 h-10">
         <div className="flex items-center gap-2">
-          {(filters.statusFilter || filters.tagFilter) && (
+          {(filters.statusFilter || filters.tagFilter || filters.typeFilter) && (
             <>
               <span className="text-xs text-muted-foreground">Filtered by:</span>
               <span className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs font-medium">
-                {filters.statusFilter || filters.tagFilter}
+                {filters.statusFilter || filters.tagFilter || filters.typeFilter}
                 <button className="ml-0.5 hover:text-foreground" onClick={() => filters.clearAll()} aria-label="Clear filter">
                   <X className="h-3 w-3" />
                 </button>

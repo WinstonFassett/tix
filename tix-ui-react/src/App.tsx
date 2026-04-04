@@ -7,8 +7,9 @@ import { DashboardView } from '@/routes/DashboardView'
 import { TicketView } from '@/routes/TicketView'
 import { CommandPalette, type PaletteCallbacks } from '@/components/CommandPalette'
 import { StatusIcon } from '@/components/icons/StatusIcon'
+import { TypeIcon } from '@/components/icons/TypeIcon'
 import { Button } from '@/components/ui'
-import { STATUS_LABELS, type TicketStatus } from '@/lib/types'
+import { STATUS_LABELS, TYPE_LABELS, type TicketStatus } from '@/lib/types'
 import { Sun, Moon, Inbox } from 'lucide-react'
 
 // Query client
@@ -76,17 +77,35 @@ function AppLayout() {
     return counts
   }, [tickets])
 
+  // Type counts
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = { task: 0, bug: 0, feature: 0, epic: 0 }
+    for (const t of tickets) {
+      if (t.type in counts) counts[t.type]!++
+    }
+    return counts
+  }, [tickets])
+
   const navigate = useNavigate()
 
   function toggleStatusFilter(status: string) {
     filters.setTagFilter('')
+    filters.setTypeFilter('')
     filters.setStatusFilter(filters.statusFilter === status ? '' : status)
     if (isTicketView) navigate({ to: '/' })
   }
 
   function toggleTagFilter(tag: string) {
     filters.setStatusFilter('')
+    filters.setTypeFilter('')
     filters.setTagFilter(filters.tagFilter === tag ? '' : tag)
+    if (isTicketView) navigate({ to: '/' })
+  }
+
+  function toggleTypeFilter(type: string) {
+    filters.setStatusFilter('')
+    filters.setTagFilter('')
+    filters.setTypeFilter(filters.typeFilter === type ? '' : type)
     if (isTicketView) navigate({ to: '/' })
   }
 
@@ -119,7 +138,7 @@ function AppLayout() {
         <nav className="flex-1 overflow-y-auto py-2">
           <div className="px-2 mb-1">
             <div
-              className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors ${!filters.statusFilter && !filters.tagFilter ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50 text-foreground'}`}
+              className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors ${!filters.statusFilter && !filters.tagFilter && !filters.typeFilter ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50 text-foreground'}`}
               onClick={() => { filters.clearAll() }}
             >
               <Inbox className="h-4 w-4 text-muted-foreground" />
@@ -140,6 +159,23 @@ function AppLayout() {
               >
                 <StatusIcon status={status} size={12} />
                 <span>{STATUS_LABELS[status as TicketStatus]}</span>
+                <span className="ml-auto text-xs">{count}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="px-3 mt-4 mb-1">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Type</span>
+          </div>
+          <div className="px-2">
+            {Object.entries(typeCounts).map(([type, count]) => (
+              <div
+                key={type}
+                className={`flex items-center gap-2 rounded-md px-2 py-1 text-sm cursor-pointer transition-colors ${filters.typeFilter === type ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}
+                onClick={() => toggleTypeFilter(type)}
+              >
+                <TypeIcon type={type} size={12} />
+                <span>{TYPE_LABELS[type]}</span>
                 <span className="ml-auto text-xs">{count}</span>
               </div>
             ))}

@@ -39,6 +39,7 @@
   const filtered = $derived(filterTickets(store.tickets, {
     status: filters.statusFilter || undefined,
     tag: filters.tagFilter || undefined,
+    type: filters.typeFilter || undefined,
   }))
 
   const sorted = $derived.by(() => {

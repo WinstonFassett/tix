@@ -42,6 +42,9 @@ export const TYPES = ['task', 'bug', 'feature', 'epic'] as const
 export const TYPE_LABELS: Record<string, string> = {
   task: 'Task', bug: 'Bug', feature: 'Feature', epic: 'Epic',
 }
+export const TYPE_COLORS: Record<string, string> = {
+  task: '#94a3b8', bug: '#ef4444', feature: '#3b82f6', epic: '#d946ef',
+}
 
 export type GroupBy = 'status' | 'priority' | 'type' | 'none'
 export type SortBy = 'priority' | 'title' | 'created' | 'status'

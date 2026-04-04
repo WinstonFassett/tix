@@ -3,8 +3,10 @@ import { STATUS_LABELS, STATUS_COLORS, PRIORITY_LABELS } from '@/lib/types'
 import { Badge } from './ui'
 import { StatusIcon } from './icons/StatusIcon'
 import { PriorityIcon } from './icons/PriorityIcon'
+import { TypeIcon } from './icons/TypeIcon'
 import { StatusSelector } from './StatusSelector'
 import { PrioritySelector } from './PrioritySelector'
+import { TypeSelector } from './TypeSelector'
 import { useNavigate } from '@tanstack/react-router'
 import { useMemo } from 'react'
 
@@ -58,6 +60,7 @@ export function TicketTable({ tickets, grouped, groupBy, onUpdate }: TicketTable
               <div className="flex items-center gap-2">
                 {groupBy === 'status' && <StatusIcon status={groupKey} />}
                 {groupBy === 'priority' && <PriorityIcon priority={Number(groupKey)} size={14} />}
+                {groupBy === 'type' && <TypeIcon type={groupKey} size={14} />}
                 <span className="text-sm font-medium">{groupLabel(groupKey, groupBy)}</span>
                 <span className="text-sm text-muted-foreground">{grouped[groupKey]?.length}</span>
               </div>
@@ -99,6 +102,13 @@ export function TicketTable({ tickets, grouped, groupBy, onUpdate }: TicketTable
                     <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0 rounded-full">{tag}</Badge>
                   ))}
                 </div>
+                <span className="hidden sm:flex w-8 shrink-0 items-center justify-center" onClick={e => e.stopPropagation()}>
+                  <TypeSelector
+                    type={ticket.type}
+                    onSelect={(t) => onUpdate?.(ticket.id, { type: t })}
+                    compact
+                  />
+                </span>
                 {ticket.created && (
                   <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline-block w-16 text-right">
                     {new Date(ticket.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}

@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
   import type { Ticket } from '../types'
-  import { Button, Input, Select } from './ui'
+  import { Button, Input } from './ui'
   import StatusSelector from './StatusSelector.svelte'
   import PrioritySelector from './PrioritySelector.svelte'
+  import TypeSelector from './TypeSelector.svelte'
   import MilkdownEditor from './MilkdownEditor.svelte'
   import { useSidebar } from '../data/sidebar.svelte'
 
@@ -33,8 +34,6 @@
   function copyPath() {
     if (filePath) navigator.clipboard.writeText(filePath)
   }
-
-  const types = ['task', 'bug', 'feature', 'epic']
 
   // Debounced save
   let saveTimer: ReturnType<typeof setTimeout> | null = null
@@ -137,15 +136,7 @@
       <StatusSelector status={ticket.status} onSelect={(s) => handleFieldChange('status', s)} />
       <PrioritySelector priority={ticket.priority} onSelect={(p) => handleFieldChange('priority', p)} />
 
-      <Select
-        class="w-auto h-8 text-sm"
-        value={ticket.type}
-        onchange={(e) => handleFieldChange('type', (e.target as HTMLSelectElement).value)}
-      >
-        {#each types as t}
-          <option value={t}>{t}</option>
-        {/each}
-      </Select>
+      <TypeSelector type={ticket.type} onSelect={(t) => handleFieldChange('type', t)} />
 
       <Input
         type="text"

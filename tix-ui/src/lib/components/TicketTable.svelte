@@ -6,6 +6,8 @@
   import PriorityIcon from './icons/PriorityIcon.svelte'
   import StatusSelector from './StatusSelector.svelte'
   import PrioritySelector from './PrioritySelector.svelte'
+  import TypeSelector from './TypeSelector.svelte'
+  import TypeIcon from './icons/TypeIcon.svelte'
 
   let { tickets, grouped, groupBy, onUpdate }: {
     tickets: Ticket[]
@@ -71,6 +73,8 @@
             <StatusIcon status={groupKey} />
           {:else if groupBy === 'priority'}
             <PriorityIcon priority={Number(groupKey)} size={14} />
+          {:else if groupBy === 'type'}
+            <TypeIcon type={groupKey} size={14} />
           {/if}
           <span class="text-sm font-medium">{groupLabel(groupKey)}</span>
           <span class="text-sm text-muted-foreground">{grouped[groupKey].length}</span>
@@ -124,6 +128,14 @@
               <Badge variant="outline" class="text-[10px] px-1.5 py-0 rounded-full">{tag}</Badge>
             {/each}
           </div>
+          <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+          <span class="hidden sm:flex w-8 shrink-0 items-center justify-center" onclick={(e) => e.stopPropagation()}>
+            <TypeSelector
+              type={ticket.type}
+              onSelect={(t) => onUpdate?.(ticket.id, { type: t })}
+              compact
+            />
+          </span>
           {#if ticket.created}
             <span class="text-xs text-muted-foreground shrink-0 hidden sm:inline-block w-16 text-right">
               {new Date(ticket.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}

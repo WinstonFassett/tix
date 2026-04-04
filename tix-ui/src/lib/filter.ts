@@ -4,6 +4,7 @@ export interface FilterOptions {
   search?: string
   status?: string
   tag?: string
+  type?: string
 }
 
 export function filterTickets(tickets: Ticket[], opts: FilterOptions): Ticket[] {
@@ -15,6 +16,10 @@ export function filterTickets(tickets: Ticket[], opts: FilterOptions): Ticket[] 
 
   if (opts.tag) {
     result = result.filter(t => t.tags.includes(opts.tag!))
+  }
+
+  if (opts.type) {
+    result = result.filter(t => t.type === opts.type)
   }
 
   if (opts.search) {

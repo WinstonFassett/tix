@@ -6,6 +6,7 @@
   import { useTickets } from './lib/data/tickets.svelte'
   import { useFilters } from './lib/data/filters.svelte'
   import StatusIcon from './lib/components/icons/StatusIcon.svelte'
+  import TypeIcon from './lib/components/icons/TypeIcon.svelte'
   import { useSidebar } from './lib/data/sidebar.svelte'
   import { useViewSettings } from './lib/data/view-settings.svelte'
   import CommandPalette from './lib/components/CommandPalette.svelte'
@@ -91,6 +92,18 @@
     return counts
   })
 
+  const typeCounts = $derived.by(() => {
+    const counts: Record<string, number> = { task: 0, bug: 0, feature: 0, epic: 0 }
+    for (const t of store.tickets) {
+      if (t.type in counts) counts[t.type]++
+    }
+    return counts
+  })
+
+  const typeLabels: Record<string, string> = {
+    task: 'Task', bug: 'Bug', feature: 'Feature', epic: 'Epic',
+  }
+
   const statusLabels: Record<string, string> = {
     'open': 'Open',
     'in-progress': 'In Progress',
@@ -126,13 +139,22 @@
 
   function toggleStatusFilter(status: string) {
     filters.tagFilter = ''
+    filters.typeFilter = ''
     filters.statusFilter = filters.statusFilter === status ? '' : status
     if (route.view !== 'dashboard') location.hash = '#/'
   }
 
   function toggleTagFilter(tag: string) {
     filters.statusFilter = ''
+    filters.typeFilter = ''
     filters.tagFilter = filters.tagFilter === tag ? '' : tag
+    if (route.view !== 'dashboard') location.hash = '#/'
+  }
+
+  function toggleTypeFilter(type: string) {
+    filters.statusFilter = ''
+    filters.tagFilter = ''
+    filters.typeFilter = filters.typeFilter === type ? '' : type
     if (route.view !== 'dashboard') location.hash = '#/'
   }
 </script>
@@ -155,7 +177,7 @@
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
-          class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors {!filters.statusFilter && !filters.tagFilter ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50 text-foreground'}"
+          class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors {!filters.statusFilter && !filters.tagFilter && !filters.typeFilter ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50 text-foreground'}"
           onclick={() => { filters.clearAll(); location.hash = '#/' }}
         >
           <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22,12 16,12 14,15 10,15 8,12 2,12"/><path d="M5.45,5.11,2,12v6a2,2,0,0,0,2,2H20a2,2,0,0,0,2-2V12l-3.45-6.89A2,2,0,0,0,16.76,4H7.24a2,2,0,0,0-1.79,1.11Z"/></svg>
@@ -178,6 +200,25 @@
           >
             <StatusIcon {status} size={12} />
             <span>{statusLabels[status]}</span>
+            <span class="ml-auto text-xs">{count}</span>
+          </div>
+        {/each}
+      </div>
+
+      <!-- Type -->
+      <div class="px-3 mt-4 mb-1">
+        <span class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Type</span>
+      </div>
+      <div class="px-2">
+        {#each Object.entries(typeCounts) as [type, count]}
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="flex items-center gap-2 rounded-md px-2 py-1 text-sm cursor-pointer transition-colors {filters.typeFilter === type ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}"
+            onclick={() => toggleTypeFilter(type)}
+          >
+            <TypeIcon {type} size={12} />
+            <span>{typeLabels[type]}</span>
             <span class="ml-auto text-xs">{count}</span>
           </div>
         {/each}
