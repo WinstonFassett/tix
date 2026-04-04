@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { parseHash, type Route } from './lib/data/router'
+  import { parseHash, navigate as navTo, type Route } from './lib/data/router'
   import DashboardView from './routes/DashboardView.svelte'
   import TicketView from './routes/TicketView.svelte'
   import Button from './lib/components/ui/Button.svelte'
@@ -118,6 +118,15 @@
     return () => window.removeEventListener('hashchange', onHash)
   })
 
+  // Sync route filter params → filter state
+  $effect(() => {
+    if (route.view === 'dashboard') {
+      filters.statusFilter = route.filter?.status || ''
+      filters.tagFilter = route.filter?.tag || ''
+      filters.typeFilter = route.filter?.type || ''
+    }
+  })
+
   $effect(() => {
     if (route.view === 'ticket' && currentTicket) {
       document.title = `tix | ${currentTicket.id} ${currentTicket.title}`
@@ -138,24 +147,18 @@
 
 
   function toggleStatusFilter(status: string) {
-    filters.tagFilter = ''
-    filters.typeFilter = ''
-    filters.statusFilter = filters.statusFilter === status ? '' : status
-    if (route.view !== 'dashboard') location.hash = '#/'
+    const next = filters.statusFilter === status ? undefined : status
+    navTo({ view: 'dashboard', filter: next ? { status: next } : undefined })
   }
 
   function toggleTagFilter(tag: string) {
-    filters.statusFilter = ''
-    filters.typeFilter = ''
-    filters.tagFilter = filters.tagFilter === tag ? '' : tag
-    if (route.view !== 'dashboard') location.hash = '#/'
+    const next = filters.tagFilter === tag ? undefined : tag
+    navTo({ view: 'dashboard', filter: next ? { tag: next } : undefined })
   }
 
   function toggleTypeFilter(type: string) {
-    filters.statusFilter = ''
-    filters.tagFilter = ''
-    filters.typeFilter = filters.typeFilter === type ? '' : type
-    if (route.view !== 'dashboard') location.hash = '#/'
+    const next = filters.typeFilter === type ? undefined : type
+    navTo({ view: 'dashboard', filter: next ? { type: next } : undefined })
   }
 </script>
 
@@ -164,7 +167,7 @@
   <aside class="{sidebar.open ? 'w-60' : 'w-0'} shrink-0 flex flex-col bg-background transition-[width] duration-200 overflow-hidden lg:py-2">
     <!-- Sidebar header -->
     <div class="flex flex-col px-4 min-w-60 py-2">
-      <a href="#/" class="text-sm font-semibold font-mono tracking-tight" onclick={() => filters.clearAll()}>tix</a>
+      <a href="#/" class="text-sm font-semibold font-mono tracking-tight" onclick={() => navTo({ view: 'dashboard' })}>tix</a>
       {#if workspaceName}
         <span class="text-xs text-muted-foreground truncate">{workspaceName}</span>
       {/if}
@@ -178,7 +181,7 @@
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors {!filters.statusFilter && !filters.tagFilter && !filters.typeFilter ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50 text-foreground'}"
-          onclick={() => { filters.clearAll(); location.hash = '#/' }}
+          onclick={() => navTo({ view: 'dashboard' })}
         >
           <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22,12 16,12 14,15 10,15 8,12 2,12"/><path d="M5.45,5.11,2,12v6a2,2,0,0,0,2,2H20a2,2,0,0,0,2-2V12l-3.45-6.89A2,2,0,0,0,16.76,4H7.24a2,2,0,0,0-1.79,1.11Z"/></svg>
           <span>All Issues</span>

@@ -1,5 +1,5 @@
 import { useMemo, useEffect } from 'react'
-import { createRouter, createRoute, createRootRoute, RouterProvider, Outlet, useParams, useRouterState, useNavigate } from '@tanstack/react-router'
+import { createRouter, createRoute, createRootRoute, RouterProvider, Outlet, useParams, useRouterState, useNavigate, useSearch } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useTickets, useUpdateTicket, useConfig } from '@/lib/hooks/use-tickets'
 import { AppProvider, useFilters, useViewSettings, useSidebar, useTheme, useCreateDialog } from '@/lib/AppContext'
@@ -89,24 +89,18 @@ function AppLayout() {
   const navigate = useNavigate()
 
   function toggleStatusFilter(status: string) {
-    filters.setTagFilter('')
-    filters.setTypeFilter('')
-    filters.setStatusFilter(filters.statusFilter === status ? '' : status)
-    if (isTicketView) navigate({ to: '/' })
+    const next = filters.statusFilter === status ? undefined : status
+    navigate({ to: '/', search: next ? { status: next } : {} })
   }
 
   function toggleTagFilter(tag: string) {
-    filters.setStatusFilter('')
-    filters.setTypeFilter('')
-    filters.setTagFilter(filters.tagFilter === tag ? '' : tag)
-    if (isTicketView) navigate({ to: '/' })
+    const next = filters.tagFilter === tag ? undefined : tag
+    navigate({ to: '/', search: next ? { tag: next } : {} })
   }
 
   function toggleTypeFilter(type: string) {
-    filters.setStatusFilter('')
-    filters.setTagFilter('')
-    filters.setTypeFilter(filters.typeFilter === type ? '' : type)
-    if (isTicketView) navigate({ to: '/' })
+    const next = filters.typeFilter === type ? undefined : type
+    navigate({ to: '/', search: next ? { type: next } : {} })
   }
 
   const paletteCallbacks: PaletteCallbacks = {
@@ -130,7 +124,7 @@ function AppLayout() {
       {/* Sidebar */}
       <aside className={`${sidebar.open ? 'w-60' : 'w-0'} shrink-0 flex flex-col bg-background transition-[width] duration-200 overflow-hidden lg:py-2`}>
         <div className="flex flex-col px-4 min-w-60 py-2">
-          <a href="/" className="text-sm font-semibold font-mono tracking-tight" onClick={(e) => { e.preventDefault(); filters.clearAll(); window.location.hash = '' }}>tix</a>
+          <a href="/" className="text-sm font-semibold font-mono tracking-tight" onClick={(e) => { e.preventDefault(); navigate({ to: '/', search: {} }) }}>tix</a>
           {config?.workspaceName && (
             <span className="text-xs text-muted-foreground truncate">{config.workspaceName}</span>
           )}
@@ -139,7 +133,7 @@ function AppLayout() {
           <div className="px-2 mb-1">
             <div
               className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors ${!filters.statusFilter && !filters.tagFilter && !filters.typeFilter ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50 text-foreground'}`}
-              onClick={() => { filters.clearAll() }}
+              onClick={() => navigate({ to: '/', search: {} })}
             >
               <Inbox className="h-4 w-4 text-muted-foreground" />
               <span>All Issues</span>
@@ -227,9 +221,20 @@ const rootRoute = createRootRoute({
   component: AppLayout,
 })
 
+interface DashboardSearch {
+  status?: string
+  tag?: string
+  type?: string
+}
+
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
+  validateSearch: (search: Record<string, unknown>): DashboardSearch => ({
+    status: typeof search.status === 'string' ? search.status : undefined,
+    tag: typeof search.tag === 'string' ? search.tag : undefined,
+    type: typeof search.type === 'string' ? search.type : undefined,
+  }),
   component: function Index() {
     return <DashboardViewWrapper />
   },
@@ -245,6 +250,16 @@ const ticketRoute = createRoute({
 })
 
 function DashboardViewWrapper() {
+  const search = useSearch({ from: '/' })
+  const filters = useFilters()
+
+  // Sync URL search params → filter state
+  useEffect(() => {
+    filters.setStatusFilter(search.status || '')
+    filters.setTagFilter(search.tag || '')
+    filters.setTypeFilter(search.type || '')
+  }, [search.status, search.tag, search.type]) // eslint-disable-line react-hooks/exhaustive-deps
+
   return <DashboardView />
 }
 

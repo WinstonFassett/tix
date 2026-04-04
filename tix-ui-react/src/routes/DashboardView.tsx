@@ -132,7 +132,7 @@ export function DashboardView() {
               <span className="text-xs text-muted-foreground">Filtered by:</span>
               <span className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs font-medium">
                 {filters.statusFilter || filters.tagFilter || filters.typeFilter}
-                <button className="ml-0.5 hover:text-foreground" onClick={() => filters.clearAll()} aria-label="Clear filter">
+                <button className="ml-0.5 hover:text-foreground" onClick={() => navigate({ to: '/', search: {} })} aria-label="Clear filter">
                   <X className="h-3 w-3" />
                 </button>
               </span>
