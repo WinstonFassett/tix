@@ -30,6 +30,8 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.5.0",
+    "@winstonfassett/web-dev-mcp-gateway": "^0.1.0-alpha.0",
+    "@winstonfassett/web-dev-mcp-vite": "^0.1.0-alpha.0",
     "tailwindcss": "^4.2.2",
     "typescript": "~5.9.3",
     "vite": "^7.0.0"
