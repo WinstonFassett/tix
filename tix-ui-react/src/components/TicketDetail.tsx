@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Ticket } from '@/lib/types'
-import { STATUSES, TYPES, PRIORITIES } from '@/lib/types'
+import { TYPES } from '@/lib/types'
 import { Button, Input, Select } from './ui'
-import { StatusIcon } from './icons/StatusIcon'
-import { PriorityIcon } from './icons/PriorityIcon'
+import { StatusSelector } from './StatusSelector'
+import { PrioritySelector } from './PrioritySelector'
 import { MilkdownEditor } from './MilkdownEditor'
 import { useConfig } from '@/lib/hooks/use-tickets'
 import { useSidebar } from '@/lib/AppContext'
@@ -116,27 +116,8 @@ export function TicketDetail({ ticket, onUpdate }: TicketDetailProps) {
           />
 
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            <div className="flex items-center gap-1.5 border rounded-md px-2 h-8">
-              <StatusIcon status={ticket.status} />
-              <Select
-                className="w-auto h-7 text-sm border-none shadow-none bg-transparent px-0"
-                defaultValue={ticket.status}
-                onChange={(e) => handleFieldChange('status', e.target.value)}
-              >
-                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-1.5 border rounded-md px-2 h-8">
-              <PriorityIcon priority={ticket.priority} size={14} />
-              <Select
-                className="w-auto h-7 text-sm border-none shadow-none bg-transparent px-0"
-                defaultValue={ticket.priority}
-                onChange={(e) => handleFieldChange('priority', Number(e.target.value))}
-              >
-                {PRIORITIES.map(p => <option key={p} value={p}>P{p}</option>)}
-              </Select>
-            </div>
+            <StatusSelector status={ticket.status} onSelect={(s) => handleFieldChange('status', s)} />
+            <PrioritySelector priority={ticket.priority} onSelect={(p) => handleFieldChange('priority', p)} />
 
             <Select
               className="w-auto h-8 text-sm"

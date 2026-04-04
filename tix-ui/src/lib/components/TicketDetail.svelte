@@ -2,8 +2,8 @@
   import { onMount, onDestroy } from 'svelte'
   import type { Ticket } from '../types'
   import { Button, Input, Select } from './ui'
-  import StatusIcon from './icons/StatusIcon.svelte'
-  import PriorityIcon from './icons/PriorityIcon.svelte'
+  import StatusSelector from './StatusSelector.svelte'
+  import PrioritySelector from './PrioritySelector.svelte'
   import MilkdownEditor from './MilkdownEditor.svelte'
   import { useSidebar } from '../data/sidebar.svelte'
 
@@ -34,9 +34,7 @@
     if (filePath) navigator.clipboard.writeText(filePath)
   }
 
-  const statuses = ['open', 'in-progress', 'on-hold', 'done', 'closed']
   const types = ['task', 'bug', 'feature', 'epic']
-  const priorities = [0, 1, 2, 3, 4]
 
   // Debounced save
   let saveTimer: ReturnType<typeof setTimeout> | null = null
@@ -136,31 +134,8 @@
 
     <!-- Metadata row -->
     <div class="flex flex-wrap items-center gap-2 mb-4">
-      <div class="flex items-center gap-1.5 border rounded-md px-2 h-8">
-        <StatusIcon status={ticket.status} />
-        <Select
-          class="w-auto h-7 text-sm border-none shadow-none bg-transparent px-0"
-          value={ticket.status}
-          onchange={(e) => handleFieldChange('status', (e.target as HTMLSelectElement).value)}
-        >
-          {#each statuses as s}
-            <option value={s}>{s}</option>
-          {/each}
-        </Select>
-      </div>
-
-      <div class="flex items-center gap-1.5 border rounded-md px-2 h-8">
-        <PriorityIcon priority={ticket.priority} size={14} />
-        <Select
-          class="w-auto h-7 text-sm border-none shadow-none bg-transparent px-0"
-          value={ticket.priority}
-          onchange={(e) => handleFieldChange('priority', Number((e.target as HTMLSelectElement).value))}
-        >
-          {#each priorities as p}
-            <option value={p}>P{p}</option>
-          {/each}
-        </Select>
-      </div>
+      <StatusSelector status={ticket.status} onSelect={(s) => handleFieldChange('status', s)} />
+      <PrioritySelector priority={ticket.priority} onSelect={(p) => handleFieldChange('priority', p)} />
 
       <Select
         class="w-auto h-8 text-sm"
