@@ -21,6 +21,8 @@
     "@testing-library/svelte": "^5.3.1",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^24.12.0",
+    "@winstonfassett/web-dev-mcp-gateway": "^0.1.0-alpha.0",
+    "@winstonfassett/web-dev-mcp-vite": "^0.1.0-alpha.0",
     "jsdom": "^29.0.1",
     "svelte": "^5.53.12",
     "svelte-check": "^4.4.5",
