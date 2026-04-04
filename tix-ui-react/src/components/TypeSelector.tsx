@@ -21,13 +21,14 @@ export function TypeSelector({ type, onSelect }: TypeSelectorProps) {
       open={open}
       onOpenChange={setOpen}
       trigger={
-        <button className="h-7 inline-flex items-center gap-1.5 rounded-md bg-secondary px-2 text-sm hover:bg-accent transition-colors">
+        <button type="button" className="h-7 inline-flex items-center gap-1.5 rounded-md bg-secondary px-2 text-sm hover:bg-accent transition-colors">
           <span>{TYPE_LABELS[type] ?? type}</span>
         </button>
       }
     >
       {TYPES.map(t => (
         <button
+          type="button"
           key={t}
           className={`w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors ${t === type ? 'bg-accent/50' : ''}`}
           onClick={() => select(t)}

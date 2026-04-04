@@ -32,12 +32,19 @@ interface ViewSettingsState {
   toggleSortDir: () => void
 }
 
+// ── Create Dialog ───────────────────────────────────────────
+interface CreateDialogState {
+  showCreate: boolean
+  setShowCreate: (v: boolean) => void
+}
+
 // ── Combined Context ─────────────────────────────────────────
 interface AppContextValue {
   filters: FiltersState
   sidebar: SidebarState
   theme: ThemeState
   viewSettings: ViewSettingsState
+  createDialog: CreateDialogState
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -53,6 +60,7 @@ export function useFilters() { return useAppContext().filters }
 export function useSidebar() { return useAppContext().sidebar }
 export function useTheme() { return useAppContext().theme }
 export function useViewSettings() { return useAppContext().viewSettings }
+export function useCreateDialog() { return useAppContext().createDialog }
 
 // ── View Settings persistence ────────────────────────────────
 const VS_KEY = 'tix-view-settings'
@@ -101,6 +109,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  // Create dialog
+  const [showCreate, setShowCreate] = useState(false)
+
   // View settings
   const [vs, setVs] = useState<typeof VS_DEFAULTS>(loadVS)
   const updateVS = useCallback((partial: Partial<typeof VS_DEFAULTS>) => {
@@ -115,6 +126,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     sidebar: { open: sidebarOpen, toggle: toggleSidebar },
     theme: { dark, toggle: toggleTheme },
     viewSettings: { ...vs, update: updateVS, toggleSortDir },
+    createDialog: { showCreate, setShowCreate },
   }
 
   return <AppContext value={value}>{children}</AppContext>

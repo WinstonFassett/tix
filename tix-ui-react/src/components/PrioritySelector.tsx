@@ -24,6 +24,7 @@ export function PrioritySelector({ priority, onSelect, compact = false }: Priori
       onOpenChange={setOpen}
       trigger={
         <button
+          type="button"
           className={`h-7 inline-flex items-center gap-1.5 rounded-md ${compact ? 'px-1.5 hover:bg-accent' : 'bg-secondary px-2 hover:bg-accent'} text-sm transition-colors`}
           title={PRIORITY_LABELS[priority] ?? `P${priority}`}
         >
@@ -34,6 +35,7 @@ export function PrioritySelector({ priority, onSelect, compact = false }: Priori
     >
       {PRIORITIES.map(p => (
         <button
+          type="button"
           key={p}
           className={`w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors ${p === priority ? 'bg-accent/50' : ''}`}
           onClick={() => select(p)}

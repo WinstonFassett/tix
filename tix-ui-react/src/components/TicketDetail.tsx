@@ -51,7 +51,7 @@ export function TicketDetail({ ticket, onUpdate }: TicketDetailProps) {
       } catch {
         setSaveState('error')
       }
-    }, 500)
+    }, 1000)
   }, [onUpdate])
 
   function handleFieldChange(field: string, value: any) {

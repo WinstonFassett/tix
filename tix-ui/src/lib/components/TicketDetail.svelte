@@ -50,7 +50,7 @@
       } catch {
         saveState = 'error'
       }
-    }, 500)
+    }, 1000)
   }
 
   // Strip leading # Title from body for display (title shown in input instead)

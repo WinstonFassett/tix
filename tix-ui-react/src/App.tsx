@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect } from 'react'
-import { createRouter, createRoute, createRootRoute, RouterProvider, Outlet, useParams, useRouterState } from '@tanstack/react-router'
+import { useMemo, useEffect } from 'react'
+import { createRouter, createRoute, createRootRoute, RouterProvider, Outlet, useParams, useRouterState, useNavigate } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useTickets, useUpdateTicket, useConfig } from '@/lib/hooks/use-tickets'
-import { AppProvider, useFilters, useViewSettings, useSidebar, useTheme } from '@/lib/AppContext'
+import { AppProvider, useFilters, useViewSettings, useSidebar, useTheme, useCreateDialog } from '@/lib/AppContext'
 import { DashboardView } from '@/routes/DashboardView'
 import { TicketView } from '@/routes/TicketView'
 import { CommandPalette, type PaletteCallbacks } from '@/components/CommandPalette'
@@ -33,7 +33,7 @@ function AppLayout() {
   const viewSettings = useViewSettings()
   const sidebar = useSidebar()
   const theme = useTheme()
-  const [showCreate, setShowCreate] = useState(false)
+  const { showCreate, setShowCreate } = useCreateDialog()
 
   const routerState = useRouterState()
   const isTicketView = routerState.location.pathname.startsWith('/ticket/')
@@ -76,14 +76,18 @@ function AppLayout() {
     return counts
   }, [tickets])
 
+  const navigate = useNavigate()
+
   function toggleStatusFilter(status: string) {
     filters.setTagFilter('')
     filters.setStatusFilter(filters.statusFilter === status ? '' : status)
+    if (isTicketView) navigate({ to: '/' })
   }
 
   function toggleTagFilter(tag: string) {
     filters.setStatusFilter('')
     filters.setTagFilter(filters.tagFilter === tag ? '' : tag)
+    if (isTicketView) navigate({ to: '/' })
   }
 
   const paletteCallbacks: PaletteCallbacks = {
@@ -205,8 +209,7 @@ const ticketRoute = createRoute({
 })
 
 function DashboardViewWrapper() {
-  const [showCreate, setShowCreate] = useState(false)
-  return <DashboardView showCreate={showCreate} setShowCreate={setShowCreate} />
+  return <DashboardView />
 }
 
 const routeTree = rootRoute.addChildren([indexRoute, ticketRoute])

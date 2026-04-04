@@ -24,6 +24,7 @@ export function StatusSelector({ status, onSelect, compact = false }: StatusSele
       onOpenChange={setOpen}
       trigger={
         <button
+          type="button"
           className={`h-7 inline-flex items-center gap-1.5 rounded-md ${compact ? 'px-1.5 hover:bg-accent' : 'bg-secondary px-2 hover:bg-accent'} text-sm transition-colors`}
           title={STATUS_LABELS[status as TicketStatus] ?? status}
         >
@@ -34,6 +35,7 @@ export function StatusSelector({ status, onSelect, compact = false }: StatusSele
     >
       {STATUSES.map(s => (
         <button
+          type="button"
           key={s}
           className={`w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors ${s === status ? 'bg-accent/50' : ''}`}
           onClick={() => select(s)}

@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useTickets, useUpdateTicket, useCreateTicket } from '@/lib/hooks/use-tickets'
-import { useFilters, useViewSettings, useSidebar } from '@/lib/AppContext'
+import { useFilters, useViewSettings, useSidebar, useCreateDialog } from '@/lib/AppContext'
 import { filterTickets } from '@/lib/filter'
 import type { Ticket } from '@/lib/types'
 import { KanbanBoard } from '@/components/KanbanBoard'
@@ -13,12 +13,7 @@ import { Button, Input, Select, Dialog, Popover } from '@/components/ui'
 import { useNavigate } from '@tanstack/react-router'
 import { PanelLeft, Search, Plus, SlidersHorizontal, X, List, LayoutGrid, Loader2 } from 'lucide-react'
 
-interface DashboardViewProps {
-  showCreate: boolean
-  setShowCreate: (show: boolean) => void
-}
-
-export function DashboardView({ showCreate, setShowCreate }: DashboardViewProps) {
+export function DashboardView() {
   const navigate = useNavigate()
   const { data: tickets = [], isLoading, error, refetch } = useTickets()
   const updateMutation = useUpdateTicket()
@@ -26,6 +21,7 @@ export function DashboardView({ showCreate, setShowCreate }: DashboardViewProps)
   const filters = useFilters()
   const view = useViewSettings()
   const { toggle: toggleSidebar } = useSidebar()
+  const { showCreate, setShowCreate } = useCreateDialog()
 
   const [showDisplay, setShowDisplay] = useState(false)
   const [newTitle, setNewTitle] = useState('')
