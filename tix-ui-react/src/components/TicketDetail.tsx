@@ -6,7 +6,7 @@ import { StatusIcon } from './icons/StatusIcon'
 import { PriorityIcon } from './icons/PriorityIcon'
 import { MilkdownEditor } from './MilkdownEditor'
 import { useConfig } from '@/lib/hooks/use-tickets'
-import { useSidebar } from '@/lib/hooks/use-sidebar'
+import { useSidebar } from '@/lib/AppContext'
 import { useNavigate } from '@tanstack/react-router'
 import { PanelLeft, ChevronLeft, Copy, ExternalLink, Folder } from 'lucide-react'
 

@@ -36,10 +36,14 @@ export function CommandPalette({ tickets, callbacks, isTicketView }: CommandPale
         e.preventDefault()
         setOpen(o => !o)
       }
+      if (e.key === 'Escape' && open) {
+        e.preventDefault()
+        close()
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const close = () => { setOpen(false); setSearch('') }
 
@@ -50,6 +54,7 @@ export function CommandPalette({ tickets, callbacks, isTicketView }: CommandPale
       <div className="w-full max-w-[640px] animate-in fade-in slide-in-from-top-2" onClick={e => e.stopPropagation()}>
         <Command className="bg-popover text-popover-foreground border rounded-lg shadow-2xl overflow-hidden max-h-[70vh] flex flex-col" shouldFilter={true}>
           <Command.Input
+            autoFocus
             value={search}
             onValueChange={setSearch}
             placeholder="Type a command or search..."

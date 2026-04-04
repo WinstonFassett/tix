@@ -2,10 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { createRouter, createRoute, createRootRoute, RouterProvider, Outlet, useParams, useRouterState } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useTickets, useUpdateTicket, useConfig } from '@/lib/hooks/use-tickets'
-import { useFilters } from '@/lib/hooks/use-filters'
-import { useViewSettings } from '@/lib/hooks/use-view-settings'
-import { useSidebar } from '@/lib/hooks/use-sidebar'
-import { useTheme } from '@/lib/hooks/use-theme'
+import { AppProvider, useFilters, useViewSettings, useSidebar, useTheme } from '@/lib/AppContext'
 import { DashboardView } from '@/routes/DashboardView'
 import { TicketView } from '@/routes/TicketView'
 import { CommandPalette, type PaletteCallbacks } from '@/components/CommandPalette'
@@ -191,7 +188,6 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   component: function Index() {
-    // We need access to the parent's state, so we'll use a wrapper
     return <DashboardViewWrapper />
   },
 })
@@ -205,13 +201,9 @@ const ticketRoute = createRoute({
   },
 })
 
-// DashboardViewWrapper bridges parent state to child
-// This is a simplification - in production you'd use route context or a store
 function DashboardViewWrapper() {
-  const filters = useFilters()
-  const viewSettings = useViewSettings()
   const [showCreate, setShowCreate] = useState(false)
-  return <DashboardView showCreate={showCreate} setShowCreate={setShowCreate} filters={filters} viewSettings={viewSettings} />
+  return <DashboardView showCreate={showCreate} setShowCreate={setShowCreate} />
 }
 
 const routeTree = rootRoute.addChildren([indexRoute, ticketRoute])
@@ -227,7 +219,9 @@ declare module '@tanstack/react-router' {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <AppProvider>
+        <RouterProvider router={router} />
+      </AppProvider>
     </QueryClientProvider>
   )
 }

@@ -1,8 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useTickets, useUpdateTicket, useCreateTicket } from '@/lib/hooks/use-tickets'
-import { useViewSettings } from '@/lib/hooks/use-view-settings'
-import { useFilters } from '@/lib/hooks/use-filters'
-import { useSidebar } from '@/lib/hooks/use-sidebar'
+import { useFilters, useViewSettings, useSidebar } from '@/lib/AppContext'
 import { filterTickets } from '@/lib/filter'
 import type { Ticket } from '@/lib/types'
 import { KanbanBoard } from '@/components/KanbanBoard'
@@ -18,15 +16,15 @@ import { PanelLeft, Search, Plus, SlidersHorizontal, X, List, LayoutGrid, Loader
 interface DashboardViewProps {
   showCreate: boolean
   setShowCreate: (show: boolean) => void
-  filters: ReturnType<typeof useFilters>
-  viewSettings: ReturnType<typeof useViewSettings>
 }
 
-export function DashboardView({ showCreate, setShowCreate, filters, viewSettings: view }: DashboardViewProps) {
+export function DashboardView({ showCreate, setShowCreate }: DashboardViewProps) {
   const navigate = useNavigate()
   const { data: tickets = [], isLoading, error, refetch } = useTickets()
   const updateMutation = useUpdateTicket()
   const createMutation = useCreateTicket()
+  const filters = useFilters()
+  const view = useViewSettings()
   const { toggle: toggleSidebar } = useSidebar()
 
   const [showDisplay, setShowDisplay] = useState(false)
