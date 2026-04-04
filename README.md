@@ -8,6 +8,10 @@ A Markdown ticket tracker in a shell script.
 - Dependency tracking, kanban views, auto-archiving
 - Versioned with your code in Git
 
+## Tix Web UI
+
+![List view](tix-ui/screenshots/list-dark.png)
+
 ## How It Works
 
 Each ticket is a Markdown file named like `Fix The Login Bug (a1b2).md`. The 4-character hex ID is embedded in the filename.

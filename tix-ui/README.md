@@ -1,6 +1,10 @@
 # tix-ui
 
-Web dashboard for browsing tix tickets. Kanban board and table views, dark mode, live reload during development.
+Web dashboard for browsing tix tickets. Svelte 5 frontend with table and kanban views, dark mode, and live reload.
+
+![List view](screenshots/list-dark.png)
+
+![Detail view](screenshots/detail-dark.png)
 
 ## Quick Start
 
