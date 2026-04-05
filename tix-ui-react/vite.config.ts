@@ -9,7 +9,7 @@ export default defineConfig(async ({ command }) => {
 
   if (command === 'serve' || process.env.NODE_ENV !== 'production') {
     try {
-      // @ts-expect-error - optional peer dependency
+      // optional peer dependency
       const { webDevMcp } = await import('@winstonfassett/web-dev-mcp-vite')
       plugins.push(webDevMcp() as Plugin)
     } catch {}
