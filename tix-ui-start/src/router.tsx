@@ -7,6 +7,7 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,
+    defaultNotFoundComponent: () => <div className="flex items-center justify-center h-full text-muted-foreground">Not found</div>,
   })
 
   return router
