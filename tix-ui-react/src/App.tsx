@@ -19,12 +19,16 @@ const queryClient = new QueryClient({
   },
 })
 
-// HMR: refetch tickets on file changes
+// Live reload: refetch tickets on file changes
+// Works with both Vite HMR (dev) and WebSocket injection (hono serve)
 if (import.meta.hot) {
   import.meta.hot.on('tickets-update', () => {
     queryClient.invalidateQueries({ queryKey: ['tickets'] })
   })
 }
+window.addEventListener('tickets-update', () => {
+  queryClient.invalidateQueries({ queryKey: ['tickets'] })
+})
 
 function AppLayout() {
   const { data: tickets = [] } = useTickets()
