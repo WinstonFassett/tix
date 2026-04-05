@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tix</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #fafafa; --surface: #fff; --border: #e0e0e0;
+    --text: #1a1a1a; --text2: #666; --accent: #2563eb; --accent-hover: #1d4ed8;
+    --green: #16a34a; --yellow: #ca8a04; --red: #dc2626; --gray: #9ca3af;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px; color: var(--text); background: var(--bg);
+  }
+  body { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { color: var(--text2); font-size: 13px; margin-bottom: 20px; }
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .status-open { background: var(--accent); }
+  .status-in-progress { background: var(--yellow); }
+  .status-done { background: var(--green); }
+  .status-closed { background: var(--gray); }
+  .status-on-hold { background: var(--red); }
+  .priority-0 { color: var(--red); font-weight: 600; }
+  .priority-1 { color: #ea580c; font-weight: 600; }
+  .priority-2 { color: var(--yellow); }
+  .priority-3 { color: var(--text2); }
+  .priority-4 { color: var(--gray); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  th { text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text2); background: #f5f5f5; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f9fafb; }
+  .id-col { font-family: monospace; font-size: 12px; color: var(--text2); }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 3px; background: #e5e7eb; color: var(--text2); margin-right: 4px; }
+
+  .form-section { margin-top: 28px; }
+  .form-section h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .form-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .form-row input, .form-row select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
+  .form-row input[name="title"] { flex: 1; min-width: 200px; }
+  button { padding: 6px 14px; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; background: var(--accent); color: #fff; }
+  button:hover { background: var(--accent-hover); }
+  .ws-status { font-size: 11px; padding: 3px 8px; border-radius: 10px; }
+  .ws-connected { background: #dcfce7; color: var(--green); }
+  .ws-disconnected { background: #fee2e2; color: var(--red); }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .header-left h1 { margin-bottom: 2px; }
+  .count { color: var(--text2); font-size: 12px; margin-left: 8px; }
+
+  .filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filter-btn { padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 12px; color: var(--text2); cursor: pointer; }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <h1>tix <span class="count" id="count"></span></h1>
+      <div class="subtitle" id="path"></div>
+    </div>
+    <span class="ws-status ws-disconnected" id="ws-status">disconnected</span>
+  </div>
+
+  <div class="filters" id="filters">
+    <button class="filter-btn active" data-status="all">All</button>
+    <button class="filter-btn" data-status="open">Open</button>
+    <button class="filter-btn" data-status="in-progress">In Progress</button>
+    <button class="filter-btn" data-status="on-hold">On Hold</button>
+    <button class="filter-btn" data-status="done">Done</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Title</th><th>Status</th><th>Type</th><th>Pri</th><th>Tags</th></tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div class="form-section">
+    <h2>Create Ticket</h2>
+    <form id="create-form">
+      <div class="form-row">
+        <input name="title" placeholder="Title" required>
+        <select name="type"><option value="task">task</option><option value="bug">bug</option><option value="feature">feature</option><option value="epic">epic</option></select>
+        <select name="priority"><option value="2">P2</option><option value="0">P0</option><option value="1">P1</option><option value="3">P3</option><option value="4">P4</option></select>
+        <button type="submit">Create</button>
+      </div>
+    </form>
+    <div id="form-msg" style="font-size:12px;margin-top:4px;"></div>
+  </div>
+
+<script>
+const PRIORITY_LABELS = ['P0','P1','P2','P3','P4'];
+let allTickets = [];
+let activeFilter = 'all';
+
+async function loadTickets() {
+  try {
+    const res = await fetch('/api/tickets');
+    allTickets = await res.json();
+    renderTickets();
+  } catch(e) { console.error('Failed to load tickets', e); }
+}
+
+function renderTickets() {
+  const filtered = activeFilter === 'all' ? allTickets : allTickets.filter(t => t.status === activeFilter);
+  document.getElementById('count').textContent = `(${filtered.length}` + (filtered.length !== allTickets.length ? ` of ${allTickets.length}` : '') + ')';
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = filtered.map(t => {
+    const sc = (t.status || 'open').replace(/\s+/g, '-');
+    const pri = t.priority ?? 2;
+    const tags = (t.tags || []).map(tag => `<span class="tag">${esc(tag)}</span>`).join('');
+    return `<tr>
+      <td class="id-col">${esc(t.id)}</td>
+      <td>${esc(t.title)}</td>
+      <td><span class="status-dot status-${sc}"></span>${esc(t.status)}</td>
+      <td>${esc(t.ticket_type || '')}</td>
+      <td class="priority-${pri}">${PRIORITY_LABELS[pri] || ''}</td>
+      <td>${tags}</td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Filters
+document.getElementById('filters').addEventListener('click', e => {
+  if (!e.target.matches('.filter-btn')) return;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  activeFilter = e.target.dataset.status;
+  renderTickets();
+});
+
+// Create form
+document.getElementById('create-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const msg = document.getElementById('form-msg');
+  try {
+    const res = await fetch('/api/tickets', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({title: fd.get('title'), type: fd.get('type'), priority: parseInt(fd.get('priority'))})
+    });
+    if (res.ok) {
+      e.target.reset();
+      msg.style.color = 'green';
+      msg.textContent = 'Created!';
+      setTimeout(() => msg.textContent = '', 2000);
+      loadTickets();
+    } else {
+      const err = await res.text();
+      msg.style.color = 'red';
+      msg.textContent = 'Error: ' + err;
+    }
+  } catch(err) { msg.style.color = 'red'; msg.textContent = err.message; }
+});
+
+// WebSocket
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const ws = new WebSocket(`${proto}://${location.host}/ws`);
+  const el = document.getElementById('ws-status');
+  ws.onopen = () => { el.textContent = 'live'; el.className = 'ws-status ws-connected'; };
+  ws.onclose = () => { el.textContent = 'disconnected'; el.className = 'ws-status ws-disconnected'; setTimeout(connectWS, 2000); };
+  ws.onmessage = (e) => { if (e.data === 'reload') loadTickets(); };
+}
+
+loadTickets();
+connectWS();
+</script>
+</body>
+</html>

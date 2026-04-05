@@ -1,0 +1,16 @@
+{
+  "name": "tix-ui-hono",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "tix-ui": "./bin/cli.ts"
+  },
+  "scripts": {
+    "start": "bun run serve.ts",
+    "build": "cd ../tix-ui-react && bun run build && cp -r dist ../tix-ui-hono/dist"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "hono": "^4"
+  }
+}
