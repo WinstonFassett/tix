@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Resolve symlinks to find the real script location
+SOURCE="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE" ]]; do
+    DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+UI_DIR="$(dirname "$SCRIPT_DIR")"
+OUTPUT="$UI_DIR/.output/server/index.mjs"
+
+if [[ ! -f "$OUTPUT" ]]; then
+    echo "tix-ui not built. Run: cd $UI_DIR && npm run build"
+    exit 1
+fi
+
+# Default TIX_WORKSPACE to cwd if not set
+export TIX_WORKSPACE="${TIX_WORKSPACE:-$(pwd)}"
+
+# Check for tickets dir
+if [[ ! -d "$TIX_WORKSPACE/tickets" ]]; then
+    echo "No tickets/ directory found at $TIX_WORKSPACE"
+    echo "Run from a directory with tickets/ or set TIX_WORKSPACE"
+    exit 1
+fi
+
+exec node "$OUTPUT" "$@"
