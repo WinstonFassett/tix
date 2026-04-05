@@ -1,55 +1,57 @@
 {
   "name": "tix-ui",
-  "version": "0.1.0",
+  "private": true,
   "type": "module",
-  "bin": {
-    "tix-ui": "./bin/cli.js"
+  "imports": {
+    "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite dev --port 3000",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.59.1",
-    "@sveltejs/vite-plugin-svelte": "^7.0.0",
-    "@tailwindcss/vite": "^4.2.2",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/svelte": "^5.3.1",
-    "@tsconfig/svelte": "^5.0.8",
-    "@types/node": "^24.12.0",
-    "@winstonfassett/web-dev-mcp-gateway": "^0.1.0-alpha.0",
-    "@winstonfassett/web-dev-mcp-vite": "^0.1.0-alpha.0",
-    "jsdom": "^29.0.1",
-    "svelte": "^5.53.12",
-    "svelte-check": "^4.4.5",
-    "tailwindcss": "^4.2.2",
-    "typescript": "~5.9.3",
-    "vite": "^8.0.1",
-    "vitest": "^4.1.2"
+    "test": "vitest run"
   },
   "dependencies": {
     "@milkdown/crepe": "^7.20.0",
-    "bits-ui": "^2.16.5",
+    "@milkdown/react": "^7.20.0",
+    "@tailwindcss/vite": "^4.1.18",
+    "@tanstack/react-devtools": "latest",
+    "@tanstack/react-query": "^5.96.2",
+    "@tanstack/react-router": "latest",
+    "@tanstack/react-router-devtools": "latest",
+    "@tanstack/react-router-ssr-query": "latest",
+    "@tanstack/react-start": "latest",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/router-plugin": "^1.132.0",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "gray-matter": "^4.0.3",
-    "svelte-command-palette": "^2.0.2",
+    "lucide-react": "^0.545.0",
+    "nitro": "npm:nitro-nightly@latest",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "tailwind-merge": "^3.5.0",
-    "tailwind-variants": "^3.2.2"
+    "tailwindcss": "^4.1.18"
   },
-  "peerDependencies": {
-    "@winstonfassett/web-dev-mcp-gateway": ">=0.1.0",
-    "@winstonfassett/web-dev-mcp-vite": ">=0.1.0"
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.16",
+    "@tanstack/devtools-vite": "latest",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.1.4",
+    "jsdom": "^28.1.0",
+    "typescript": "^5.7.2",
+    "vite": "^7.3.1",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.0.5"
   },
-  "peerDependenciesMeta": {
-    "@winstonfassett/web-dev-mcp-gateway": {
-      "optional": true
-    },
-    "@winstonfassett/web-dev-mcp-vite": {
-      "optional": true
-    }
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "lightningcss"
+    ]
   }
 }

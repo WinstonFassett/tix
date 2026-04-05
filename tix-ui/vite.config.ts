@@ -1,30 +1,46 @@
-import { defineConfig, type Plugin } from 'vite'
-import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { defineConfig } from 'vite'
+import { devtools } from '@tanstack/devtools-vite'
+import tsconfigPaths from 'vite-tsconfig-paths'
+
+import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+
+import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { ticketsPlugin } from './src/lib/vite-tickets-plugin'
+import { nitro } from 'nitro/vite'
+import fs from 'node:fs'
+import path from 'node:path'
+import type { Plugin, ViteDevServer } from 'vite'
 
-export default defineConfig(async ({ command }) => {
-  const plugins = [svelte(), tailwindcss(), ticketsPlugin()]
+function resolveTicketsDir(): string {
+  return process.env.TICKETS_DIR
+    || path.join(process.env.TIX_WORKSPACE || process.env.TICKET_WORKSPACE || process.cwd(), 'tickets')
+}
 
-  if (command === 'serve' || process.env.NODE_ENV !== 'production') {
-    try {
-      const { webDevMcp } = await import('@winstonfassett/web-dev-mcp-vite')
-      plugins.push(webDevMcp() as Plugin)
-    } catch {}
-  }
-
+function ticketsWatcherPlugin(): Plugin {
   return {
-    plugins,
-    resolve: {
-      preserveSymlinks: true,
-    },
-    server: {
-      port: 5175,
-      open: true,
-    },
-    test: {
-      environment: 'jsdom',
-      sequence: { concurrent: false },
+    name: 'tix-tickets-watcher',
+    configureServer(server: ViteDevServer) {
+      const ticketsDir = resolveTicketsDir()
+      if (fs.existsSync(ticketsDir)) {
+        const watcher = fs.watch(ticketsDir, { recursive: true }, () => {
+          server.ws.send({ type: 'custom', event: 'tickets-update', data: {} })
+        })
+        server.httpServer?.on('close', () => watcher.close())
+      }
     },
   }
+}
+
+const config = defineConfig({
+  plugins: [
+    devtools(),
+    nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+    tsconfigPaths({ projects: ['./tsconfig.json'] }),
+    tailwindcss(),
+    tanstackStart(),
+    viteReact(),
+    ticketsWatcherPlugin(),
+  ],
 })
+
+export default config
