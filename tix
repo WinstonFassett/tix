@@ -287,7 +287,7 @@ cmd_create() {
     ensure_dir
 
     local title="" description="" design="" acceptance="" folder=""
-    local priority=2 issue_type="task" assignee="" external_ref="" parent="" tags=""
+    local priority=2 issue_type="task" assignee="" external_ref="" parent="" tags="" deps=""
 
     # No default assignee — use -a/--assignee to set one
 
@@ -334,10 +334,29 @@ cmd_create() {
                 tags="$2"
                 validate_input "$tags" "general" || return 1
                 shift 2 ;;
+            --tag)
+                validate_input "$2" "general" || return 1
+                if [[ -n "$tags" ]]; then
+                    tags="$tags,$2"
+                else
+                    tags="$2"
+                fi
+                shift 2 ;;
+            --dep)
+                validate_input "$2" "id" || return 1
+                if [[ -n "$deps" ]]; then
+                    deps="$deps,$2"
+                else
+                    deps="$2"
+                fi
+                shift 2 ;;
             -f|--folder)
                 folder="$2"
                 validate_input "$folder" "path" || return 1
                 shift 2 ;;
+            -*)
+                echo "Error: Unknown option: $1" >&2
+                return 1 ;;
             *)
                 title="$1"
                 validate_input "$title" "general" || return 1
@@ -367,7 +386,11 @@ cmd_create() {
         echo "id: $id"
         printf "title: \"%s\"\n" "$title"
         echo "status: open"
-        echo "deps: []"
+        if [[ -n "$deps" ]]; then
+            echo "deps: [${deps//,/, }]"
+        else
+            echo "deps: []"
+        fi
         echo "links: []"
         echo "created: $now"
         echo "type: $issue_type"
@@ -2337,7 +2360,7 @@ Commands:
   create <title> [--description <desc>] [--design <design>] [--acceptance <ac>]
                  [--priority <p>] [--type <type>] [--assignee <assignee>]
                  [--external-ref <ref>] [--parent <id>] [--tags <tag1,tag2>]
-                 [-f|--folder <folder>]
+                 [--tag <tag>]... [--dep <id>]... [-f|--folder <folder>]
     Create a new ticket. Title is required. Description, design, and acceptance
     criteria can be provided. Acceptance criteria can be separated by ';'.
     Use --folder to place in a subfolder (e.g., backlog, inbox). Auto-creates folder.

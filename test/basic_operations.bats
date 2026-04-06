@@ -45,6 +45,55 @@ load test_helper
     [ "$type" = "bug" ]
 }
 
+@test "tix create with --tag flag adds tags" {
+    local ticket_id
+    ticket_id=$(create_test_ticket "Tagged ticket" --tag foo --tag bar)
+
+    local tags
+    tags=$(get_ticket_field "$ticket_id" "tags")
+    [[ "$tags" =~ "foo" ]]
+    [[ "$tags" =~ "bar" ]]
+}
+
+@test "tix create with --dep flag adds dependencies" {
+    local dep_id
+    dep_id=$(create_test_ticket "Dependency ticket")
+
+    local ticket_id
+    ticket_id=$(create_test_ticket "Dependent ticket" --dep "$dep_id")
+
+    local deps
+    deps=$(get_ticket_field "$ticket_id" "deps")
+    [[ "$deps" =~ "$dep_id" ]]
+}
+
+@test "tix create with --dep and --tag preserves title" {
+    local dep_id
+    dep_id=$(create_test_ticket "Dep ticket")
+
+    local ticket_id
+    ticket_id=$(create_test_ticket "My Real Title" --tag mytag --dep "$dep_id")
+
+    local file
+    file=$(find tickets -name "*(${ticket_id}).md" | head -1)
+    [[ "$file" =~ "My Real Title" ]]
+}
+
+@test "tix create rejects unknown flags" {
+    run ./tix create "Test" --bogus-flag value
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "Unknown option" ]]
+}
+
+@test "tix create with colon in title preserves title" {
+    local ticket_id
+    ticket_id=$(create_test_ticket "Hot Voice Channel: Eliminate cold start")
+
+    local file
+    file=$(find tickets -name "*(${ticket_id}).md" | head -1)
+    [[ "$file" =~ "Hot Voice Channel" ]]
+}
+
 @test "tix ls lists tickets" {
     create_test_ticket "First ticket"
     create_test_ticket "Second ticket"
