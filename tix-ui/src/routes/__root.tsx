@@ -45,6 +45,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: `try{if(localStorage.getItem('tix-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}` }} />
       </head>
       <body className="font-sans antialiased">
         {children}

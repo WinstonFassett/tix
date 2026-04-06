@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 import type { GroupBy, SortBy, SortDir, ViewMode } from './types'
 
 // ── Filters ──────────────────────────────────────────────────
@@ -100,13 +100,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  // Theme
-  const [dark, setDark] = useState(() => {
-    if (typeof window === 'undefined') return false
+  // Theme — state starts false (matches SSR), synced from localStorage in useEffect
+  const [dark, setDark] = useState(false)
+  useEffect(() => {
     const saved = localStorage.getItem('tix-theme') === 'dark'
-    if (saved) document.documentElement.classList.add('dark')
-    return saved
-  })
+    setDark(saved)
+    document.documentElement.classList.toggle('dark', saved)
+  }, [])
   const toggleTheme = useCallback(() => {
     setDark(prev => {
       const next = !prev
