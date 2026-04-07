@@ -23,6 +23,7 @@
     "@tanstack/react-start": "latest",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/router-plugin": "^1.132.0",
+    "@winstonfassett/web-dev-mcp-gateway": "^0.1.0-alpha.0",
     "chokidar": "^5.0.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -58,5 +59,11 @@
       "esbuild",
       "lightningcss"
     ]
+  },
+  "overrides": {
+    "emblor": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
   }
 }
