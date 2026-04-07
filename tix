@@ -428,9 +428,9 @@ cmd_create() {
 }
 
 # Valid statuses
-VALID_STATUSES="open in-progress on-hold done closed"
+VALID_STATUSES="open in-progress review on-hold done closed"
 TERMINAL_STATUSES="done closed"
-ACTIVE_STATUSES="open in-progress on-hold"
+ACTIVE_STATUSES="open in-progress review on-hold"
 
 # Normalize status aliases to canonical values
 # Returns canonical status on stdout, returns 1 if unrecognized
@@ -439,6 +439,7 @@ normalize_status() {
     case "$s" in
         open) echo "open" ;;
         in-progress|in_progress) echo "in-progress" ;;
+        review|in-review|in_review|pr|pending-review) echo "review" ;;
         on-hold|on_hold|paused|hold) echo "on-hold" ;;
         done|completed|finished|resolved) echo "done" ;;
         closed|cancelled|canceled|wontfix) echo "closed" ;;
@@ -2386,7 +2387,7 @@ Commands:
     Example: tix show w-abcd
 
   status <id> <status>
-    Update a ticket's status. Valid: open, in-progress, on-hold, done, closed.
+    Update a ticket's status. Valid: open, in-progress, review, on-hold, done, closed.
     Auto-archives if status is terminal (done/closed).
     Example: tix status w-abcd in-progress
 

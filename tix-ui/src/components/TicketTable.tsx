@@ -78,7 +78,7 @@ export function TicketTable({ grouped, groupBy, onUpdate }: TicketTableProps) {
   const orderedGroups = useMemo(() => {
     const keys = Object.keys(grouped)
     if (groupBy === 'status') {
-      const order = ['open', 'in-progress', 'on-hold', 'done', 'closed']
+      const order = ['open', 'in-progress', 'review', 'on-hold', 'done', 'closed']
       return order.filter(k => keys.includes(k))
     }
     if (groupBy === 'priority') {

@@ -124,7 +124,7 @@ function AppLayout() {
 
   // Status counts
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { open: 0, 'in-progress': 0, 'on-hold': 0, done: 0, closed: 0 }
+    const counts: Record<string, number> = { open: 0, 'in-progress': 0, review: 0, 'on-hold': 0, done: 0, closed: 0 }
     for (const t of tickets) {
       if (t.status in counts) counts[t.status]!++
     }

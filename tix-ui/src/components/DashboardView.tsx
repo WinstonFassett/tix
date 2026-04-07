@@ -62,7 +62,7 @@ export function DashboardView() {
 
   const filteredByStatus = useMemo(() => {
     const groups: Record<string, Ticket[]> = {
-      'open': [], 'in-progress': [], 'on-hold': [], 'done': [], 'closed': [],
+      'open': [], 'in-progress': [], 'review': [], 'on-hold': [], 'done': [], 'closed': [],
     }
     for (const t of sorted) {
       const key = t.status in groups ? t.status : 'open'

@@ -6,6 +6,7 @@ interface StatusIconProps {
 const config: Record<string, { color: string; progress: number; dashed?: boolean; check?: boolean; pause?: boolean }> = {
   'open':        { color: '#f97316', progress: 0, dashed: false },
   'in-progress': { color: '#facc15', progress: 0.33 },
+  'review':      { color: '#22d3ee', progress: 0.66 },
   'on-hold':     { color: '#94a3b8', progress: 0, pause: true },
   'done':        { color: '#8b5cf6', progress: 1, check: true },
   'closed':      { color: '#94a3b8', progress: 0, dashed: true },
