@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getTickets, getConfig, updateTicket, createTicket } from '../server/tickets'
+import { getTickets, getConfig, updateTicket, createTicket, deleteTicket } from '../server/tickets'
 
 export function useTickets() {
   return useQuery({
@@ -22,6 +22,17 @@ export function useUpdateTicket() {
     mutationFn: async ({ ticketId, updates }: { ticketId: string; updates: Record<string, unknown> }) => {
       return updateTicket({ data: { ticketId, updates } })
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] })
+    },
+  })
+}
+
+export function useDeleteTicket() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (ticketId: string) => deleteTicket({ data: { ticketId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
     },

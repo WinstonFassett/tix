@@ -172,3 +172,14 @@ export const updateTicket = createServerFn({ method: 'POST' })
 
     return { ok: true }
   })
+
+export const deleteTicket = createServerFn({ method: 'POST' })
+  .inputValidator((data: { ticketId: string }) => data)
+  .handler(async ({ data }) => {
+    const ticketsDir = resolveTicketsDir()
+    const entries = fs.readdirSync(ticketsDir).filter(f => f.endsWith('.md'))
+    const filename = entries.find(f => f.includes(`(${data.ticketId})`))
+    if (!filename) throw new Error(`Ticket ${data.ticketId} not found`)
+    fs.unlinkSync(path.join(ticketsDir, filename))
+    return { ok: true }
+  })
