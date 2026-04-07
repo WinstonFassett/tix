@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useTickets, useUpdateTicket, useCreateTicket } from '#/lib/hooks/use-tickets'
-import { useFilters, useViewSettings, useSidebar, useCreateDialog } from '#/lib/AppContext'
+import { useFilters, useViewSettings, useSidebar, useCreateDialog, usePalette } from '#/lib/AppContext'
 import { filterTickets } from '#/lib/filter'
 import type { Ticket } from '#/lib/types'
 import { KanbanBoard } from '#/components/KanbanBoard'
@@ -22,6 +22,8 @@ export function DashboardView() {
   const view = useViewSettings()
   const { toggle: toggleSidebar } = useSidebar()
   const { showCreate, setShowCreate } = useCreateDialog()
+  const { setOpen: setPaletteOpen } = usePalette()
+  const isMac = typeof navigator !== 'undefined' && navigator?.platform?.includes('Mac')
 
   const [showDisplay, setShowDisplay] = useState(false)
   const [newTitle, setNewTitle] = useState('')
@@ -116,13 +118,27 @@ export function DashboardView() {
           </button>
           <span className="text-sm font-medium">All Issues</span>
         </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8" title="Search (Cmd+K)">
-            <Search className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowCreate(true)}>
-            <Plus className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setPaletteOpen(true)}
+            className="h-7 inline-flex items-center gap-2 rounded-md border border-border bg-background hover:bg-accent transition-colors px-2 text-xs text-muted-foreground"
+            title="Open command palette"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span>Search</span>
+            <kbd className="ml-1 text-[10px] font-mono bg-muted text-muted-foreground rounded border border-border px-1 py-px">{isMac ? '\u2318K' : 'Ctrl+K'}</kbd>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="h-7 inline-flex items-center gap-2 rounded-md border border-border bg-background hover:bg-accent transition-colors px-2 text-xs"
+            title="Create a new ticket"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>New</span>
+            <kbd className="ml-1 text-[10px] font-mono bg-muted text-muted-foreground rounded border border-border px-1 py-px">C</kbd>
+          </button>
         </div>
       </div>
 
@@ -244,7 +260,7 @@ export function DashboardView() {
               <Button type="button" variant="outline" size="sm" onClick={() => setShowCreate(false)}>Cancel</Button>
               <Button type="submit" size="sm" disabled={!newTitle.trim() || createMutation.isPending}>
                 {createMutation.isPending ? 'Creating...' : 'Create issue'}
-                <kbd className="ml-1.5 text-[10px] opacity-60 font-mono">{typeof navigator !== 'undefined' && navigator?.platform?.includes('Mac') ? '\u2318' : 'Ctrl'}\u21B5</kbd>
+                <kbd className="ml-1.5 text-[10px] opacity-60 font-mono">{(typeof navigator !== 'undefined' && navigator?.platform?.includes('Mac') ? '\u2318' : 'Ctrl') + '\u21B5'}</kbd>
               </Button>
             </div>
           </div>

@@ -4,6 +4,7 @@ import type { Ticket } from '#/lib/types'
 import { STATUSES, STATUS_LABELS, PRIORITIES, PRIORITY_FULL_LABELS, TYPES, TYPE_LABELS, PRIORITY_LABELS } from '#/lib/types'
 import type { GroupBy, SortBy, ViewMode } from '#/lib/types'
 import { useNavigate } from '@tanstack/react-router'
+import { usePalette } from '#/lib/AppContext'
 import { StatusIcon } from './icons/StatusIcon'
 import { TypeIcon } from './icons/TypeIcon'
 import { Badge } from './ui'
@@ -29,7 +30,7 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ tickets, callbacks, isTicketView }: CommandPaletteProps) {
-  const [open, setOpen] = useState(false)
+  const { open, setOpen } = usePalette()
   const [search, setSearch] = useState('')
   const navigate = useNavigate()
 
@@ -37,7 +38,7 @@ export function CommandPalette({ tickets, callbacks, isTicketView }: CommandPale
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        setOpen(o => !o)
+        setOpen(!open)
       }
       if (e.key === 'Escape' && open) {
         e.preventDefault()
