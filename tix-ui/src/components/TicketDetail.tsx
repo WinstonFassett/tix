@@ -216,15 +216,22 @@ export function TicketDetail({ ticket, onUpdate, pager }: TicketDetailProps) {
       {/* Detail content */}
       <div className="flex-1 overflow-auto">
         <div className="max-w-3xl mx-auto py-6 px-6">
-          <input
-            type="text"
-            className="w-full bg-transparent text-2xl font-bold rounded-md outline-none placeholder:text-muted-foreground mb-4 -mx-2 px-2 py-1 cursor-text border border-transparent hover:border-border hover:bg-accent/30 focus:border-ring focus:bg-background focus:ring-2 focus:ring-ring/30 transition-colors"
-            defaultValue={ticket.title}
-            onChange={(e) => handleFieldChange('title', e.target.value)}
-            placeholder="Ticket title"
-            title="Click to edit title"
-            aria-label="Ticket title (editable)"
-          />
+          <div className="flex items-start gap-3 mb-4">
+            <input
+              type="text"
+              className="flex-1 min-w-0 bg-transparent text-2xl font-bold rounded-md outline-none placeholder:text-muted-foreground -mx-2 px-2 py-1 cursor-text border border-transparent hover:border-border hover:bg-accent/30 focus:border-ring focus:bg-background focus:ring-2 focus:ring-ring/30 transition-colors"
+              defaultValue={ticket.title}
+              onChange={(e) => handleFieldChange('title', e.target.value)}
+              placeholder="Ticket title"
+              title="Click to edit title"
+              aria-label="Ticket title (editable)"
+            />
+            {ticket.created && (
+              <span className="shrink-0 text-xs text-muted-foreground mt-3" title={new Date(ticket.created).toLocaleString()}>
+                Created {new Date(ticket.created).toLocaleDateString()}
+              </span>
+            )}
+          </div>
 
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <StatusSelector status={ticket.status} onSelect={(s) => handleFieldChange('status', s)} />
@@ -237,11 +244,6 @@ export function TicketDetail({ ticket, onUpdate, pager }: TicketDetailProps) {
               onChange={(e) => handleFieldChange('assignee', e.target.value)}
               placeholder="Assignee"
             />
-            {ticket.created && (
-              <span className="ml-auto text-xs text-muted-foreground" title={new Date(ticket.created).toLocaleString()}>
-                Created {new Date(ticket.created).toLocaleDateString()}
-              </span>
-            )}
           </div>
 
           <div className="flex items-start gap-2 mb-4">
