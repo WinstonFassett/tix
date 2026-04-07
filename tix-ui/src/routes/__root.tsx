@@ -1,7 +1,7 @@
 import { useMemo, useEffect } from 'react'
 import { HeadContent, Outlet, Scripts, createRootRoute, useNavigate, useRouterState } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AppProvider, useFilters, useViewSettings, useSidebar, useTheme, useCreateDialog } from '#/lib/AppContext'
+import { AppProvider, useFilters, useViewSettings, useSidebar, useTheme, useCreateDialog, usePalette } from '#/lib/AppContext'
 import { useTickets, useUpdateTicket, useConfig } from '#/lib/hooks/use-tickets'
 import { CommandPalette, type PaletteCallbacks } from '#/components/CommandPalette'
 import { StatusIcon } from '#/components/icons/StatusIcon'
@@ -88,7 +88,34 @@ function AppLayout() {
   const viewSettings = useViewSettings()
   const sidebar = useSidebar()
   const theme = useTheme()
-  const { setShowCreate } = useCreateDialog()
+  const { setShowCreate, showCreate } = useCreateDialog()
+  const { setOpen: setPaletteOpen, open: paletteOpen } = usePalette()
+
+  // Linear-inspired global keyboard shortcuts. Single-key shortcuts only fire
+  // when no input/textarea is focused and no modal/palette is already open.
+  useEffect(() => {
+    function isTypingTarget(el: EventTarget | null): boolean {
+      if (!(el instanceof HTMLElement)) return false
+      const tag = el.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+      if (el.isContentEditable) return true
+      return false
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (showCreate || paletteOpen) return
+      if (isTypingTarget(e.target)) return
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault()
+        setShowCreate(true)
+      } else if (e.key === '/') {
+        e.preventDefault()
+        setPaletteOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showCreate, paletteOpen, setShowCreate, setPaletteOpen])
 
   const routerState = useRouterState()
   const isTicketView = routerState.location.pathname.startsWith('/ticket/')
