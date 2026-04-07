@@ -15,6 +15,10 @@ interface TicketTableProps {
   grouped: Record<string, Ticket[]>
   groupBy: GroupBy
   onUpdate?: (ticketId: string, updates: Record<string, any>) => void
+  /** When provided, called instead of navigating to the full route on row click. */
+  onRowClick?: (ticketId: string) => void
+  /** Currently selected row id (highlighted when shown in side panel). */
+  selectedId?: string | null
 }
 
 const priorityLabels: Record<string, string> = {
@@ -52,8 +56,13 @@ function saveCollapsed(state: Record<string, string[]>) {
   try { localStorage.setItem(COLLAPSE_STORAGE_KEY, JSON.stringify(state)) } catch { /* ignore */ }
 }
 
-export function TicketTable({ grouped, groupBy, onUpdate }: TicketTableProps) {
+export function TicketTable({ grouped, groupBy, onUpdate, onRowClick, selectedId }: TicketTableProps) {
   const navigate = useNavigate()
+
+  const openTicket = (id: string) => {
+    if (onRowClick) onRowClick(id)
+    else navigate({ to: '/ticket/$ticketId', params: { ticketId: id } })
+  }
 
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set())
 
@@ -120,11 +129,11 @@ export function TicketTable({ grouped, groupBy, onUpdate }: TicketTableProps) {
           {!collapsed.has(groupKey) && (grouped[groupKey] || []).map(ticket => (
             <div
               key={ticket.id}
-              className="w-full flex items-center justify-start h-11 px-6 hover:bg-accent/50 cursor-pointer transition-colors"
-              onClick={() => navigate({ to: '/ticket/$ticketId', params: { ticketId: ticket.id } })}
+              className={`w-full flex items-center justify-start h-11 px-6 cursor-pointer transition-colors ${selectedId === ticket.id ? 'bg-accent' : 'hover:bg-accent/50'}`}
+              onClick={() => openTicket(ticket.id)}
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter') navigate({ to: '/ticket/$ticketId', params: { ticketId: ticket.id } }) }}
+              onKeyDown={(e) => { if (e.key === 'Enter') openTicket(ticket.id) }}
             >
               <span className="w-8 shrink-0 flex items-center justify-center" onClick={e => e.stopPropagation()}>
                 <PrioritySelector
