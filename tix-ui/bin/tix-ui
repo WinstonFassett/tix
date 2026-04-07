@@ -26,4 +26,20 @@ if [[ ! -d "$TIX_WORKSPACE/tickets" ]]; then
     exit 1
 fi
 
+# Find an available port starting from PORT or 3000
+PORT="${PORT:-3000}"
+while lsof -ti "tcp:$PORT" >/dev/null 2>&1; do
+    PORT=$((PORT + 1))
+done
+export PORT
+
+echo "tix-ui → http://localhost:$PORT  (workspace: $TIX_WORKSPACE)"
+
+# Auto-open browser
+if command -v open >/dev/null 2>&1; then
+    open "http://localhost:$PORT" &
+elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "http://localhost:$PORT" &
+fi
+
 exec node "$OUTPUT" "$@"
