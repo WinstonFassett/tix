@@ -28,6 +28,24 @@ function findTicketFile(id: string): string {
   return path.join(ticketsDir, found)
 }
 
+test.describe('numeric-looking id (regression c278)', () => {
+  // A 4-char hex id like "0e48" is parsed by js-yaml as the number 0
+  // unless it's quoted in the frontmatter. Previously the tix CLI wrote
+  // ids unquoted, so the id survived on disk but the UI saw it as number
+  // 0 and then dropped it through `data.id || ''`, leaving clicks routing
+  // to /ticket/ with an empty id. Now ids are written quoted; this test
+  // guards that a ticket with such an id is loadable end-to-end.
+  test('ticket with id 0e48 renders in list and detail view', async ({ page }) => {
+    await page.goto('/')
+    // Title should appear in the list.
+    await expect(page.getByText('Queue concurrent audio requests').first()).toBeVisible({ timeout: 15_000 })
+    // Direct navigation to the detail URL should not 404.
+    await page.goto('/ticket/0e48')
+    await expect(page.getByText('Queue concurrent audio requests').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('Not found')).toHaveCount(0)
+  })
+})
+
 test.describe('live updates', () => {
   let testTicketId: string
 
