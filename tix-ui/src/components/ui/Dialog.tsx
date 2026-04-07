@@ -25,10 +25,10 @@ export function Dialog({ open, onClose, className, children }: DialogProps) {
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm anim-overlay-in"
       onClick={(e) => { if (e.target === overlayRef.current) onClose() }}
     >
-      <div className={cn('relative bg-popover text-popover-foreground border rounded-lg shadow-lg w-full sm:max-w-lg p-6', className)}>
+      <div className={cn('relative bg-popover text-popover-foreground border rounded-lg shadow-lg w-full sm:max-w-lg p-6 anim-dialog-in', className)}>
         {children}
       </div>
     </div>
