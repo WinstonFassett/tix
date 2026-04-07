@@ -23,20 +23,24 @@ fi
 echo "Building tix-ui..."
 (cd "$UI_DIR" && npm run build --silent)
 
+mkdir -p "$UI_DIR/bin"
+
 # Create launcher script
 cat > "$UI_DIR/bin/tix-ui" << 'LAUNCHER'
 #!/usr/bin/env bash
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve symlinks to find the real script location
+SOURCE="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE" ]]; do
+    DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
 UI_DIR="$(dirname "$SCRIPT_DIR")"
 OUTPUT="$UI_DIR/.output/server/index.mjs"
 
-if [[ ! -f "$OUTPUT" ]]; then
-    echo "tix-ui not built. Run: cd $UI_DIR && npm run build"
-    exit 1
-fi
-
-# Default TIX_WORKSPACE to cwd if not set
+# Default TIX_WORKSPACE to cwd if not set (dev server needs this too)
 export TIX_WORKSPACE="${TIX_WORKSPACE:-$(pwd)}"
 
 # Check for tickets dir
@@ -46,11 +50,49 @@ if [[ ! -d "$TIX_WORKSPACE/tickets" ]]; then
     exit 1
 fi
 
+# Find an available port starting from PORT or 3000
+PORT="${PORT:-3000}"
+while lsof -ti "tcp:$PORT" >/dev/null 2>&1; do
+    PORT=$((PORT + 1))
+done
+export PORT
+
+# Dev mode: run vite dev server from source dir for HMR
+if [[ "${TIX_UI_DEV:-}" == "1" ]]; then
+    echo "tix-ui (dev) → http://localhost:$PORT  (workspace: $TIX_WORKSPACE)"
+    if command -v open >/dev/null 2>&1; then
+        open "http://localhost:$PORT" &
+    elif command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "http://localhost:$PORT" &
+    fi
+    cd "$UI_DIR"
+    if command -v pnpm >/dev/null 2>&1; then
+        exec pnpm dev --port "$PORT" "$@"
+    elif command -v bun >/dev/null 2>&1; then
+        exec bun run dev --port "$PORT" "$@"
+    else
+        exec npm run dev -- --port "$PORT" "$@"
+    fi
+fi
+
+if [[ ! -f "$OUTPUT" ]]; then
+    echo "tix-ui not built. Run: cd $UI_DIR && npm run build"
+    exit 1
+fi
+
+echo "tix-ui → http://localhost:$PORT  (workspace: $TIX_WORKSPACE)"
+
+# Auto-open browser
+if command -v open >/dev/null 2>&1; then
+    open "http://localhost:$PORT" &
+elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "http://localhost:$PORT" &
+fi
+
 exec node "$OUTPUT" "$@"
 LAUNCHER
 
 chmod +x "$UI_DIR/bin/tix-ui"
-mkdir -p "$UI_DIR/bin"
 
 # Symlink
 INSTALL_DIR="/usr/local/bin"
