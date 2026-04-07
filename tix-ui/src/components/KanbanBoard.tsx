@@ -5,9 +5,11 @@ import { StatusIcon } from './icons/StatusIcon'
 
 interface KanbanBoardProps {
   byStatus: Record<string, Ticket[]>
+  onCardClick?: (id: string) => void
+  selectedId?: string | null
 }
 
-export function KanbanBoard({ byStatus }: KanbanBoardProps) {
+export function KanbanBoard({ byStatus, onCardClick, selectedId }: KanbanBoardProps) {
   return (
     <div className="flex h-full gap-3 px-3 py-3 overflow-x-auto">
       {STATUSES.map(col => (
@@ -24,7 +26,7 @@ export function KanbanBoard({ byStatus }: KanbanBoardProps) {
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-muted/30 rounded-b-md">
             {(byStatus[col] || []).map(ticket => (
-              <TicketCard key={ticket.id} ticket={ticket} />
+              <TicketCard key={ticket.id} ticket={ticket} onClick={onCardClick} selected={selectedId === ticket.id} />
             ))}
             {!byStatus[col]?.length && (
               <div className="text-center text-xs text-muted-foreground py-8">No tickets</div>

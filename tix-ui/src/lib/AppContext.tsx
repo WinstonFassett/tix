@@ -46,6 +46,14 @@ interface PaletteState {
   setOpen: (v: boolean) => void
 }
 
+// ── Detail Panel ────────────────────────────────────────────
+interface DetailPanelState {
+  selectedId: string | null
+  setSelectedId: (id: string | null) => void
+  width: number
+  setWidth: (w: number) => void
+}
+
 // ── Combined Context ─────────────────────────────────────────
 interface AppContextValue {
   filters: FiltersState
@@ -54,6 +62,7 @@ interface AppContextValue {
   viewSettings: ViewSettingsState
   createDialog: CreateDialogState
   palette: PaletteState
+  detailPanel: DetailPanelState
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -71,6 +80,7 @@ export function useTheme() { return useAppContext().theme }
 export function useViewSettings() { return useAppContext().viewSettings }
 export function useCreateDialog() { return useAppContext().createDialog }
 export function usePalette() { return useAppContext().palette }
+export function useDetailPanel() { return useAppContext().detailPanel }
 
 // ── View Settings persistence ────────────────────────────────
 const VS_KEY = 'tix-view-settings'
@@ -130,6 +140,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Command palette
   const [paletteOpen, setPaletteOpen] = useState(false)
 
+  // Detail panel
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [panelWidth, setPanelWidthState] = useState<number>(() => {
+    if (typeof window === 'undefined') return 520
+    const saved = Number(localStorage.getItem('tix-detail-panel-width'))
+    return Number.isFinite(saved) && saved > 280 ? saved : 520
+  })
+  const setPanelWidth = useCallback((w: number) => {
+    const clamped = Math.max(320, Math.min(900, w))
+    setPanelWidthState(clamped)
+    try { localStorage.setItem('tix-detail-panel-width', String(clamped)) } catch {}
+  }, [])
+
   // View settings
   const [vs, setVs] = useState<typeof VS_DEFAULTS>(() => {
     if (typeof window === 'undefined') return VS_DEFAULTS
@@ -149,6 +172,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     viewSettings: { ...vs, update: updateVS, toggleSortDir },
     createDialog: { showCreate, setShowCreate },
     palette: { open: paletteOpen, setOpen: setPaletteOpen },
+    detailPanel: { selectedId, setSelectedId, width: panelWidth, setWidth: setPanelWidth },
   }
 
   return <AppContext value={value}>{children}</AppContext>

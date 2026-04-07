@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useTickets, useUpdateTicket, useCreateTicket } from '#/lib/hooks/use-tickets'
-import { useFilters, useViewSettings, useSidebar, useCreateDialog, usePalette } from '#/lib/AppContext'
+import { useFilters, useViewSettings, useSidebar, useCreateDialog, usePalette, useDetailPanel } from '#/lib/AppContext'
+import { TicketDetailPanel } from '#/components/TicketDetailPanel'
 import { filterTickets } from '#/lib/filter'
 import type { Ticket } from '#/lib/types'
 import { KanbanBoard } from '#/components/KanbanBoard'
@@ -24,7 +25,34 @@ export function DashboardView() {
   const { toggle: toggleSidebar } = useSidebar()
   const { showCreate, setShowCreate } = useCreateDialog()
   const { setOpen: setPaletteOpen } = usePalette()
+  const { selectedId, setSelectedId } = useDetailPanel()
   const isMac = typeof navigator !== 'undefined' && navigator?.platform?.includes('Mac')
+
+  // Mobile navigation: at narrow viewports route to /ticket/[id] instead of
+  // opening the side panel — the back button stays meaningful (7ee2).
+  const [isNarrow, setIsNarrow] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 800px)').matches,
+  )
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(max-width: 800px)')
+    const handler = (e: MediaQueryListEvent) => setIsNarrow(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  const handleRowClick = useCallback((id: string) => {
+    if (isNarrow) {
+      navigate({ to: '/ticket/$ticketId', params: { ticketId: id } })
+    } else {
+      setSelectedId(id)
+    }
+  }, [isNarrow, navigate, setSelectedId])
+
+  const selectedTicket = useMemo(
+    () => (selectedId ? tickets.find(t => t.id === selectedId) || null : null),
+    [tickets, selectedId],
+  )
 
   const [showDisplay, setShowDisplay] = useState(false)
   const [newTitle, setNewTitle] = useState('')
@@ -303,30 +331,35 @@ export function DashboardView() {
         </form>
       </Dialog>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto">
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
-          </div>
-        ) : error ? (
-          <div className="mx-6 mt-4 rounded-md border border-destructive bg-destructive/10 p-4 flex items-center gap-3">
-            <span className="text-sm text-destructive">Failed to load tickets: {error.message}</span>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button>
-          </div>
-        ) : tickets.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <p className="text-lg">No tickets yet</p>
-            <p className="text-sm mt-1">Press <kbd className="px-1.5 py-0.5 rounded border bg-muted text-xs font-mono">+</kbd> to create one</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <p>No matching tickets</p>
-          </div>
-        ) : view.viewMode === 'list' ? (
-          <TicketTable grouped={grouped} groupBy={view.groupBy} onUpdate={handleUpdate} />
-        ) : (
-          <KanbanBoard byStatus={filteredByStatus} />
+      {/* Content + optional detail panel */}
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <div className="flex-1 overflow-auto min-w-0">
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
+            </div>
+          ) : error ? (
+            <div className="mx-6 mt-4 rounded-md border border-destructive bg-destructive/10 p-4 flex items-center gap-3">
+              <span className="text-sm text-destructive">Failed to load tickets: {error.message}</span>
+              <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button>
+            </div>
+          ) : tickets.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <p className="text-lg">No tickets yet</p>
+              <p className="text-sm mt-1">Press <kbd className="px-1.5 py-0.5 rounded border bg-muted text-xs font-mono">+</kbd> to create one</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <p>No matching tickets</p>
+            </div>
+          ) : view.viewMode === 'list' ? (
+            <TicketTable grouped={grouped} groupBy={view.groupBy} onUpdate={handleUpdate} onRowClick={handleRowClick} selectedId={selectedId} />
+          ) : (
+            <KanbanBoard byStatus={filteredByStatus} onCardClick={handleRowClick} selectedId={selectedId} />
+          )}
+        </div>
+        {selectedTicket && !isNarrow && (
+          <TicketDetailPanel key={selectedTicket.id} ticket={selectedTicket} />
         )}
       </div>
     </>

@@ -6,14 +6,20 @@ import { useNavigate } from '@tanstack/react-router'
 
 interface TicketCardProps {
   ticket: Ticket
+  onClick?: (id: string) => void
+  selected?: boolean
 }
 
-export function TicketCard({ ticket }: TicketCardProps) {
+export function TicketCard({ ticket, onClick, selected }: TicketCardProps) {
   const navigate = useNavigate()
+  const open = () => {
+    if (onClick) onClick(ticket.id)
+    else navigate({ to: '/ticket/$ticketId', params: { ticketId: ticket.id } })
+  }
 
   return (
-    <div className="block cursor-pointer group" onClick={() => navigate({ to: '/ticket/$ticketId', params: { ticketId: ticket.id } })}>
-      <Card className="p-3 transition-colors hover:bg-accent/50">
+    <div className="block cursor-pointer group" onClick={open}>
+      <Card className={`p-3 transition-colors ${selected ? 'bg-accent ring-1 ring-ring' : 'hover:bg-accent/50'}`}>
         <div className="flex items-center gap-1.5 mb-1">
           <PriorityIcon priority={ticket.priority} size={14} />
           <span className="font-mono text-xs text-muted-foreground">{ticket.id}</span>
