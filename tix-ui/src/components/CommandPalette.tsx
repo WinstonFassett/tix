@@ -54,8 +54,8 @@ export function CommandPalette({ tickets, callbacks, isTicketView }: CommandPale
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-start justify-center pt-[10vh] px-4" onClick={close}>
-      <div className="w-full max-w-[640px] animate-in fade-in slide-in-from-top-2" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-start justify-center pt-[10vh] px-4 anim-overlay-in" onClick={close}>
+      <div className="w-full max-w-[640px] anim-palette-in" onClick={e => e.stopPropagation()}>
         <Command loop className="bg-popover text-popover-foreground border rounded-lg shadow-2xl overflow-hidden max-h-[70vh] flex flex-col" shouldFilter={true}>
           <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted-foreground"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
