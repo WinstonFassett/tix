@@ -1,14 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { Ticket } from '#/lib/types'
 import { Button, Input } from './ui'
 import { StatusSelector } from './StatusSelector'
 import { PrioritySelector } from './PrioritySelector'
 import { TypeSelector } from './TypeSelector'
 import { MilkdownEditor } from './MilkdownEditor'
-import { useConfig } from '#/lib/hooks/use-tickets'
+import { useConfig, useTickets } from '#/lib/hooks/use-tickets'
 import { useSidebar } from '#/lib/AppContext'
 import { useNavigate } from '@tanstack/react-router'
 import { PanelLeft, ChevronLeft, Copy, ExternalLink, Folder, ChevronRight } from 'lucide-react'
+import { TagInput, type Tag as EmblorTag } from 'emblor'
 
 interface PagerState {
   index: number
@@ -90,10 +91,34 @@ export function TicketDetail({ ticket, onUpdate, pager }: TicketDetailProps) {
     save({ [field]: value })
   }
 
-  function handleTagsChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const tags = e.target.value.split(',').map(t => t.trim()).filter(Boolean)
-    save({ tags })
-  }
+  // Tag input state (emblor uses Tag[] internally, we persist string[]).
+  const { data: allTickets = [] } = useTickets()
+  const [activeTagIndex, setActiveTagIndex] = useState<number | null>(null)
+  const [tagObjs, setTagObjs] = useState<EmblorTag[]>(() =>
+    ticket.tags.map(t => ({ id: t, text: t })),
+  )
+  // Re-sync when the ticket changes (pager navigation).
+  useEffect(() => {
+    setTagObjs(ticket.tags.map(t => ({ id: t, text: t })))
+  }, [ticket.id, ticket.tags])
+
+  const tagSuggestions = useMemo<EmblorTag[]>(() => {
+    const seen = new Set<string>()
+    for (const t of allTickets) for (const tag of t.tags) seen.add(tag)
+    return Array.from(seen).map(t => ({ id: t, text: t }))
+  }, [allTickets])
+
+  const handleSetTags = useCallback((updater: React.SetStateAction<EmblorTag[]>) => {
+    setTagObjs(prev => {
+      const next = typeof updater === 'function' ? (updater as (p: EmblorTag[]) => EmblorTag[])(prev) : updater
+      save({ tags: next.map(t => t.text) })
+      return next
+    })
+  }, [save])
+
+  const handleTagClick = useCallback((tag: EmblorTag) => {
+    navigate({ to: '/', search: { tag: tag.text } })
+  }, [navigate])
 
   function copyPath() {
     if (filePath) navigator.clipboard.writeText(filePath)
@@ -202,15 +227,31 @@ export function TicketDetail({ ticket, onUpdate, pager }: TicketDetailProps) {
             )}
           </div>
 
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs text-muted-foreground shrink-0">Tags</span>
-            <Input
-              type="text"
-              className="flex-1 h-8 text-sm"
-              defaultValue={ticket.tags.join(', ')}
-              onChange={handleTagsChange}
-              placeholder="tag1, tag2, ..."
-            />
+          <div className="flex items-start gap-2 mb-4">
+            <span className="text-xs text-muted-foreground shrink-0 mt-2">Tags</span>
+            <div className="flex-1 min-w-0">
+              <TagInput
+                tags={tagObjs}
+                setTags={handleSetTags}
+                activeTagIndex={activeTagIndex}
+                setActiveTagIndex={setActiveTagIndex}
+                placeholder="Add a tag..."
+                enableAutocomplete
+                autocompleteOptions={tagSuggestions}
+                inlineTags
+                addOnPaste
+                onTagClick={handleTagClick}
+                styleClasses={{
+                  inlineTagsContainer:
+                    'border border-input rounded-md p-1 gap-1 flex-wrap bg-background min-h-8 focus-within:ring-1 focus-within:ring-ring',
+                  input: 'h-6 border-0 shadow-none text-sm bg-transparent focus-visible:ring-0 flex-1 min-w-24',
+                  tag: {
+                    body: 'h-6 px-2 text-xs bg-secondary text-secondary-foreground rounded-md cursor-pointer hover:bg-secondary/80',
+                    closeButton: 'text-muted-foreground hover:text-foreground',
+                  },
+                }}
+              />
+            </div>
           </div>
 
           {ticket.deps.length > 0 && (
