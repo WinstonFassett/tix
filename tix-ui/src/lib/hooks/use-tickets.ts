@@ -5,6 +5,14 @@ export function useTickets() {
   return useQuery({
     queryKey: ['tickets'],
     queryFn: () => getTickets(),
+    // Live updates: poll every 2s so that external changes to ticket files
+    // (via `tix` CLI, editor saves, etc.) appear without a hard refresh.
+    // In vite dev mode the HMR `tickets-update` event (see __root.tsx)
+    // provides an additional instant-invalidate path; polling is the
+    // production fallback since the Nitro server has no HMR. Regression
+    // guarded by e2e/live-update.spec.ts (ticket d0ca).
+    refetchInterval: 2000,
+    refetchIntervalInBackground: false,
   })
 }
 
