@@ -8,18 +8,26 @@ import { MilkdownEditor } from './MilkdownEditor'
 import { useConfig } from '#/lib/hooks/use-tickets'
 import { useSidebar } from '#/lib/AppContext'
 import { useNavigate } from '@tanstack/react-router'
-import { PanelLeft, ChevronLeft, Copy, ExternalLink, Folder } from 'lucide-react'
+import { PanelLeft, ChevronLeft, Copy, ExternalLink, Folder, ChevronRight } from 'lucide-react'
+
+interface PagerState {
+  index: number
+  total: number
+  onPrev?: () => void
+  onNext?: () => void
+}
 
 interface TicketDetailProps {
   ticket: Ticket
   onUpdate: (updates: Record<string, any>) => Promise<void> | void
+  pager?: PagerState
 }
 
 function stripLeadingTitle(body: string): string {
   return body.replace(/^\s*#\s+[^\n]*\n*/, '')
 }
 
-export function TicketDetail({ ticket, onUpdate }: TicketDetailProps) {
+export function TicketDetail({ ticket, onUpdate, pager }: TicketDetailProps) {
   const navigate = useNavigate()
   const { toggle: toggleSidebar } = useSidebar()
   const { data: config } = useConfig()
@@ -38,6 +46,30 @@ export function TicketDetail({ ticket, onUpdate }: TicketDetailProps) {
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
     }
   }, [])
+
+  // Keyboard shortcuts for the ticket pager: J / K (vim-ish) and
+  // Alt+ArrowLeft / Alt+ArrowRight. Plain arrow keys are left alone so
+  // the user can still navigate text inputs and the editor.
+  useEffect(() => {
+    if (!pager) return
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName
+      const inEditable = tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable
+      if (inEditable) return
+      if (e.key === 'j' || e.key === 'J' || (e.altKey && e.key === 'ArrowRight')) {
+        if (pager.onNext) { e.preventDefault(); pager.onNext() }
+      } else if (e.key === 'k' || e.key === 'K' || (e.altKey && e.key === 'ArrowLeft')) {
+        if (pager.onPrev) { e.preventDefault(); pager.onPrev() }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [pager])
+
+  function copyTicketId() {
+    if (navigator.clipboard) navigator.clipboard.writeText(ticket.id)
+  }
 
   const save = useCallback((updates: Record<string, any>) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
@@ -82,11 +114,48 @@ export function TicketDetail({ ticket, onUpdate }: TicketDetailProps) {
           <ChevronLeft className="h-4 w-4" />
           Back
         </Button>
-        <div className="flex items-center gap-2 ml-3">
-          <span className="font-mono text-xs text-muted-foreground">{ticket.id}</span>
-          {saveState === 'saving' && <span className="text-xs text-muted-foreground">Saving...</span>}
-          {saveState === 'saved' && <span className="text-xs text-muted-foreground">Saved</span>}
-          {saveState === 'error' && <span className="text-xs text-destructive">Save failed</span>}
+        <div className="flex items-center gap-1 ml-3">
+          {pager && pager.total > 1 ? (
+            <div className="inline-flex items-center rounded-md border h-7">
+              <button
+                className="h-7 w-7 inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-30 disabled:hover:bg-transparent rounded-l-md"
+                onClick={pager.onPrev}
+                disabled={!pager.onPrev}
+                title="Previous ticket (K or Alt+←)"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <button
+                className="h-7 px-2 font-mono text-xs text-muted-foreground hover:text-foreground hover:bg-accent border-x"
+                onClick={copyTicketId}
+                title="Click to copy ticket ID"
+              >
+                {ticket.id}
+              </button>
+              <button
+                className="h-7 w-7 inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-30 disabled:hover:bg-transparent rounded-r-md"
+                onClick={pager.onNext}
+                disabled={!pager.onNext}
+                title="Next ticket (J or Alt+→)"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              className="font-mono text-xs text-muted-foreground hover:text-foreground px-1"
+              onClick={copyTicketId}
+              title="Click to copy ticket ID"
+            >
+              {ticket.id}
+            </button>
+          )}
+          {pager && pager.total > 1 && pager.index >= 0 && (
+            <span className="text-xs text-muted-foreground ml-1">{pager.index + 1} of {pager.total}</span>
+          )}
+          {saveState === 'saving' && <span className="text-xs text-muted-foreground ml-2">Saving...</span>}
+          {saveState === 'saved' && <span className="text-xs text-muted-foreground ml-2">Saved</span>}
+          {saveState === 'error' && <span className="text-xs text-destructive ml-2">Save failed</span>}
         </div>
         {filePath && (
           <div className="flex items-center gap-1 ml-auto">
