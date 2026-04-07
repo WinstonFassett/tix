@@ -2253,46 +2253,52 @@ cmd_add_ac() {
     file=$(ticket_path "$1") || return 1
     shift
     local new_ac="$*"
-
-    # Sanitize new_ac for awk: remove newlines and escape single quotes
-    local new_ac_safe
-    new_ac_safe=$(echo "$new_ac" | tr -s '\\n' ' ' | sed "s/'/'\\\''/g" | sed 's/ *$//')
+    # Strip any embedded newlines (ACs are single-line markdown checkboxes)
+    # and trailing whitespace. Pass the value to awk via -v verbatim — awk's
+    # -v handles the value safely without shell-quote escaping.
+    local new_ac_safe="${new_ac//$'\n'/ }"
+    new_ac_safe="${new_ac_safe//$'\r'/ }"
+    # Trim trailing spaces
+    while [[ "$new_ac_safe" == *" " ]]; do new_ac_safe="${new_ac_safe% }"; done
 
     # Find AC section and append, or create section if missing
     local temp_file
     temp_file=$(mktemp) || { echo "Error: Failed to create temporary file" >&2; return 1; }
     awk -v new_ac="$new_ac_safe" '
-    BEGIN { in_ac=0; found_ac=0; added=0; last_was_blank=0 }
-    
+    BEGIN { in_ac=0; found_ac=0; added=0 }
+
+    # Start of the AC section
     /^## Acceptance Criteria/ {
         found_ac=1
         in_ac=1
         print
         next
     }
-    
-    /^## / && in_ac && !added {
-        # End of AC section, insert before next heading
-        print "- [ ] " new_ac
-        added=1
-        in_ac=0 # Stop processing ACs
-        print # Print the current heading
+
+    # A new heading while inside the AC section: insert pending AC just
+    # before it, then leave the section.
+    in_ac && /^## / {
+        if (!added) {
+            print "- [ ] " new_ac
+            added=1
+        }
+        in_ac=0
+        print
         next
     }
-    
-    # If in AC section and not a blank line or a new heading, print
-    in_ac && NF > 0 && !/^## / { print }
-    # Handle blank lines after ACs to ensure proper formatting
-    in_ac && NF == 0 { last_was_blank=1; print; next } # Preserve blank lines
-    
-    # If outside AC section, or after ACs were added, just print
-    !in_ac { print }
-    
+
+    # Inside the AC section: just pass lines through.
+    { print }
+
     END {
-        # If AC section not found at all, append it
         if (!found_ac) {
+            # No AC section anywhere — append a new one.
             print ""
             print "## Acceptance Criteria"
+            print "- [ ] " new_ac
+        } else if (!added) {
+            # AC section was the last section in the file — append the new
+            # AC at the end. (Previous implementation silently dropped it.)
             print "- [ ] " new_ac
         }
     }' "$file" > "$temp_file" && mv "$temp_file" "$file" || { rm -f "$temp_file"; return 1; }
