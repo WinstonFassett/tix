@@ -130,11 +130,9 @@ export function TicketTable({ grouped, groupBy, onUpdate, onRowClick, selectedId
             <div
               key={ticket.id}
               data-ticket-row={ticket.id}
-              className={`w-full flex items-center justify-start h-11 px-6 cursor-pointer transition-colors ${selectedId === ticket.id ? 'bg-accent' : 'hover:bg-accent/50'}`}
+              className={`w-full flex items-center justify-start h-11 px-6 cursor-pointer transition-colors outline-none focus:outline-none ${selectedId === ticket.id ? 'bg-accent' : 'hover:bg-accent/50'}`}
               onClick={() => openTicket(ticket.id)}
               role="button"
-              tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter') openTicket(ticket.id) }}
             >
               <span className="w-8 shrink-0 flex items-center justify-center" onClick={e => e.stopPropagation()}>
                 <PrioritySelector

@@ -88,48 +88,6 @@ export function DashboardView() {
     })
   }, [filtered, view.sortBy, view.sortDir])
 
-  // Keyboard navigation through the list view: arrow up/down and j/k step
-  // through `sorted` and update the panel selection. First press selects
-  // the first row when nothing is selected. Skipped while typing in
-  // inputs/editor or when modifier keys are held. Disabled on board view
-  // and at narrow viewports (9805).
-  useEffect(() => {
-    if (isNarrow) return
-    if (view.viewMode !== 'list') return
-    function isTyping(el: EventTarget | null): boolean {
-      if (!(el instanceof HTMLElement)) return false
-      const tag = el.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
-      if (el.isContentEditable) return true
-      return false
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.metaKey || e.ctrlKey || e.altKey) return
-      if (isTyping(e.target)) return
-      const isDown = e.key === 'ArrowDown' || e.key === 'j' || e.key === 'J'
-      const isUp = e.key === 'ArrowUp' || e.key === 'k' || e.key === 'K'
-      if (!isDown && !isUp) return
-      if (sorted.length === 0) return
-      e.preventDefault()
-      const currentIdx = selectedId ? sorted.findIndex(t => t.id === selectedId) : -1
-      let nextIdx: number
-      if (currentIdx === -1) {
-        nextIdx = isDown ? 0 : sorted.length - 1
-      } else {
-        nextIdx = isDown ? (currentIdx + 1) % sorted.length : (currentIdx - 1 + sorted.length) % sorted.length
-      }
-      const nextId = sorted[nextIdx]!.id
-      setSelectedId(nextId)
-      // Scroll the row into view on next paint.
-      requestAnimationFrame(() => {
-        const el = document.querySelector(`[data-ticket-row="${nextId}"]`) as HTMLElement | null
-        if (el) el.scrollIntoView({ block: 'nearest' })
-      })
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [isNarrow, view.viewMode, sorted, selectedId, setSelectedId])
-
   const grouped = useMemo(() => {
     if (view.groupBy === 'none') return { '': sorted }
     const groups: Record<string, Ticket[]> = {}
@@ -151,6 +109,75 @@ export function DashboardView() {
     }
     return groups
   }, [sorted])
+
+  // Flat visible order matching what TicketTable renders: groups walked in
+  // canonical order (status / priority / insertion), tickets within each
+  // group in their existing sort. Used for arrow-key navigation so the next
+  // selection matches what the user actually sees on screen, not the raw
+  // sort order (9805).
+  const flatVisibleOrder = useMemo<Ticket[]>(() => {
+    const keys = Object.keys(grouped)
+    let orderedKeys: string[]
+    if (view.groupBy === 'status') {
+      const order = ['open', 'in-progress', 'review', 'on-hold', 'done', 'closed']
+      orderedKeys = order.filter(k => keys.includes(k))
+    } else if (view.groupBy === 'priority') {
+      orderedKeys = ['0', '1', '2', '3', '4'].filter(k => keys.includes(k))
+    } else {
+      orderedKeys = keys.slice().sort()
+    }
+    const out: Ticket[] = []
+    for (const k of orderedKeys) for (const t of grouped[k] || []) out.push(t)
+    return out
+  }, [grouped, view.groupBy])
+
+  // Keyboard navigation through the list view: arrow up/down and j/k step
+  // through the visible flat order and update the panel selection. First
+  // press selects the first row when nothing is selected. Skipped while
+  // typing or with modifiers, and disabled on board view / narrow
+  // viewports (9805).
+  useEffect(() => {
+    if (isNarrow) return
+    if (view.viewMode !== 'list') return
+    function isTyping(el: EventTarget | null): boolean {
+      if (!(el instanceof HTMLElement)) return false
+      const tag = el.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+      if (el.isContentEditable) return true
+      return false
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (isTyping(e.target)) return
+      const isDown = e.key === 'ArrowDown' || e.key === 'j' || e.key === 'J'
+      const isUp = e.key === 'ArrowUp' || e.key === 'k' || e.key === 'K'
+      if (!isDown && !isUp) return
+      const list = flatVisibleOrder
+      if (list.length === 0) return
+      e.preventDefault()
+      const currentIdx = selectedId ? list.findIndex(t => t.id === selectedId) : -1
+      let nextIdx: number
+      if (currentIdx === -1) {
+        nextIdx = isDown ? 0 : list.length - 1
+      } else {
+        nextIdx = isDown ? (currentIdx + 1) % list.length : (currentIdx - 1 + list.length) % list.length
+      }
+      const nextId = list[nextIdx]!.id
+      setSelectedId(nextId)
+      // Drop the residual focus ring left behind by the previous click —
+      // selection is communicated by selectedId / row background, not by
+      // browser focus.
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur()
+      }
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-ticket-row="${nextId}"]`) as HTMLElement | null
+        if (el) el.scrollIntoView({ block: 'nearest' })
+      })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isNarrow, view.viewMode, flatVisibleOrder, selectedId, setSelectedId])
 
   const isDisplayChanged = view.groupBy !== 'status' || view.sortBy !== 'priority' || view.sortDir !== 'asc'
 
