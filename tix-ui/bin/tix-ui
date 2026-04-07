@@ -11,12 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
 UI_DIR="$(dirname "$SCRIPT_DIR")"
 OUTPUT="$UI_DIR/.output/server/index.mjs"
 
-if [[ ! -f "$OUTPUT" ]]; then
-    echo "tix-ui not built. Run: cd $UI_DIR && npm run build"
-    exit 1
-fi
-
-# Default TIX_WORKSPACE to cwd if not set
+# Default TIX_WORKSPACE to cwd if not set (dev server needs this too)
 export TIX_WORKSPACE="${TIX_WORKSPACE:-$(pwd)}"
 
 # Check for tickets dir
@@ -32,6 +27,29 @@ while lsof -ti "tcp:$PORT" >/dev/null 2>&1; do
     PORT=$((PORT + 1))
 done
 export PORT
+
+# Dev mode: run vite dev server from source dir for HMR
+if [[ "${TIX_UI_DEV:-}" == "1" ]]; then
+    echo "tix-ui (dev) → http://localhost:$PORT  (workspace: $TIX_WORKSPACE)"
+    if command -v open >/dev/null 2>&1; then
+        open "http://localhost:$PORT" &
+    elif command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "http://localhost:$PORT" &
+    fi
+    cd "$UI_DIR"
+    if command -v pnpm >/dev/null 2>&1; then
+        exec pnpm dev --port "$PORT" "$@"
+    elif command -v bun >/dev/null 2>&1; then
+        exec bun run dev --port "$PORT" "$@"
+    else
+        exec npm run dev -- --port "$PORT" "$@"
+    fi
+fi
+
+if [[ ! -f "$OUTPUT" ]]; then
+    echo "tix-ui not built. Run: cd $UI_DIR && npm run build"
+    exit 1
+fi
 
 echo "tix-ui → http://localhost:$PORT  (workspace: $TIX_WORKSPACE)"
 
