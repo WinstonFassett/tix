@@ -28,14 +28,16 @@ while lsof -ti "tcp:$PORT" >/dev/null 2>&1; do
 done
 export PORT
 
-# Wait for the server to actually be listening on $PORT, then open the
-# browser. Polls bash's /dev/tcp instead of sleeping for a fixed guess —
-# that way the browser only fires when the page will actually load (e0b6).
-# Runs in the background so we can kick off the server in the foreground.
+# Wait for the server to actually respond on $PORT, then open the
+# browser. Uses curl so we check real HTTP readiness (not just TCP
+# listen) and don't care whether vite binds to IPv4 or IPv6 — curl
+# follows whatever localhost resolves to (e0b6). Runs in the background
+# so we can kick off the server in the foreground.
 wait_then_open() {
     local url="http://localhost:$PORT"
     local tries=0
-    while ! (exec 3<>/dev/tcp/127.0.0.1/"$PORT") 2>/dev/null; do
+    # Any HTTP response (200, 404, 500, …) proves the server is alive.
+    while ! curl -sS -o /dev/null --max-time 1 "$url" 2>/dev/null; do
         tries=$((tries + 1))
         if [[ $tries -gt 600 ]]; then  # ~60s total
             echo "tix-ui: server did not start within 60s, skipping auto-open" >&2
@@ -43,7 +45,6 @@ wait_then_open() {
         fi
         sleep 0.1
     done
-    exec 3>&-  # close the probe connection
     if command -v open >/dev/null 2>&1; then
         open "$url"
     elif command -v xdg-open >/dev/null 2>&1; then
