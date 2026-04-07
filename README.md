@@ -10,6 +10,8 @@ A Markdown ticket tracker in a shell script.
 
 ## Tix Web UI
 
+![List view](tix-ui/screenshots/list-dark.png)
+
 A local React + TanStack Start dashboard for browsing, editing, and creating
 tickets. Lives in [`tix-ui/`](tix-ui/). Highlights:
 
