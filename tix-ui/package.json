@@ -45,11 +45,13 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.1.4",
+    "@winstonfassett/web-dev-mcp-vite": "^0.1.0-alpha.0",
     "jsdom": "^28.1.0",
     "typescript": "^5.7.2",
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.0.5"
+    "vitest": "^3.0.5",
+    "youch": "^4.1.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
