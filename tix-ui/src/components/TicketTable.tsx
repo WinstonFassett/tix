@@ -129,6 +129,7 @@ export function TicketTable({ grouped, groupBy, onUpdate, onRowClick, selectedId
           {!collapsed.has(groupKey) && (grouped[groupKey] || []).map(ticket => (
             <div
               key={ticket.id}
+              data-ticket-row={ticket.id}
               className={`w-full flex items-center justify-start h-11 px-6 cursor-pointer transition-colors ${selectedId === ticket.id ? 'bg-accent' : 'hover:bg-accent/50'}`}
               onClick={() => openTicket(ticket.id)}
               role="button"

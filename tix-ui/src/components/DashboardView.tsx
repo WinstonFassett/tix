@@ -54,6 +54,48 @@ export function DashboardView() {
     [tickets, selectedId],
   )
 
+  // Keyboard navigation through the list view: arrow up/down and j/k step
+  // through `sorted` and update the panel selection. First press selects
+  // the first row when nothing is selected. Skipped while typing in
+  // inputs/editor or when modifier keys are held. Disabled on board view
+  // and at narrow viewports (9805).
+  useEffect(() => {
+    if (isNarrow) return
+    if (view.viewMode !== 'list') return
+    function isTyping(el: EventTarget | null): boolean {
+      if (!(el instanceof HTMLElement)) return false
+      const tag = el.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+      if (el.isContentEditable) return true
+      return false
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (isTyping(e.target)) return
+      const isDown = e.key === 'ArrowDown' || e.key === 'j' || e.key === 'J'
+      const isUp = e.key === 'ArrowUp' || e.key === 'k' || e.key === 'K'
+      if (!isDown && !isUp) return
+      if (sorted.length === 0) return
+      e.preventDefault()
+      const currentIdx = selectedId ? sorted.findIndex(t => t.id === selectedId) : -1
+      let nextIdx: number
+      if (currentIdx === -1) {
+        nextIdx = isDown ? 0 : sorted.length - 1
+      } else {
+        nextIdx = isDown ? (currentIdx + 1) % sorted.length : (currentIdx - 1 + sorted.length) % sorted.length
+      }
+      const nextId = sorted[nextIdx]!.id
+      setSelectedId(nextId)
+      // Scroll the row into view on next paint.
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-ticket-row="${nextId}"]`) as HTMLElement | null
+        if (el) el.scrollIntoView({ block: 'nearest' })
+      })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isNarrow, view.viewMode, sorted, selectedId, setSelectedId])
+
   const [showDisplay, setShowDisplay] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newDescription, setNewDescription] = useState('')
