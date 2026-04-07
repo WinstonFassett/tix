@@ -28,19 +28,38 @@ while lsof -ti "tcp:$PORT" >/dev/null 2>&1; do
 done
 export PORT
 
+# Wait for the server to actually be listening on $PORT, then open the
+# browser. Polls bash's /dev/tcp instead of sleeping for a fixed guess —
+# that way the browser only fires when the page will actually load (e0b6).
+# Runs in the background so we can kick off the server in the foreground.
+wait_then_open() {
+    local url="http://localhost:$PORT"
+    local tries=0
+    while ! (exec 3<>/dev/tcp/127.0.0.1/"$PORT") 2>/dev/null; do
+        tries=$((tries + 1))
+        if [[ $tries -gt 600 ]]; then  # ~60s total
+            echo "tix-ui: server did not start within 60s, skipping auto-open" >&2
+            return 0
+        fi
+        sleep 0.1
+    done
+    exec 3>&-  # close the probe connection
+    if command -v open >/dev/null 2>&1; then
+        open "$url"
+    elif command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "$url"
+    fi
+}
+
 # Dev mode: run vite dev server from source dir for HMR
 if [[ "${TIX_UI_DEV:-}" == "1" ]]; then
     echo "tix-ui (dev) → http://localhost:$PORT  (workspace: $TIX_WORKSPACE)"
-    if command -v open >/dev/null 2>&1; then
-        open "http://localhost:$PORT" &
-    elif command -v xdg-open >/dev/null 2>&1; then
-        xdg-open "http://localhost:$PORT" &
-    fi
+    wait_then_open &
     cd "$UI_DIR"
-    if command -v pnpm >/dev/null 2>&1; then
-        exec pnpm dev --port "$PORT" "$@"
-    elif command -v bun >/dev/null 2>&1; then
+    if command -v bun >/dev/null 2>&1; then
         exec bun run dev --port "$PORT" "$@"
+    elif command -v pnpm >/dev/null 2>&1; then
+        exec pnpm dev --port "$PORT" "$@"
     else
         exec npm run dev -- --port "$PORT" "$@"
     fi
@@ -53,11 +72,6 @@ fi
 
 echo "tix-ui → http://localhost:$PORT  (workspace: $TIX_WORKSPACE)"
 
-# Auto-open browser
-if command -v open >/dev/null 2>&1; then
-    open "http://localhost:$PORT" &
-elif command -v xdg-open >/dev/null 2>&1; then
-    xdg-open "http://localhost:$PORT" &
-fi
+wait_then_open &
 
 exec node "$OUTPUT" "$@"
