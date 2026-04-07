@@ -54,6 +54,40 @@ export function DashboardView() {
     [tickets, selectedId],
   )
 
+  const [showDisplay, setShowDisplay] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
+  const [newDescription, setNewDescription] = useState('')
+  const [newStatus, setNewStatus] = useState('open')
+  const [newType, setNewType] = useState('task')
+  const [newPriority, setNewPriority] = useState(2)
+  const [newAssignee, setNewAssignee] = useState('')
+  const [createMore, setCreateMore] = useState(false)
+  const [newTags, setNewTags] = useState<EmblorTag[]>([])
+  const [newTagsActive, setNewTagsActive] = useState<number | null>(null)
+
+  const allTagSuggestions = useMemo<EmblorTag[]>(() => {
+    const seen = new Set<string>()
+    for (const t of tickets) for (const tag of t.tags) seen.add(tag)
+    return Array.from(seen).map(t => ({ id: t, text: t }))
+  }, [tickets])
+
+  const filtered = useMemo(() => filterTickets(tickets, {
+    status: filters.statusFilter || undefined,
+    tag: filters.tagFilter || undefined,
+    type: filters.typeFilter || undefined,
+  }), [tickets, filters.statusFilter, filters.tagFilter, filters.typeFilter])
+
+  const sorted = useMemo(() => {
+    const dir = view.sortDir === 'asc' ? 1 : -1
+    return [...filtered].sort((a, b) => {
+      const av = a[view.sortBy as keyof Ticket]
+      const bv = b[view.sortBy as keyof Ticket]
+      if (av < bv) return -1 * dir
+      if (av > bv) return 1 * dir
+      return 0
+    })
+  }, [filtered, view.sortBy, view.sortDir])
+
   // Keyboard navigation through the list view: arrow up/down and j/k step
   // through `sorted` and update the panel selection. First press selects
   // the first row when nothing is selected. Skipped while typing in
@@ -95,40 +129,6 @@ export function DashboardView() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [isNarrow, view.viewMode, sorted, selectedId, setSelectedId])
-
-  const [showDisplay, setShowDisplay] = useState(false)
-  const [newTitle, setNewTitle] = useState('')
-  const [newDescription, setNewDescription] = useState('')
-  const [newStatus, setNewStatus] = useState('open')
-  const [newType, setNewType] = useState('task')
-  const [newPriority, setNewPriority] = useState(2)
-  const [newAssignee, setNewAssignee] = useState('')
-  const [createMore, setCreateMore] = useState(false)
-  const [newTags, setNewTags] = useState<EmblorTag[]>([])
-  const [newTagsActive, setNewTagsActive] = useState<number | null>(null)
-
-  const allTagSuggestions = useMemo<EmblorTag[]>(() => {
-    const seen = new Set<string>()
-    for (const t of tickets) for (const tag of t.tags) seen.add(tag)
-    return Array.from(seen).map(t => ({ id: t, text: t }))
-  }, [tickets])
-
-  const filtered = useMemo(() => filterTickets(tickets, {
-    status: filters.statusFilter || undefined,
-    tag: filters.tagFilter || undefined,
-    type: filters.typeFilter || undefined,
-  }), [tickets, filters.statusFilter, filters.tagFilter, filters.typeFilter])
-
-  const sorted = useMemo(() => {
-    const dir = view.sortDir === 'asc' ? 1 : -1
-    return [...filtered].sort((a, b) => {
-      const av = a[view.sortBy as keyof Ticket]
-      const bv = b[view.sortBy as keyof Ticket]
-      if (av < bv) return -1 * dir
-      if (av > bv) return 1 * dir
-      return 0
-    })
-  }, [filtered, view.sortBy, view.sortDir])
 
   const grouped = useMemo(() => {
     if (view.groupBy === 'none') return { '': sorted }
