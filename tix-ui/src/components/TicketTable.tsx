@@ -8,7 +8,8 @@ import { StatusSelector } from './StatusSelector'
 import { PrioritySelector } from './PrioritySelector'
 import { TypeSelector } from './TypeSelector'
 import { useNavigate } from '@tanstack/react-router'
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 
 interface TicketTableProps {
   grouped: Record<string, Ticket[]>
@@ -32,8 +33,47 @@ function groupColor(key: string, groupBy: GroupBy): string {
   return '#94a3b8'
 }
 
+// Persist collapsed group keys per-groupBy in localStorage so the state
+// survives reloads and switching between groupings.
+const COLLAPSE_STORAGE_KEY = 'tix-ui:collapsed-groups'
+
+function loadCollapsed(): Record<string, string[]> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = localStorage.getItem(COLLAPSE_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveCollapsed(state: Record<string, string[]>) {
+  if (typeof window === 'undefined') return
+  try { localStorage.setItem(COLLAPSE_STORAGE_KEY, JSON.stringify(state)) } catch { /* ignore */ }
+}
+
 export function TicketTable({ grouped, groupBy, onUpdate }: TicketTableProps) {
   const navigate = useNavigate()
+
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set())
+
+  // Load persisted state when groupBy changes.
+  useEffect(() => {
+    const all = loadCollapsed()
+    setCollapsed(new Set(all[groupBy] || []))
+  }, [groupBy])
+
+  function toggleGroup(key: string) {
+    setCollapsed(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      const all = loadCollapsed()
+      all[groupBy] = Array.from(next)
+      saveCollapsed(all)
+      return next
+    })
+  }
 
   const orderedGroups = useMemo(() => {
     const keys = Object.keys(grouped)
@@ -53,13 +93,21 @@ export function TicketTable({ grouped, groupBy, onUpdate }: TicketTableProps) {
         <div key={groupKey}>
           {groupBy !== 'none' && (
             <div
-              className="sticky top-0 z-10 w-full h-10 flex items-center justify-between px-6 bg-background"
+              className="sticky top-0 z-10 w-full h-10 flex items-center justify-between px-6 bg-background cursor-pointer select-none"
               // Solid background so sticky headers don't let scrolling rows
               // bleed through; color-mix blends the group tint into the
               // theme bg so we still get a subtle color accent.
               style={{ backgroundColor: `color-mix(in srgb, ${groupColor(groupKey, groupBy)} 6%, var(--background))` }}
+              onClick={() => toggleGroup(groupKey)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGroup(groupKey) } }}
+              aria-expanded={!collapsed.has(groupKey)}
             >
               <div className="flex items-center gap-2">
+                {collapsed.has(groupKey)
+                  ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
                 {groupBy === 'status' && <StatusIcon status={groupKey} />}
                 {groupBy === 'priority' && <PriorityIcon priority={Number(groupKey)} size={14} />}
                 {groupBy === 'type' && <TypeIcon type={groupKey} size={14} />}
@@ -69,7 +117,7 @@ export function TicketTable({ grouped, groupBy, onUpdate }: TicketTableProps) {
             </div>
           )}
 
-          {(grouped[groupKey] || []).map(ticket => (
+          {!collapsed.has(groupKey) && (grouped[groupKey] || []).map(ticket => (
             <div
               key={ticket.id}
               className="w-full flex items-center justify-start h-11 px-6 hover:bg-accent/50 cursor-pointer transition-colors"
