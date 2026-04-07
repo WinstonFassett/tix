@@ -383,7 +383,9 @@ cmd_create() {
 
     {
         echo "---"
-        echo "id: $id"
+        # Quote id: 4-char hex can look like YAML scientific notation
+        # (e.g. "0e48" parses as 0 * 10^48 = 0) and strip the original string.
+        echo "id: \"$id\""
         printf "title: \"%s\"\n" "$title"
         echo "status: open"
         if [[ -n "$deps" ]]; then
@@ -645,7 +647,7 @@ cmd_dep_tree() {
             prev_file=FILENAME
         }
         /^---$/ { in_front = !in_front; next }
-        in_front && /^id:/ { id = $2 }
+        in_front && /^id:/ { id = $2; gsub(/"/, "", id) }
         in_front && /^status:/ { status = $2 }
         in_front && /^deps:/ {
             deps = $2
@@ -737,7 +739,7 @@ cmd_dep_tree_single() {
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
-    in_front && /^id:/ { id = $2 }
+    in_front && /^id:/ { id = $2; gsub(/"/, "", id) }
     in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2 }
     in_front && /^deps:/ {
@@ -944,7 +946,7 @@ cmd_dep_cycle() {
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
-    in_front && /^id:/ { id = $2 }
+    in_front && /^id:/ { id = $2; gsub(/"/, "", id) }
     in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2 }
     in_front && /^deps:/ {
@@ -1218,7 +1220,7 @@ cmd_ready() {
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
-    in_front && /^id:/ { id = $2 }
+    in_front && /^id:/ { id = $2; gsub(/"/, "", id) }
     in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2 }
     in_front && /^priority:/ { priority = $2 }
@@ -1533,7 +1535,7 @@ cmd_blocked() {
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
-    in_front && /^id:/ { id = $2 }
+    in_front && /^id:/ { id = $2; gsub(/"/, "", id) }
     in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2 }
     in_front && /^priority:/ { priority = $2 }
@@ -2022,7 +2024,7 @@ cmd_show() {
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
-    in_front && /^id:/ { id = $2 }
+    in_front && /^id:/ { id = $2; gsub(/"/, "", id) }
     in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2 }
     in_front && /^deps:/ { deps = $2; gsub(/[\[\] ]/, "", deps) }
