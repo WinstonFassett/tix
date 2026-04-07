@@ -49,6 +49,7 @@ export function useCreateTicket() {
       type?: string
       priority?: number
       assignee?: string
+      tags?: string[]
     }) => {
       return createTicket({ data })
     },

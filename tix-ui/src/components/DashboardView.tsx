@@ -12,6 +12,7 @@ import { TypeSelector } from '#/components/TypeSelector'
 import { Button, Input, Select, Dialog, Popover } from '#/components/ui'
 import { useNavigate } from '@tanstack/react-router'
 import { PanelLeft, Search, Plus, SlidersHorizontal, X, List, LayoutGrid, Loader2 } from 'lucide-react'
+import { TagInput, type Tag as EmblorTag } from 'emblor'
 
 export function DashboardView() {
   const navigate = useNavigate()
@@ -33,6 +34,14 @@ export function DashboardView() {
   const [newPriority, setNewPriority] = useState(2)
   const [newAssignee, setNewAssignee] = useState('')
   const [createMore, setCreateMore] = useState(false)
+  const [newTags, setNewTags] = useState<EmblorTag[]>([])
+  const [newTagsActive, setNewTagsActive] = useState<number | null>(null)
+
+  const allTagSuggestions = useMemo<EmblorTag[]>(() => {
+    const seen = new Set<string>()
+    for (const t of tickets) for (const tag of t.tags) seen.add(tag)
+    return Array.from(seen).map(t => ({ id: t, text: t }))
+  }, [tickets])
 
   const filtered = useMemo(() => filterTickets(tickets, {
     status: filters.statusFilter || undefined,
@@ -88,6 +97,7 @@ export function DashboardView() {
         type: newType,
         priority: newPriority,
         assignee: newAssignee.trim() || undefined,
+        tags: newTags.length > 0 ? newTags.map(t => t.text) : undefined,
       })
       setNewTitle('')
       setNewDescription('')
@@ -95,6 +105,7 @@ export function DashboardView() {
       setNewType('task')
       setNewPriority(2)
       setNewAssignee('')
+      setNewTags([])
       if (createMore) {
         // Stay in dialog
       } else {
@@ -243,6 +254,31 @@ export function DashboardView() {
               <PrioritySelector priority={newPriority} onSelect={setNewPriority} />
               <TypeSelector type={newType} onSelect={setNewType} />
               <Input type="text" placeholder="Assignee" className="w-32 h-7 text-sm" value={newAssignee} onChange={e => setNewAssignee(e.target.value)} />
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-xs text-muted-foreground shrink-0 mt-2">Tags</span>
+              <div className="flex-1 min-w-0">
+                <TagInput
+                  tags={newTags}
+                  setTags={setNewTags as any}
+                  activeTagIndex={newTagsActive}
+                  setActiveTagIndex={setNewTagsActive}
+                  placeholder="Add a tag..."
+                  enableAutocomplete
+                  autocompleteOptions={allTagSuggestions}
+                  inlineTags
+                  addOnPaste
+                  styleClasses={{
+                    inlineTagsContainer:
+                      'border-0 rounded-md p-1 gap-1 flex-wrap bg-transparent min-h-8',
+                    input: 'h-6 border-0 shadow-none text-sm bg-transparent focus-visible:ring-0 flex-1 min-w-24',
+                    tag: {
+                      body: 'h-6 px-2 text-xs bg-secondary text-secondary-foreground rounded-md',
+                      closeButton: 'text-muted-foreground hover:text-foreground',
+                    },
+                  }}
+                />
+              </div>
             </div>
           </div>
           <div className="flex items-center justify-between py-2.5 px-4 border-t mt-3">
