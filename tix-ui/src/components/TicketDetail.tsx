@@ -115,12 +115,10 @@ export function TicketDetail({ ticket, onUpdate }: TicketDetailProps) {
             placeholder="Ticket title"
           />
 
-          <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
             <StatusSelector status={ticket.status} onSelect={(s) => handleFieldChange('status', s)} />
             <PrioritySelector priority={ticket.priority} onSelect={(p) => handleFieldChange('priority', p)} />
-
             <TypeSelector type={ticket.type} onSelect={(t) => handleFieldChange('type', t)} />
-
             <Input
               type="text"
               className="w-40 h-8 text-sm"
@@ -128,13 +126,15 @@ export function TicketDetail({ ticket, onUpdate }: TicketDetailProps) {
               onChange={(e) => handleFieldChange('assignee', e.target.value)}
               placeholder="Assignee"
             />
+            {ticket.created && (
+              <span className="ml-auto text-xs text-muted-foreground" title={new Date(ticket.created).toLocaleString()}>
+                Created {new Date(ticket.created).toLocaleDateString()}
+              </span>
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4 text-xs text-muted-foreground">
-            {ticket.created && (
-              <span>Created {new Date(ticket.created).toLocaleDateString()}</span>
-            )}
-            <span>Tags:</span>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xs text-muted-foreground shrink-0">Tags</span>
             <Input
               type="text"
               className="flex-1 h-8 text-sm"
