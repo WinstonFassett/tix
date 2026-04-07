@@ -200,11 +200,37 @@ function AppLayout() {
     } : {}),
   }
 
+  // Drag-to-resize the left sidebar (72a5). Same approach as the right
+  // detail panel: bind move/up to window so a fast drag doesn't lose
+  // tracking; clamp to reasonable bounds in setSidebarWidth itself.
+  function startSidebarDrag(e: React.MouseEvent) {
+    if (!sidebar.open) return
+    e.preventDefault()
+    const startX = e.clientX
+    const startW = sidebar.width
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    function onMove(ev: MouseEvent) {
+      sidebar.setWidth(startW + (ev.clientX - startX))
+    }
+    function onUp() {
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
+
   return (
     <div className="flex h-svh bg-background text-foreground overflow-hidden">
       {/* Sidebar */}
-      <aside className={`${sidebar.open ? 'w-60' : 'w-0'} shrink-0 flex flex-col bg-background transition-[width] duration-200 overflow-hidden lg:py-2`}>
-        <div className="flex flex-col px-4 min-w-60 py-2">
+      <aside
+        className="shrink-0 flex flex-col bg-background overflow-hidden lg:py-2"
+        style={{ width: sidebar.open ? `${sidebar.width}px` : 0 }}
+      >
+        <div className="flex flex-col px-4 py-2" style={{ minWidth: `${sidebar.width}px` }}>
           <a href="/" className="text-sm font-semibold font-mono tracking-tight" onClick={(e) => { e.preventDefault(); navigate({ to: '/', search: {} }) }}>tix</a>
           {config?.workspaceName && (
             <span className="text-xs text-muted-foreground truncate">{config.workspaceName}</span>
@@ -284,6 +310,17 @@ function AppLayout() {
           </Button>
         </div>
       </aside>
+
+      {/* Drag handle to resize the sidebar (72a5) */}
+      {sidebar.open && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+          onMouseDown={startSidebarDrag}
+          className="w-1 -mx-0.5 cursor-col-resize hover:bg-primary/40 active:bg-primary/60 transition-colors z-10 shrink-0"
+        />
+      )}
 
       {/* Main content */}
       <div className="flex-1 h-svh overflow-hidden lg:p-2">

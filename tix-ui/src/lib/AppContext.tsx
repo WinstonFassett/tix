@@ -16,6 +16,8 @@ interface FiltersState {
 interface SidebarState {
   open: boolean
   toggle: () => void
+  width: number
+  setWidth: (w: number) => void
 }
 
 // ── Theme ────────────────────────────────────────────────────
@@ -105,11 +107,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [typeFilter, setTypeFilter] = useState('')
   const clearAll = useCallback(() => { setStatusFilter(''); setTagFilter(''); setTypeFilter('') }, [])
 
-  // Sidebar
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return localStorage.getItem('tix-sidebar') !== 'collapsed'
-  })
+  // Sidebar — same hydration-safety pattern as view settings: start with the
+  // default that the server renders, then sync from localStorage after mount
+  // (27ef). Width is also drag-resizable (72a5).
+  const SIDEBAR_DEFAULT_WIDTH = 240
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarWidth, setSidebarWidthState] = useState<number>(SIDEBAR_DEFAULT_WIDTH)
+  useEffect(() => {
+    setSidebarOpen(localStorage.getItem('tix-sidebar') !== 'collapsed')
+    const saved = Number(localStorage.getItem('tix-sidebar-width'))
+    if (Number.isFinite(saved) && saved > 160) setSidebarWidthState(saved)
+  }, [])
+  const setSidebarWidth = useCallback((w: number) => {
+    const clamped = Math.max(180, Math.min(480, w))
+    setSidebarWidthState(clamped)
+    try { localStorage.setItem('tix-sidebar-width', String(clamped)) } catch {}
+  }, [])
   const toggleSidebar = useCallback(() => {
     setSidebarOpen(prev => {
       const next = !prev
@@ -154,10 +167,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // View settings
-  const [vs, setVs] = useState<typeof VS_DEFAULTS>(() => {
-    if (typeof window === 'undefined') return VS_DEFAULTS
-    return loadVS()
-  })
+  // Always start from defaults so the SSR and the first client render match;
+  // sync from localStorage in an effect after hydration (27ef).
+  const [vs, setVs] = useState<typeof VS_DEFAULTS>(VS_DEFAULTS)
+  useEffect(() => {
+    setVs(loadVS())
+  }, [])
   const updateVS = useCallback((partial: Partial<typeof VS_DEFAULTS>) => {
     setVs((prev: typeof VS_DEFAULTS) => { const next = { ...prev, ...partial }; persistVS(next); return next })
   }, [])
@@ -167,7 +182,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value: AppContextValue = {
     filters: { statusFilter, tagFilter, typeFilter, setStatusFilter, setTagFilter, setTypeFilter, clearAll },
-    sidebar: { open: sidebarOpen, toggle: toggleSidebar },
+    sidebar: { open: sidebarOpen, toggle: toggleSidebar, width: sidebarWidth, setWidth: setSidebarWidth },
     theme: { dark, toggle: toggleTheme },
     viewSettings: { ...vs, update: updateVS, toggleSortDir },
     createDialog: { showCreate, setShowCreate },
