@@ -1,7 +1,7 @@
 export interface Ticket {
   id: string
   title: string
-  status: 'open' | 'in-progress' | 'on-hold' | 'done' | 'closed'
+  status: 'open' | 'in-progress' | 'review' | 'on-hold' | 'done' | 'closed'
   deps: string[]
   links: string[]
   created: string
@@ -14,10 +14,11 @@ export interface Ticket {
 }
 
 export type TicketStatus = Ticket['status']
-export const STATUSES: TicketStatus[] = ['open', 'in-progress', 'on-hold', 'done', 'closed']
+export const STATUSES: TicketStatus[] = ['open', 'in-progress', 'review', 'on-hold', 'done', 'closed']
 export const STATUS_LABELS: Record<TicketStatus, string> = {
   'open': 'Open',
   'in-progress': 'In Progress',
+  'review': 'In Review',
   'on-hold': 'On Hold',
   'done': 'Done',
   'closed': 'Closed',
@@ -25,6 +26,7 @@ export const STATUS_LABELS: Record<TicketStatus, string> = {
 export const STATUS_COLORS: Record<TicketStatus, string> = {
   'open': '#f97316',
   'in-progress': '#facc15',
+  'review': '#22d3ee',
   'on-hold': '#94a3b8',
   'done': '#8b5cf6',
   'closed': '#94a3b8',

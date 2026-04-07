@@ -5,7 +5,7 @@ import matter from 'gray-matter'
 import { execFile } from 'node:child_process'
 import type { Ticket } from '../types'
 
-const VALID_STATUSES = ['open', 'in-progress', 'on-hold', 'done', 'closed']
+const VALID_STATUSES = ['open', 'in-progress', 'review', 'on-hold', 'done', 'closed']
 
 function resolveTicketsDir(): string {
   return process.env.TICKETS_DIR
