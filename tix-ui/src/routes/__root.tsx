@@ -18,11 +18,21 @@ const queryClient = new QueryClient({
   },
 })
 
-// Live reload: refetch tickets on file changes (dev mode HMR)
-if (typeof window !== 'undefined' && import.meta.hot) {
-  import.meta.hot.on('tickets-update', () => {
+// Live reload: subscribe to the server-side file watcher via SSE and
+// invalidate the tickets query on every filesystem event. Works in both
+// vite dev and the built Nitro server, so live updates behave the same
+// in development and production (ticket d0ca). EventSource auto-reconnects
+// so no manual retry logic is needed. Uses a module-level guard so React
+// strict-mode double-mounts don't create multiple streams.
+let liveUpdateStream: EventSource | null = null
+function ensureLiveUpdateStream() {
+  if (typeof window === 'undefined' || typeof EventSource === 'undefined') return
+  if (liveUpdateStream) return
+  const es = new EventSource('/api/tickets-events')
+  es.addEventListener('tickets-update', () => {
     queryClient.invalidateQueries({ queryKey: ['tickets'] })
   })
+  liveUpdateStream = es
 }
 
 export const Route = createRootRoute({
@@ -57,6 +67,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  useEffect(() => {
+    ensureLiveUpdateStream()
+  }, [])
+
   return (
     <QueryClientProvider client={queryClient}>
       <AppProvider>
