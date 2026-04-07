@@ -10,7 +10,24 @@ A Markdown ticket tracker in a shell script.
 
 ## Tix Web UI
 
-![List view](tix-ui/screenshots/list-dark.png)
+A local React + TanStack Start dashboard for browsing, editing, and creating
+tickets. Lives in [`tix-ui/`](tix-ui/). Highlights:
+
+- Reactive live updates — a chokidar file watcher pushes changes over
+  Server-Sent Events, so edits made by the CLI, your editor, or another
+  agent appear instantly.
+- Linear-style list and board views with grouping (status / priority /
+  type), collapsible sticky group headers, and URL-driven filters.
+- Detail view with inline editing (Milkdown markdown editor), a prev/next
+  pager (J/K or Alt+←/→), and a chip-based tag input with autocomplete.
+- Command palette (⌘K) with cyclical arrow nav and ticket search.
+
+Install and launch:
+
+```bash
+./install-tix-ui                          # builds and symlinks `tix-ui`
+cd your-project && tix-ui                 # opens http://localhost:3000
+```
 
 ## How It Works
 
@@ -18,7 +35,7 @@ Each ticket is a Markdown file named like `Fix The Login Bug (a1b2).md`. The 4-c
 
 ```yaml
 ---
-id: a1b2
+id: "a1b2"
 title: "Fix the login bug"
 status: open
 priority: 2
@@ -29,6 +46,9 @@ tags: [auth]
 created: 2026-03-29T12:00:00Z
 ---
 ```
+
+The `id` is quoted so that 4-char hex values like `0e48` aren't parsed as
+YAML scientific notation by downstream tools.
 
 The body is freeform Markdown — description, design notes, acceptance criteria.
 
@@ -79,10 +99,14 @@ tix delete <id>             Permanently delete a ticket
 
 ```
 tix start <id>              Set status to in-progress
+tix hold <id>               Set status to on-hold (alias: pause)
 tix done <id>               Mark done and archive
 tix close <id>              Mark closed (won't-do) and archive
 tix reopen <id>             Reopen a ticket
+tix status <id> <status>    Set explicit status
 ```
+
+Valid statuses: `open`, `in-progress`, `review`, `on-hold`, `done`, `closed`.
 
 ### Lists
 
@@ -139,7 +163,7 @@ bats test/                # Run the test suite (requires bats-core)
 
 ## See Also
 
-- [tix-ui](tix-ui/) — Web dashboard for browsing tickets (Svelte + Vite)
+- [tix-ui](tix-ui/) — Web dashboard for browsing tickets (React + TanStack Start)
 - [skills/tix](skills/tix/) — Agent skill definition for AI-assisted ticket management
 
 ## Uninstall

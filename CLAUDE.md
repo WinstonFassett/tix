@@ -28,11 +28,12 @@ bats test/basic_operations.bats   # single test file
 - **`lib/yq`, `lib/jq`** — Vendored binaries (not checked in; downloaded by `setup-deps`).
 - **`ticket`** — Deprecated compat wrapper that exec's `tix`.
 - **`tix-vault`** — Obsidian vault integration wrapper.
+- **`tix-ui/`** — React + TanStack Start web dashboard. Reactive live updates via chokidar SSE endpoint at `tix-ui/server/routes/api/tickets-events.get.ts`. Built and symlinked by `./install-tix-ui`. Playwright e2e tests in `tix-ui/e2e/`.
 - **`skills/tix/SKILL.md`** — Skill definition for AI agents to use tix.
 
 ## Ticket Format
 
-Files named `Title Case (4hex).md` in `tickets/`. Frontmatter fields: `id`, `title`, `status`, `deps`, `links`, `created`, `type`, `priority` (0-4), `assignee`, `tags`. IDs are 4-char hex. Statuses: `open`, `in-progress`, `on-hold`, `done`, `closed`. Done/closed tickets auto-archive to `tickets/archive/YYYY-MM-DD/`.
+Files named `Title Case (4hex).md` in `tickets/`. Frontmatter fields: `id`, `title`, `status`, `deps`, `links`, `created`, `type`, `priority` (0-4), `assignee`, `tags`. IDs are 4-char hex and **must be quoted** in YAML (`id: "0e48"`) so values like `0e48` don't get parsed as scientific notation. Statuses: `open`, `in-progress`, `review`, `on-hold`, `done`, `closed`. Done/closed tickets auto-archive to `tickets/archive/YYYY-MM-DD/`.
 
 ## Environment Variables
 
