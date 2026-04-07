@@ -88,9 +88,9 @@ export const getConfig = createServerFn({ method: 'GET' }).handler(async () => {
 })
 
 export const createTicket = createServerFn({ method: 'POST' })
-  .inputValidator((data: { title: string; description?: string; type?: string; priority?: number; assignee?: string }) => data)
+  .inputValidator((data: { title: string; description?: string; type?: string; priority?: number; assignee?: string; tags?: string[] }) => data)
   .handler(async ({ data }) => {
-    const { title, description, type, priority, assignee } = data
+    const { title, description, type, priority, assignee, tags } = data
 
     if (!title) {
       throw new Error('Title is required')
@@ -101,6 +101,9 @@ export const createTicket = createServerFn({ method: 'POST' })
     if (type) args.push('--type', type)
     if (priority !== undefined) args.push('--priority', String(priority))
     if (assignee) args.push('--assignee', assignee)
+    if (tags && tags.length > 0) {
+      for (const t of tags) args.push('--tag', t)
+    }
 
     const workspace = process.env.TIX_WORKSPACE || process.env.TICKET_WORKSPACE || process.cwd()
 

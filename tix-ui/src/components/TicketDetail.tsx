@@ -259,8 +259,11 @@ export function TicketDetail({ ticket, onUpdate, pager }: TicketDetailProps) {
                 addOnPaste
                 onTagClick={handleTagClick}
                 styleClasses={{
+                  // emblor's autocomplete wrapper already provides a border;
+                  // adding one here would double up. Keep this borderless and
+                  // use focus-within on the wrapper via CSS instead.
                   inlineTagsContainer:
-                    'border border-input rounded-md p-1 gap-1 flex-wrap bg-background min-h-8 focus-within:ring-1 focus-within:ring-ring',
+                    'border-0 rounded-md p-1 gap-1 flex-wrap bg-transparent min-h-8',
                   input: 'h-6 border-0 shadow-none text-sm bg-transparent focus-visible:ring-0 flex-1 min-w-24',
                   tag: {
                     body: 'h-6 px-2 text-xs bg-secondary text-secondary-foreground rounded-md cursor-pointer hover:bg-secondary/80',
