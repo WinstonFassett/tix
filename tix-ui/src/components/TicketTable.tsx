@@ -53,8 +53,11 @@ export function TicketTable({ grouped, groupBy, onUpdate }: TicketTableProps) {
         <div key={groupKey}>
           {groupBy !== 'none' && (
             <div
-              className="sticky top-0 z-10 w-full h-10 flex items-center justify-between px-6"
-              style={{ backgroundColor: `${groupColor(groupKey, groupBy)}08` }}
+              className="sticky top-0 z-10 w-full h-10 flex items-center justify-between px-6 bg-background"
+              // Solid background so sticky headers don't let scrolling rows
+              // bleed through; color-mix blends the group tint into the
+              // theme bg so we still get a subtle color accent.
+              style={{ backgroundColor: `color-mix(in srgb, ${groupColor(groupKey, groupBy)} 6%, var(--background))` }}
             >
               <div className="flex items-center gap-2">
                 {groupBy === 'status' && <StatusIcon status={groupKey} />}
