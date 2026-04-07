@@ -55,7 +55,7 @@ export function CommandPalette({ tickets, callbacks, isTicketView }: CommandPale
   return (
     <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-start justify-center pt-[10vh] px-4" onClick={close}>
       <div className="w-full max-w-[640px] animate-in fade-in slide-in-from-top-2" onClick={e => e.stopPropagation()}>
-        <Command className="bg-popover text-popover-foreground border rounded-lg shadow-2xl overflow-hidden max-h-[70vh] flex flex-col" shouldFilter={true}>
+        <Command loop className="bg-popover text-popover-foreground border rounded-lg shadow-2xl overflow-hidden max-h-[70vh] flex flex-col" shouldFilter={true}>
           <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted-foreground"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             <Command.Input
@@ -72,54 +72,9 @@ export function CommandPalette({ tickets, callbacks, isTicketView }: CommandPale
               No results found
             </Command.Empty>
 
-            {/* Navigate */}
-            <Command.Group heading="Navigate">
-              {tickets.map(t => (
-                <Command.Item
-                  key={`nav-${t.id}`}
-                  value={`${t.title} ${t.id} ${t.assignee} ${t.tags.join(' ')} ${t.type} ${t.status}`}
-                  onSelect={() => { close(); navigate({ to: '/ticket/$ticketId', params: { ticketId: t.id } }) }}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-sm data-[selected=true]:bg-accent border border-transparent data-[selected=true]:border-border"
-                >
-                  <StatusIcon status={t.status} size={14} />
-                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium truncate">{t.title}</span>
-                      <span className="ml-auto shrink-0"><TypeIcon type={t.type} size={13} /></span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                      <span className="font-mono">{t.id}</span>
-                      <span>·</span>
-                      <span>{STATUS_LABELS[t.status]}</span>
-                      <span>·</span>
-                      <span>{TYPE_LABELS[t.type] || t.type}</span>
-                      <span>·</span>
-                      <span>{PRIORITY_LABELS[t.priority] || `P${t.priority}`}</span>
-                      {t.tags.length > 0 && (
-                        <>
-                          <span className="ml-auto" />
-                          {t.tags.slice(0, 2).map(tag => (
-                            <Badge key={tag} variant="outline" className="text-[9px] px-1 py-0 rounded-full leading-tight">{tag}</Badge>
-                          ))}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </Command.Item>
-              ))}
-              {isTicketView && (
-                <Command.Item
-                  value="go to dashboard home all issues list"
-                  onSelect={() => { close(); navigate({ to: '/' }) }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer text-sm data-[selected=true]:bg-accent"
-                >
-                  <span className="font-medium">Go to Dashboard</span>
-                  <span className="text-xs text-muted-foreground ml-auto">All issues view</span>
-                </Command.Item>
-              )}
-            </Command.Group>
-
-            {/* Actions */}
+            {/* Actions — keep at top so frequently used commands like
+                "Create New Ticket" are reachable with a single Enter
+                from the empty palette (3b98). */}
             <Command.Group heading="Actions">
               <Command.Item value="create new ticket add issue" onSelect={() => { close(); callbacks.openCreate() }} className="flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer text-sm data-[selected=true]:bg-accent">
                 <span className="font-medium">Create New Ticket</span>
@@ -206,6 +161,56 @@ export function CommandPalette({ tickets, callbacks, isTicketView }: CommandPale
                 </Command.Item>
               </Command.Group>
             )}
+
+            {/* Navigate to a ticket — placed last so the long ticket list
+                doesn't push commands off-screen. With cmdk's filtering you
+                can still type a few characters to jump to a specific
+                ticket from anywhere in the palette. */}
+            <Command.Group heading="Navigate">
+              {isTicketView && (
+                <Command.Item
+                  value="go to dashboard home all issues list"
+                  onSelect={() => { close(); navigate({ to: '/' }) }}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer text-sm data-[selected=true]:bg-accent"
+                >
+                  <span className="font-medium">Go to Dashboard</span>
+                  <span className="text-xs text-muted-foreground ml-auto">All issues view</span>
+                </Command.Item>
+              )}
+              {tickets.map(t => (
+                <Command.Item
+                  key={`nav-${t.id}`}
+                  value={`${t.title} ${t.id} ${t.assignee} ${t.tags.join(' ')} ${t.type} ${t.status}`}
+                  onSelect={() => { close(); navigate({ to: '/ticket/$ticketId', params: { ticketId: t.id } }) }}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-sm data-[selected=true]:bg-accent border border-transparent data-[selected=true]:border-border"
+                >
+                  <StatusIcon status={t.status} size={14} />
+                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium truncate">{t.title}</span>
+                      <span className="ml-auto shrink-0"><TypeIcon type={t.type} size={13} /></span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <span className="font-mono">{t.id}</span>
+                      <span>·</span>
+                      <span>{STATUS_LABELS[t.status]}</span>
+                      <span>·</span>
+                      <span>{TYPE_LABELS[t.type] || t.type}</span>
+                      <span>·</span>
+                      <span>{PRIORITY_LABELS[t.priority] || `P${t.priority}`}</span>
+                      {t.tags.length > 0 && (
+                        <>
+                          <span className="ml-auto" />
+                          {t.tags.slice(0, 2).map(tag => (
+                            <Badge key={tag} variant="outline" className="text-[9px] px-1 py-0 rounded-full leading-tight">{tag}</Badge>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </Command.Item>
+              ))}
+            </Command.Group>
           </Command.List>
         </Command>
       </div>
