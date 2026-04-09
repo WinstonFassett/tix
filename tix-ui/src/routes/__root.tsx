@@ -56,7 +56,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <script dangerouslySetInnerHTML={{ __html: `try{if(localStorage.getItem('tix-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}` }} />
+        <script dangerouslySetInnerHTML={{ __html: `try{var s=localStorage.getItem('tix-theme');var d=s?s==='dark':window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark')}catch(e){}` }} />
         {import.meta.env.DEV && (
           <>
             <script
@@ -134,18 +134,20 @@ function AppLayout() {
   const ticketsDir = config?.ticketsDir || ''
   const currentFilePath = ticketsDir && currentTicket?.filename ? `${ticketsDir}/${currentTicket.filename}` : ''
 
-  // Document title
+  // Document title — prefix with the project name (workspaceName) when known,
+  // falling back to "tix" during the initial config fetch (ff47).
+  const titlePrefix = config?.workspaceName || 'tix'
   useEffect(() => {
     if (isTicketView && currentTicket) {
-      document.title = `tix | ${currentTicket.id} ${currentTicket.title}`
+      document.title = `${titlePrefix} | ${currentTicket.id} ${currentTicket.title}`
     } else if (filters.statusFilter) {
-      document.title = `tix | ${STATUS_LABELS[filters.statusFilter as TicketStatus] ?? filters.statusFilter}`
+      document.title = `${titlePrefix} | ${STATUS_LABELS[filters.statusFilter as TicketStatus] ?? filters.statusFilter}`
     } else if (filters.tagFilter) {
-      document.title = `tix | #${filters.tagFilter}`
+      document.title = `${titlePrefix} | #${filters.tagFilter}`
     } else {
-      document.title = 'tix | All Issues'
+      document.title = `${titlePrefix} | All Issues`
     }
-  }, [isTicketView, currentTicket, filters.statusFilter, filters.tagFilter])
+  }, [titlePrefix, isTicketView, currentTicket, filters.statusFilter, filters.tagFilter])
 
   // Tag counts
   const tagCounts = useMemo(() => {

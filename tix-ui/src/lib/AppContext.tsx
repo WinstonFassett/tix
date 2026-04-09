@@ -131,12 +131,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  // Theme — state starts false (matches SSR), synced from localStorage in useEffect
+  // Theme — state starts false (matches SSR), synced in useEffect.
+  // If the user has never explicitly toggled, fall back to the OS
+  // prefers-color-scheme so a fresh browser/port opens in dark when
+  // the system is dark (d214). The pre-hydration inline script in
+  // __root.tsx applies the same resolution to avoid a flash.
   const [dark, setDark] = useState(false)
   useEffect(() => {
-    const saved = localStorage.getItem('tix-theme') === 'dark'
-    setDark(saved)
-    document.documentElement.classList.toggle('dark', saved)
+    const saved = localStorage.getItem('tix-theme')
+    const prefersDark = typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches
+      : false
+    const isDark = saved ? saved === 'dark' : prefersDark
+    setDark(isDark)
+    document.documentElement.classList.toggle('dark', isDark)
   }, [])
   const toggleTheme = useCallback(() => {
     setDark(prev => {
