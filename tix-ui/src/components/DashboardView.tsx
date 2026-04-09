@@ -208,7 +208,15 @@ export function DashboardView() {
       } else {
         setShowCreate(false)
         if (result.id) {
-          navigate({ to: '/ticket/$ticketId', params: { ticketId: result.id } })
+          // c99a: stay in list view on wide screens and open the new
+          // ticket in the side detail panel instead of navigating away.
+          // On narrow screens the panel is hidden, so fall back to the
+          // full-page ticket route (mirrors handleRowClick).
+          if (isNarrow) {
+            navigate({ to: '/ticket/$ticketId', params: { ticketId: result.id } })
+          } else {
+            setSelectedId(result.id)
+          }
         }
       }
     } catch (e: any) {
