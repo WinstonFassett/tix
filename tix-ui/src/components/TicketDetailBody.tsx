@@ -8,7 +8,7 @@ import { MilkdownEditor } from './MilkdownEditor'
 import { useTickets, useDeleteTicket } from '#/lib/hooks/use-tickets'
 import { useNavigate } from '@tanstack/react-router'
 import { AlertTriangle } from 'lucide-react'
-import { TagInput, type Tag as EmblorTag } from 'emblor'
+import { TicketTagsField } from './TicketTagsField'
 
 interface TicketDetailBodyProps {
   ticket: Ticket
@@ -65,31 +65,21 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
 
   // Tags
   const { data: allTickets = [] } = useTickets()
-  const [activeTagIndex, setActiveTagIndex] = useState<number | null>(null)
-  const [tagObjs, setTagObjs] = useState<EmblorTag[]>(() =>
-    ticket.tags.map(t => ({ id: t, text: t })),
-  )
+  const [localTags, setLocalTags] = useState<string[]>(() => ticket.tags)
   useEffect(() => {
-    setTagObjs(ticket.tags.map(t => ({ id: t, text: t })))
+    setLocalTags(ticket.tags)
   }, [ticket.id, ticket.tags])
 
-  const tagSuggestions = useMemo<EmblorTag[]>(() => {
+  const tagSuggestions = useMemo<string[]>(() => {
     const seen = new Set<string>()
     for (const t of allTickets) for (const tag of t.tags) seen.add(tag)
-    return Array.from(seen).map(t => ({ id: t, text: t }))
+    return Array.from(seen)
   }, [allTickets])
 
-  const handleSetTags = useCallback((updater: React.SetStateAction<EmblorTag[]>) => {
-    setTagObjs(prev => {
-      const next = typeof updater === 'function' ? (updater as (p: EmblorTag[]) => EmblorTag[])(prev) : updater
-      save({ tags: next.map(t => t.text) })
-      return next
-    })
+  const handleTagsChange = useCallback((next: string[]) => {
+    setLocalTags(next)
+    save({ tags: next })
   }, [save])
-
-  const handleTagClick = useCallback((tag: EmblorTag) => {
-    navigate({ to: '/', search: { tag: tag.text } })
-  }, [navigate])
 
   async function confirmDelete() {
     try {
@@ -141,26 +131,11 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
         <div className="flex items-start gap-2 mb-4">
           <span className="text-xs text-muted-foreground shrink-0 mt-2">Tags</span>
           <div className="flex-1 min-w-0">
-            <TagInput
-              tags={tagObjs}
-              setTags={handleSetTags}
-              activeTagIndex={activeTagIndex}
-              setActiveTagIndex={setActiveTagIndex}
+            <TicketTagsField
+              value={localTags}
+              onChange={handleTagsChange}
+              suggestions={tagSuggestions}
               placeholder="Add a tag..."
-              enableAutocomplete
-              autocompleteOptions={tagSuggestions}
-              inlineTags
-              addOnPaste
-              onTagClick={handleTagClick}
-              styleClasses={{
-                inlineTagsContainer:
-                  'border-0 rounded-md p-1 gap-1 flex-wrap bg-transparent min-h-8',
-                input: 'h-6 border-0 shadow-none text-sm bg-transparent focus-visible:ring-0 flex-1 min-w-24',
-                tag: {
-                  body: 'h-6 px-2 text-xs bg-secondary text-secondary-foreground rounded-md cursor-pointer hover:bg-secondary/80',
-                  closeButton: 'text-muted-foreground hover:text-foreground',
-                },
-              }}
             />
           </div>
         </div>

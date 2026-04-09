@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { StatusIcon } from './icons/StatusIcon'
-import { Popover } from './ui/Popover'
+import { Popover, PopoverTrigger, PopoverContent } from './ui/popover'
 import { STATUSES, STATUS_LABELS, type TicketStatus } from '#/lib/types'
 import { Check } from 'lucide-react'
 
@@ -19,10 +19,8 @@ export function StatusSelector({ status, onSelect, compact = false }: StatusSele
   }
 
   return (
-    <Popover
-      open={open}
-      onOpenChange={setOpen}
-      trigger={
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
         <button
           type="button"
           className={`h-7 inline-flex items-center gap-1.5 rounded-md ${compact ? 'px-1.5 hover:bg-accent' : 'bg-secondary px-2 hover:bg-accent'} text-sm transition-colors`}
@@ -31,20 +29,21 @@ export function StatusSelector({ status, onSelect, compact = false }: StatusSele
           <StatusIcon status={status} size={compact ? 14 : 12} />
           {!compact && <span>{STATUS_LABELS[status as TicketStatus] ?? status}</span>}
         </button>
-      }
-    >
-      {STATUSES.map(s => (
-        <button
-          type="button"
-          key={s}
-          className={`w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors ${s === status ? 'bg-accent/50' : ''}`}
-          onClick={() => select(s)}
-        >
-          <StatusIcon status={s} size={12} />
-          <span>{STATUS_LABELS[s]}</span>
-          {s === status && <Check className="ml-auto h-4 w-4" />}
-        </button>
-      ))}
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-auto min-w-48 p-1">
+        {STATUSES.map(s => (
+          <button
+            type="button"
+            key={s}
+            className={`w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors ${s === status ? 'bg-accent/50' : ''}`}
+            onClick={() => select(s)}
+          >
+            <StatusIcon status={s} size={12} />
+            <span>{STATUS_LABELS[s]}</span>
+            {s === status && <Check className="ml-auto h-4 w-4" />}
+          </button>
+        ))}
+      </PopoverContent>
     </Popover>
   )
 }
