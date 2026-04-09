@@ -7,6 +7,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { nitro } from 'nitro/vite'
+import { webDevMcp } from '@winstonfassett/web-dev-mcp-vite'
 
 // Note: live updates are driven by the SSE endpoint at
 // server/routes/api/tickets-events.get.ts (chokidar-based) which runs in
@@ -25,6 +26,7 @@ const config = defineConfig({
     tailwindcss(),
     tanstackStart(),
     viteReact(),
+    webDevMcp(),
   ],
 })
 
