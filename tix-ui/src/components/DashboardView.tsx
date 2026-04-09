@@ -10,10 +10,10 @@ import { MilkdownEditor } from '#/components/MilkdownEditor'
 import { StatusSelector } from '#/components/StatusSelector'
 import { PrioritySelector } from '#/components/PrioritySelector'
 import { TypeSelector } from '#/components/TypeSelector'
-import { Button, Input, Select, Dialog, Popover } from '#/components/ui'
+import { Button, Input, Select, Dialog, Popover, PopoverTrigger, PopoverContent } from '#/components/ui'
 import { useNavigate } from '@tanstack/react-router'
 import { PanelLeft, Search, Plus, SlidersHorizontal, X, List, LayoutGrid, Loader2 } from 'lucide-react'
-import { TagInput, type Tag as EmblorTag } from 'emblor'
+import { TicketTagsField } from '#/components/TicketTagsField'
 
 export function DashboardView() {
   const navigate = useNavigate()
@@ -62,13 +62,12 @@ export function DashboardView() {
   const [newPriority, setNewPriority] = useState(2)
   const [newAssignee, setNewAssignee] = useState('')
   const [createMore, setCreateMore] = useState(false)
-  const [newTags, setNewTags] = useState<EmblorTag[]>([])
-  const [newTagsActive, setNewTagsActive] = useState<number | null>(null)
+  const [newTags, setNewTags] = useState<string[]>([])
 
-  const allTagSuggestions = useMemo<EmblorTag[]>(() => {
+  const allTagSuggestions = useMemo<string[]>(() => {
     const seen = new Set<string>()
     for (const t of tickets) for (const tag of t.tags) seen.add(tag)
-    return Array.from(seen).map(t => ({ id: t, text: t }))
+    return Array.from(seen)
   }, [tickets])
 
   const filtered = useMemo(() => filterTickets(tickets, {
@@ -194,7 +193,7 @@ export function DashboardView() {
         type: newType,
         priority: newPriority,
         assignee: newAssignee.trim() || undefined,
-        tags: newTags.length > 0 ? newTags.map(t => t.text) : undefined,
+        tags: newTags.length > 0 ? newTags : undefined,
       })
       setNewTitle('')
       setNewDescription('')
@@ -274,20 +273,16 @@ export function DashboardView() {
           )}
         </div>
         <div className="flex items-center gap-1">
-          <Popover
-            open={showDisplay}
-            onOpenChange={setShowDisplay}
-            align="end"
-            className="w-56 p-3"
-            trigger={
+          <Popover open={showDisplay} onOpenChange={setShowDisplay}>
+            <PopoverTrigger asChild>
               <Button variant="secondary" size="sm" className="h-7 px-2 text-xs gap-1 relative">
                 <SlidersHorizontal className="h-4 w-4" />
                 Display
                 {isDisplayChanged && <span className="absolute -right-0.5 -top-0.5 w-2 h-2 bg-primary rounded-full" />}
               </Button>
-            }
-          >
-            <div className="space-y-3">
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-56 p-3">
+              <div className="space-y-3">
               <div>
                 <span className="text-xs font-medium text-muted-foreground mb-1 block">Group by</span>
                 <Select className="h-7 text-xs" value={view.groupBy} onChange={(e) => view.update({ groupBy: e.target.value as any })}>
@@ -323,7 +318,8 @@ export function DashboardView() {
                   </Button>
                 </div>
               </div>
-            </div>
+              </div>
+            </PopoverContent>
           </Popover>
         </div>
       </div>
@@ -363,25 +359,11 @@ export function DashboardView() {
             <div className="flex items-start gap-2">
               <span className="text-xs text-muted-foreground shrink-0 mt-2">Tags</span>
               <div className="flex-1 min-w-0">
-                <TagInput
-                  tags={newTags}
-                  setTags={setNewTags as any}
-                  activeTagIndex={newTagsActive}
-                  setActiveTagIndex={setNewTagsActive}
+                <TicketTagsField
+                  value={newTags}
+                  onChange={setNewTags}
+                  suggestions={allTagSuggestions}
                   placeholder="Add a tag..."
-                  enableAutocomplete
-                  autocompleteOptions={allTagSuggestions}
-                  inlineTags
-                  addOnPaste
-                  styleClasses={{
-                    inlineTagsContainer:
-                      'border-0 rounded-md p-1 gap-1 flex-wrap bg-transparent min-h-8',
-                    input: 'h-6 border-0 shadow-none text-sm bg-transparent focus-visible:ring-0 flex-1 min-w-24',
-                    tag: {
-                      body: 'h-6 px-2 text-xs bg-secondary text-secondary-foreground rounded-md',
-                      closeButton: 'text-muted-foreground hover:text-foreground',
-                    },
-                  }}
                 />
               </div>
             </div>
