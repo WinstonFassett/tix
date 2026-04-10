@@ -28,7 +28,7 @@ function walkTickets(ticketsDir: string, rel = ''): Array<{ filepath: string; fi
     if (entry.isDirectory()) {
       const childRel = rel ? `${rel}/${entry.name}` : entry.name
       results.push(...walkTickets(ticketsDir, childRel))
-    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+    } else if (entry.isFile() && /\([0-9a-f]{4}\)\.md$/i.test(entry.name)) {
       results.push({
         filepath: path.join(dir, entry.name),
         filename: rel ? `${rel}/${entry.name}` : entry.name,
