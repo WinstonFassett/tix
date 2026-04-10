@@ -79,8 +79,9 @@ wait_then_open() {
     local code
     while true; do
         code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 1 "$url" 2>/dev/null)" || code=000
-        # Any real response except 404 (proxy's "not registered yet") means ready
-        [[ "$code" != "000" && "$code" != "404" ]] && break
+        # Wait for a 2xx/3xx — proxy returns 404 (not registered) or 502
+        # (backend not listening yet) before the app is truly ready.
+        [[ "$code" =~ ^[23] ]] && break
         tries=$((tries + 1))
         if [[ $tries -gt 600 ]]; then  # ~60s total
             echo "tix-ui: server did not start within 60s, skipping auto-open" >&2
