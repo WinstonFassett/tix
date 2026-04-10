@@ -50,26 +50,62 @@ if [[ ! -d "$TIX_WORKSPACE/tickets" ]]; then
     exit 1
 fi
 
-# Find an available port starting from PORT or 3000
-PORT="${PORT:-3000}"
-while lsof -ti "tcp:$PORT" >/dev/null 2>&1; do
-    PORT=$((PORT + 1))
-done
-export PORT
+# Derive project-scoped name for portless (e.g. talky-tix, web-dev-mcp-tix)
+PROJECT_NAME="$(basename "$TIX_WORKSPACE")"
+APP_NAME="${PROJECT_NAME}-tix"
+
+# Detect portless availability (respect PORTLESS=0 bypass)
+if [[ "${PORTLESS:-1}" != "0" ]] && command -v portless >/dev/null 2>&1; then
+    USE_PORTLESS=1
+    URL="http://${APP_NAME}.localhost:${PORTLESS_PORT:-1355}"
+else
+    USE_PORTLESS=0
+    # Find an available port starting from PORT or 3000
+    PORT="${PORT:-3000}"
+    while lsof -ti "tcp:$PORT" >/dev/null 2>&1; do
+        PORT=$((PORT + 1))
+    done
+    export PORT
+    URL="http://localhost:$PORT"
+fi
+
+# Wait for the server to actually respond, then open the browser.
+# $1 = URL to open (and poll for readiness).
+# With portless the proxy responds 404 before the backend registers,
+# so we require a non-404 response to confirm the app is truly up.
+wait_then_open() {
+    local url="$1"
+    local tries=0
+    local code
+    while true; do
+        code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 1 "$url" 2>/dev/null)" || code=000
+        # Any real response except 404 (proxy's "not registered yet") means ready
+        [[ "$code" != "000" && "$code" != "404" ]] && break
+        tries=$((tries + 1))
+        if [[ $tries -gt 600 ]]; then  # ~60s total
+            echo "tix-ui: server did not start within 60s, skipping auto-open" >&2
+            return 0
+        fi
+        sleep 0.1
+    done
+    if command -v open >/dev/null 2>&1; then
+        open "$url"
+    elif command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "$url"
+    fi
+}
 
 # Dev mode: run vite dev server from source dir for HMR
 if [[ "${TIX_UI_DEV:-}" == "1" ]]; then
-    echo "tix-ui (dev) → http://localhost:$PORT  (workspace: $TIX_WORKSPACE)"
-    if command -v open >/dev/null 2>&1; then
-        open "http://localhost:$PORT" &
-    elif command -v xdg-open >/dev/null 2>&1; then
-        xdg-open "http://localhost:$PORT" &
-    fi
+    echo "tix-ui (dev) → $URL  (workspace: $TIX_WORKSPACE)"
+    wait_then_open "$URL" &
     cd "$UI_DIR"
-    if command -v pnpm >/dev/null 2>&1; then
-        exec pnpm dev --port "$PORT" "$@"
+    if [[ "$USE_PORTLESS" == "1" ]]; then
+        exec portless "$APP_NAME" vite dev "$@"
     elif command -v bun >/dev/null 2>&1; then
         exec bun run dev --port "$PORT" "$@"
+    elif command -v pnpm >/dev/null 2>&1; then
+        exec pnpm dev --port "$PORT" "$@"
     else
         exec npm run dev -- --port "$PORT" "$@"
     fi
@@ -80,16 +116,15 @@ if [[ ! -f "$OUTPUT" ]]; then
     exit 1
 fi
 
-echo "tix-ui → http://localhost:$PORT  (workspace: $TIX_WORKSPACE)"
+echo "tix-ui → $URL  (workspace: $TIX_WORKSPACE)"
 
-# Auto-open browser
-if command -v open >/dev/null 2>&1; then
-    open "http://localhost:$PORT" &
-elif command -v xdg-open >/dev/null 2>&1; then
-    xdg-open "http://localhost:$PORT" &
+wait_then_open "$URL" &
+
+if [[ "$USE_PORTLESS" == "1" ]]; then
+    exec portless "$APP_NAME" node "$OUTPUT" "$@"
+else
+    exec node "$OUTPUT" "$@"
 fi
-
-exec node "$OUTPUT" "$@"
 LAUNCHER
 
 chmod +x "$UI_DIR/bin/tix-ui"

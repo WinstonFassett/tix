@@ -21,23 +21,37 @@ if [[ ! -d "$TIX_WORKSPACE/tickets" ]]; then
     exit 1
 fi
 
-# Find an available port starting from PORT or 3000
-PORT="${PORT:-3000}"
-while lsof -ti "tcp:$PORT" >/dev/null 2>&1; do
-    PORT=$((PORT + 1))
-done
-export PORT
+# Derive project-scoped name for portless (e.g. talky-tix, web-dev-mcp-tix)
+PROJECT_NAME="$(basename "$TIX_WORKSPACE")"
+APP_NAME="${PROJECT_NAME}-tix"
 
-# Wait for the server to actually respond on $PORT, then open the
-# browser. Uses curl so we check real HTTP readiness (not just TCP
-# listen) and don't care whether vite binds to IPv4 or IPv6 — curl
-# follows whatever localhost resolves to (e0b6). Runs in the background
-# so we can kick off the server in the foreground.
+# Detect portless availability (respect PORTLESS=0 bypass)
+if [[ "${PORTLESS:-1}" != "0" ]] && command -v portless >/dev/null 2>&1; then
+    USE_PORTLESS=1
+    URL="http://${APP_NAME}.localhost:${PORTLESS_PORT:-1355}"
+else
+    USE_PORTLESS=0
+    # Find an available port starting from PORT or 3000
+    PORT="${PORT:-3000}"
+    while lsof -ti "tcp:$PORT" >/dev/null 2>&1; do
+        PORT=$((PORT + 1))
+    done
+    export PORT
+    URL="http://localhost:$PORT"
+fi
+
+# Wait for the server to actually respond, then open the browser.
+# $1 = URL to open (and poll for readiness).
+# With portless the proxy responds 404 before the backend registers,
+# so we require a non-404 response to confirm the app is truly up.
 wait_then_open() {
-    local url="http://localhost:$PORT"
+    local url="$1"
     local tries=0
-    # Any HTTP response (200, 404, 500, …) proves the server is alive.
-    while ! curl -sS -o /dev/null --max-time 1 "$url" 2>/dev/null; do
+    local code
+    while true; do
+        code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 1 "$url" 2>/dev/null)" || code=000
+        # Any real response except 404 (proxy's "not registered yet") means ready
+        [[ "$code" != "000" && "$code" != "404" ]] && break
         tries=$((tries + 1))
         if [[ $tries -gt 600 ]]; then  # ~60s total
             echo "tix-ui: server did not start within 60s, skipping auto-open" >&2
@@ -54,10 +68,12 @@ wait_then_open() {
 
 # Dev mode: run vite dev server from source dir for HMR
 if [[ "${TIX_UI_DEV:-}" == "1" ]]; then
-    echo "tix-ui (dev) → http://localhost:$PORT  (workspace: $TIX_WORKSPACE)"
-    wait_then_open &
+    echo "tix-ui (dev) → $URL  (workspace: $TIX_WORKSPACE)"
+    wait_then_open "$URL" &
     cd "$UI_DIR"
-    if command -v bun >/dev/null 2>&1; then
+    if [[ "$USE_PORTLESS" == "1" ]]; then
+        exec portless "$APP_NAME" vite dev "$@"
+    elif command -v bun >/dev/null 2>&1; then
         exec bun run dev --port "$PORT" "$@"
     elif command -v pnpm >/dev/null 2>&1; then
         exec pnpm dev --port "$PORT" "$@"
@@ -71,8 +87,12 @@ if [[ ! -f "$OUTPUT" ]]; then
     exit 1
 fi
 
-echo "tix-ui → http://localhost:$PORT  (workspace: $TIX_WORKSPACE)"
+echo "tix-ui → $URL  (workspace: $TIX_WORKSPACE)"
 
-wait_then_open &
+wait_then_open "$URL" &
 
-exec node "$OUTPUT" "$@"
+if [[ "$USE_PORTLESS" == "1" ]]; then
+    exec portless "$APP_NAME" node "$OUTPUT" "$@"
+else
+    exec node "$OUTPUT" "$@"
+fi
