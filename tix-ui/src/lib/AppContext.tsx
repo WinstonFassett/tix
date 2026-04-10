@@ -110,7 +110,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Sidebar — same hydration-safety pattern as view settings: start with the
   // default that the server renders, then sync from localStorage after mount
   // (27ef). Width is also drag-resizable (72a5).
-  const SIDEBAR_DEFAULT_WIDTH = 240
+  const SIDEBAR_DEFAULT_WIDTH = 220
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [sidebarWidth, setSidebarWidthState] = useState<number>(SIDEBAR_DEFAULT_WIDTH)
   useEffect(() => {
