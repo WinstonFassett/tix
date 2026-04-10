@@ -644,16 +644,20 @@ cmd_dep_tree() {
         BEGIN { FS=": "; in_front=0 }
         FNR==1 {
             if (prev_file) store()
-            id=""; status=""; deps=""; in_front=0
+            id=""; status=""; deps=""; in_front=0; _arr=""
             prev_file=FILENAME
         }
         /^---$/ { in_front = !in_front; next }
         in_front && /^id:/ { id = $2; gsub(/"/, "", id) }
         in_front && /^status:/ { status = $2 }
         in_front && /^deps:/ {
-            deps = $2
-            gsub(/[\[\] ]/, "", deps)
+            deps = $2; gsub(/[\[\] ]/, "", deps); _arr = "deps"; next
         }
+        in_front && _arr == "deps" && /^  - / {
+            val = $0; sub(/^  - /, "", val); gsub(/[" ]/, "", val)
+            deps = (deps == "") ? val : deps "," val; next
+        }
+        in_front && _arr == "deps" { _arr = "" }
         function is_terminal(s) {
             return (s == "done" || s == "closed" || s == "completed" || s == "finished" || s == "resolved" || s == "cancelled" || s == "canceled" || s == "wontfix")
         }
@@ -677,6 +681,12 @@ cmd_dep_tree() {
                     print "ROOT:" id
                 }
             }
+            # Also treat dep targets with no ticket file as virtual roots
+            for (id in is_dependency) {
+                if (!(id in all_ids)) {
+                    print "ROOT:" id
+                }
+            }
 
             # Count isolated tickets (no incoming or outgoing dependencies)
             isolated_count = 0
@@ -690,9 +700,9 @@ cmd_dep_tree() {
         ' "${ticket_files[@]}" 2>/dev/null)
 
         local roots
-        roots=$(echo "$roots_output" | grep '^ROOT:' | cut -d: -f2)
+        roots=$(echo "$roots_output" | grep '^ROOT:' | cut -d: -f2 || true)
         local isolated_count
-        isolated_count=$(echo "$roots_output" | grep '^ISOLATED:' | cut -d: -f2)
+        isolated_count=$(echo "$roots_output" | grep '^ISOLATED:' | cut -d: -f2 || true)
 
         if [[ -z "$roots" ]]; then
         echo "No dependency trees found."
@@ -736,7 +746,7 @@ cmd_dep_tree_single() {
     BEGIN { FS=": "; in_front=0 }
     FNR==1 {
         if (prev_file) store()
-        id=""; status=""; title=""; fm_title=""; deps=""; in_front=0
+        id=""; status=""; title=""; fm_title=""; deps=""; in_front=0; _arr=""
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
@@ -744,9 +754,13 @@ cmd_dep_tree_single() {
     in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2 }
     in_front && /^deps:/ {
-        deps = $2
-        gsub(/[\[\] ]/, "", deps)
+        deps = $2; gsub(/[\[\] ]/, "", deps); _arr = "deps"; next
     }
+    in_front && _arr == "deps" && /^  - / {
+        val = $0; sub(/^  - /, "", val); gsub(/[" ]/, "", val)
+        deps = (deps == "") ? val : deps "," val; next
+    }
+    in_front && _arr == "deps" { _arr = "" }
     !in_front && /^# / && title == "" { title = substr($0, 3) }
     function store() {
         if (title == "" && fm_title != "") title = fm_title
@@ -764,7 +778,7 @@ cmd_dep_tree_single() {
 
     END {
         if (prev_file) store()
-        # Resolve partial ID
+        # Resolve partial ID (check real tickets and dep targets)
         root = ""
         for (id in statuses) {
             if (index(id, root_pattern) > 0) {
@@ -773,6 +787,19 @@ cmd_dep_tree_single() {
                     exit 1
                 }
                 root = id
+            }
+        }
+        # Also check dep targets that may not have ticket files
+        if (root == "") {
+            for (id in statuses) {
+                n = split(deps_str[id], arr, ",")
+                for (i = 1; i <= n; i++) {
+                    if (arr[i] != "" && index(arr[i], root_pattern) > 0) {
+                        root = arr[i]
+                        statuses[root] = "missing"
+                        titles[root] = "(ticket not found)"
+                    }
+                }
             }
         }
         if (root == "") {
@@ -799,7 +826,7 @@ cmd_dep_tree_single() {
             id = stack[sp]; depth = stack_depth[sp]; path = stack_path[sp]
             sp--
 
-            if (!(id in statuses)) continue
+            if (!(id in statuses) && !(id in inverse_dep_count)) continue
             if (index(path, ":" id ":") > 0) continue
 
             if (!(id in max_depth) || depth > max_depth[id]) {
@@ -826,7 +853,7 @@ cmd_dep_tree_single() {
         while (sp > 0) {
             id = stack[sp]; path = stack_path[sp]; phase = stack_phase[sp]
 
-            if (!(id in statuses)) continue
+            if (!(id in statuses) && !(id in inverse_dep_count)) { sp--; continue }
             if (index(path, ":" id ":") > 0) { sp--; continue } # Protect against cycles
 
             if (phase == 0) {
@@ -873,7 +900,7 @@ cmd_dep_tree_single() {
             path = print_stack_path[print_sp]
             print_sp--
 
-            if (!(id in statuses)) continue
+            if (!(id in statuses) && !(id in inverse_dep_count)) continue
             if (!full_mode && (id in printed)) continue
             if (index(path, ":" id ":") > 0) continue
             if (!full_mode && depth != max_depth[id]) continue
@@ -907,7 +934,7 @@ cmd_dep_tree_single() {
         for (i = 2; i <= n; i++) {
             tmp = arr[i]
             j = i - 1
-            while (j >= 1 && (subtree_depth[arr[j]] > subtree_depth[tmp] || \\
+            while (j >= 1 && (subtree_depth[arr[j]] > subtree_depth[tmp] || \
                    (subtree_depth[arr[j]] == subtree_depth[tmp] && arr[j] > tmp))) {
                 arr[j + 1] = arr[j]
                 j--
@@ -943,7 +970,7 @@ cmd_dep_cycle() {
     BEGIN { FS=": "; in_front=0 }
     FNR==1 {
         if (prev_file) store()
-        id=""; status=""; title=""; fm_title=""; deps=""; in_front=0
+        id=""; status=""; title=""; fm_title=""; deps=""; in_front=0; _arr=""
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
@@ -951,9 +978,13 @@ cmd_dep_cycle() {
     in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2 }
     in_front && /^deps:/ {
-        deps = $2
-        gsub(/[\[\] ]/, "", deps)
+        deps = $2; gsub(/[\[\] ]/, "", deps); _arr = "deps"; next
     }
+    in_front && _arr == "deps" && /^  - / {
+        val = $0; sub(/^  - /, "", val); gsub(/[" ]/, "", val)
+        deps = (deps == "") ? val : deps "," val; next
+    }
+    in_front && _arr == "deps" { _arr = "" }
     !in_front && /^# / && title == "" { title = substr($0, 3) }
     function is_terminal(s) {
         return (s == "done" || s == "closed" || s == "completed" || s == "finished" || s == "resolved" || s == "cancelled" || s == "canceled" || s == "wontfix")
@@ -1142,7 +1173,7 @@ cmd_ls() {
     BEGIN { FS=": "; in_front=0 }
     FNR==1 {
         if (prev_file) emit()
-        id=""; status=""; title=""; fm_title=""; deps=""; assignee=""; tags=""; ttype=""; in_front=0
+        id=""; status=""; title=""; fm_title=""; deps=""; assignee=""; tags=""; ttype=""; in_front=0; _arr=""
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
@@ -1153,9 +1184,13 @@ cmd_ls() {
     in_front && /^assignee:/ { assignee = $2; gsub(/"/, "", assignee) }
     in_front && /^tags:/ { tags = $2; gsub(/[\[\]"]/, "", tags) }
     in_front && /^deps:/ {
-        deps = $2
-        gsub(/[\[\]]/, "", deps)
+        deps = $2; gsub(/[\[\]]/, "", deps); _arr = "deps"; next
     }
+    in_front && _arr == "deps" && /^  - / {
+        val = $0; sub(/^  - /, "", val); gsub(/[" ]/, "", val)
+        deps = (deps == "") ? val : deps "," val; next
+    }
+    in_front && _arr == "deps" { _arr = "" }
     !in_front && /^# / && title == "" { title = substr($0, 3) }
     END { if (prev_file) emit() }
     function has_tag(tags_str, tag,    i, n, arr) {
@@ -1217,7 +1252,7 @@ cmd_ready() {
     BEGIN { FS=": "; in_front=0 }
     FNR==1 {
         if (prev_file) store()
-        id=""; status=""; title=""; fm_title=""; deps=""; priority=""; assignee=""; tags=""; ttype=""; in_front=0
+        id=""; status=""; title=""; fm_title=""; deps=""; priority=""; assignee=""; tags=""; ttype=""; in_front=0; _arr=""
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
@@ -1229,9 +1264,13 @@ cmd_ready() {
     in_front && /^assignee:/ { assignee = $2 }
     in_front && /^tags:/ { tags = $2; gsub(/[\[\] ]/, "", tags) }
     in_front && /^deps:/ {
-        deps = $2
-        gsub(/[\[\] ]/, "", deps)
+        deps = $2; gsub(/[\[\] ]/, "", deps); _arr = "deps"; next
     }
+    in_front && _arr == "deps" && /^  - / {
+        val = $0; sub(/^  - /, "", val); gsub(/[" ]/, "", val)
+        deps = (deps == "") ? val : deps "," val; next
+    }
+    in_front && _arr == "deps" { _arr = "" }
     !in_front && /^# / && title == "" { title = substr($0, 3) }
     function has_tag(tags_str, tag,    i, n, arr) {
         n = split(tags_str, arr, ",")
@@ -1532,7 +1571,7 @@ cmd_blocked() {
     BEGIN { FS=": "; in_front=0 }
     FNR==1 {
         if (prev_file) store()
-        id=""; status=""; title=""; fm_title=""; deps=""; priority=""; assignee=""; tags=""; ttype=""; in_front=0
+        id=""; status=""; title=""; fm_title=""; deps=""; priority=""; assignee=""; tags=""; ttype=""; in_front=0; _arr=""
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
@@ -1544,9 +1583,13 @@ cmd_blocked() {
     in_front && /^assignee:/ { assignee = $2 }
     in_front && /^tags:/ { tags = $2; gsub(/[\[\] ]/, "", tags) }
     in_front && /^deps:/ {
-        deps = $2
-        gsub(/[\[\] ]/, "", deps)
+        deps = $2; gsub(/[\[\] ]/, "", deps); _arr = "deps"; next
     }
+    in_front && _arr == "deps" && /^  - / {
+        val = $0; sub(/^  - /, "", val); gsub(/[" ]/, "", val)
+        deps = (deps == "") ? val : deps "," val; next
+    }
+    in_front && _arr == "deps" { _arr = "" }
     !in_front && /^# / && title == "" { title = substr($0, 3) }
     function has_tag(tags_str, tag,    i, n, arr) {
         n = split(tags_str, arr, ",")
@@ -2021,15 +2064,22 @@ cmd_show() {
     # First pass: collect all ticket metadata
     FNR==1 {
         if (prev_file) store()
-        id=""; status=""; title=""; fm_title=""; deps=""; links=""; parent=""; in_front=0
+        id=""; status=""; title=""; fm_title=""; deps=""; links=""; parent=""; in_front=0; _arr=""
         prev_file=FILENAME
     }
     /^---$/ { in_front = !in_front; next }
     in_front && /^id:/ { id = $2; gsub(/"/, "", id) }
     in_front && /^title:/ { fm_title = substr($0, 8); gsub(/^["'\'']+|["'\'']+$/, "", fm_title) }
     in_front && /^status:/ { status = $2 }
-    in_front && /^deps:/ { deps = $2; gsub(/[\[\] ]/, "", deps) }
-    in_front && /^links:/ { links = $2; gsub(/[\[\] ]/, "", links) }
+    in_front && /^deps:/ { deps = $2; gsub(/[\[\] ]/, "", deps); _arr = "deps"; next }
+    in_front && /^links:/ { links = $2; gsub(/[\[\] ]/, "", links); _arr = "links"; next }
+    in_front && _arr != "" && /^  - / {
+        val = $0; sub(/^  - /, "", val); gsub(/[" ]/, "", val)
+        if (_arr == "deps") deps = (deps == "") ? val : deps "," val
+        else if (_arr == "links") links = (links == "") ? val : links "," val
+        next
+    }
+    in_front && _arr != "" { _arr = "" }
     in_front && /^parent:/ { parent = $2 }
     !in_front && /^# / && title == "" { title = substr($0, 3) }
 
