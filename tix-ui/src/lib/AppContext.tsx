@@ -6,9 +6,15 @@ interface FiltersState {
   statusFilter: string
   tagFilter: string
   typeFilter: string
+  /** Currently scoped folder path. Empty string = root (all). */
+  folderScope: string
   setStatusFilter: (v: string) => void
   setTagFilter: (v: string) => void
   setTypeFilter: (v: string) => void
+  setFolderScope: (v: string) => void
+  /** Clear status/tag/type filters but keep folder scope. */
+  clearSubFilters: () => void
+  /** Clear everything including folder scope. */
   clearAll: () => void
 }
 
@@ -105,7 +111,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [statusFilter, setStatusFilter] = useState('')
   const [tagFilter, setTagFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
-  const clearAll = useCallback(() => { setStatusFilter(''); setTagFilter(''); setTypeFilter('') }, [])
+  const [folderScope, setFolderScope] = useState('')
+  const clearSubFilters = useCallback(() => { setStatusFilter(''); setTagFilter(''); setTypeFilter('') }, [])
+  const clearAll = useCallback(() => { setStatusFilter(''); setTagFilter(''); setTypeFilter(''); setFolderScope('') }, [])
 
   // Sidebar — same hydration-safety pattern as view settings: start with the
   // default that the server renders, then sync from localStorage after mount
@@ -189,7 +197,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value: AppContextValue = {
-    filters: { statusFilter, tagFilter, typeFilter, setStatusFilter, setTagFilter, setTypeFilter, clearAll },
+    filters: { statusFilter, tagFilter, typeFilter, folderScope, setStatusFilter, setTagFilter, setTypeFilter, setFolderScope, clearSubFilters, clearAll },
     sidebar: { open: sidebarOpen, toggle: toggleSidebar, width: sidebarWidth, setWidth: setSidebarWidth },
     theme: { dark, toggle: toggleTheme },
     viewSettings: { ...vs, update: updateVS, toggleSortDir },
