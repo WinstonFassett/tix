@@ -74,7 +74,8 @@ export function DashboardView() {
     status: filters.statusFilter || undefined,
     tag: filters.tagFilter || undefined,
     type: filters.typeFilter || undefined,
-  }), [tickets, filters.statusFilter, filters.tagFilter, filters.typeFilter])
+    folderScope: filters.folderScope || undefined,
+  }), [tickets, filters.statusFilter, filters.tagFilter, filters.typeFilter, filters.folderScope])
 
   const sorted = useMemo(() => {
     const dir = view.sortDir === 'asc' ? 1 : -1
@@ -231,7 +232,7 @@ export function DashboardView() {
           <button className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent transition-colors text-muted-foreground" onClick={toggleSidebar} title="Toggle sidebar">
             <PanelLeft className="h-4 w-4" />
           </button>
-          <span className="text-sm font-medium">All Issues</span>
+          <span className="text-sm font-medium">{filters.folderScope ? `All Issues in ${filters.folderScope}` : 'All Issues'}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <button
@@ -259,13 +260,13 @@ export function DashboardView() {
 
       {/* Header row 2 */}
       <div className="w-full flex justify-between items-center border-b py-1.5 px-6 h-10">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {(filters.statusFilter || filters.tagFilter || filters.typeFilter) && (
             <>
               <span className="text-xs text-muted-foreground">Filtered by:</span>
               <span className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs font-medium">
                 {filters.statusFilter || filters.tagFilter || filters.typeFilter}
-                <button className="ml-0.5 hover:text-foreground" onClick={() => navigate({ to: '/', search: {} })} aria-label="Clear filter">
+                <button className="ml-0.5 hover:text-foreground" onClick={() => { filters.clearSubFilters(); navigate({ to: '/', search: {} }) }} aria-label="Clear filter">
                   <X className="h-3 w-3" />
                 </button>
               </span>
@@ -289,6 +290,7 @@ export function DashboardView() {
                   <option value="status">Status</option>
                   <option value="priority">Priority</option>
                   <option value="type">Type</option>
+                  <option value="folder">Folder</option>
                   <option value="none">None</option>
                 </Select>
               </div>

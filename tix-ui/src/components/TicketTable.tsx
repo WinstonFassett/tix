@@ -29,6 +29,7 @@ function groupLabel(key: string, groupBy: GroupBy): string {
   if (groupBy === 'status') return STATUS_LABELS[key as TicketStatus] || key
   if (groupBy === 'priority') return priorityLabels[key] || `P${key}`
   if (groupBy === 'type') return key.charAt(0).toUpperCase() + key.slice(1)
+  if (groupBy === 'folder') return key || '(root)'
   return key
 }
 

@@ -11,6 +11,8 @@ export interface Ticket {
   tags: string[]
   body: string
   filename: string
+  /** Relative path from tickets/ root. Empty string for root-level tickets. */
+  folder: string
 }
 
 export type TicketStatus = Ticket['status']
@@ -48,7 +50,7 @@ export const TYPE_COLORS: Record<string, string> = {
   task: '#94a3b8', bug: '#ef4444', feature: '#3b82f6', epic: '#d946ef',
 }
 
-export type GroupBy = 'status' | 'priority' | 'type' | 'none'
+export type GroupBy = 'status' | 'priority' | 'type' | 'folder' | 'none'
 export type SortBy = 'priority' | 'title' | 'created' | 'status'
 export type SortDir = 'asc' | 'desc'
 export type ViewMode = 'list' | 'board'

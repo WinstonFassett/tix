@@ -6,10 +6,43 @@ import { execFile } from 'node:child_process'
 import type { Ticket } from '../types'
 
 const VALID_STATUSES = ['open', 'in-progress', 'review', 'on-hold', 'done', 'closed']
+export const DEFAULT_IGNORED_FOLDERS = ['archive']
 
 function resolveTicketsDir(): string {
   return process.env.TICKETS_DIR
     || path.join(process.env.TIX_WORKSPACE || process.env.TICKET_WORKSPACE || process.cwd(), 'tickets')
+}
+
+/** Recursively walk tickets dir, returning { filepath, filename, folder } tuples.
+ *  `folder` is relative to ticketsDir (empty string for root). */
+function walkTickets(ticketsDir: string, rel = ''): Array<{ filepath: string; filename: string; folder: string }> {
+  const results: Array<{ filepath: string; filename: string; folder: string }> = []
+  const dir = rel ? path.join(ticketsDir, rel) : ticketsDir
+  let entries: fs.Dirent[]
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return results
+  }
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      const childRel = rel ? `${rel}/${entry.name}` : entry.name
+      results.push(...walkTickets(ticketsDir, childRel))
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      results.push({
+        filepath: path.join(dir, entry.name),
+        filename: rel ? `${rel}/${entry.name}` : entry.name,
+        folder: rel,
+      })
+    }
+  }
+  return results
+}
+
+/** Find a single ticket file by ID anywhere in the tree (including ignored folders). */
+function findTicketFile(ticketsDir: string, ticketId: string): { filepath: string; filename: string; folder: string } | null {
+  const all = walkTickets(ticketsDir)
+  return all.find(f => f.filename.includes(`(${ticketId})`)) || null
 }
 
 function sanitizeTitle(title: string): string {
@@ -49,9 +82,8 @@ export const getTickets = createServerFn({ method: 'GET' }).handler(async () => 
   const tickets: Ticket[] = []
 
   try {
-    const entries = fs.readdirSync(ticketsDir).filter(f => f.endsWith('.md'))
-    for (const filename of entries) {
-      const filepath = path.join(ticketsDir, filename)
+    const files = walkTickets(ticketsDir)
+    for (const { filepath, filename, folder } of files) {
       const raw = fs.readFileSync(filepath, 'utf-8')
       const { data, content } = matter(raw)
       tickets.push({
@@ -67,6 +99,7 @@ export const getTickets = createServerFn({ method: 'GET' }).handler(async () => 
         tags: data.tags || [],
         body: content.trim(),
         filename,
+        folder,
       })
     }
   } catch {
@@ -131,14 +164,12 @@ export const updateTicket = createServerFn({ method: 'POST' })
       throw new Error(`Invalid status: ${updates.status}. Valid: ${VALID_STATUSES.join(', ')}`)
     }
 
-    const entries = fs.readdirSync(ticketsDir).filter(f => f.endsWith('.md'))
-    const filename = entries.find(f => f.includes(`(${ticketId})`))
-
-    if (!filename) {
+    const found = findTicketFile(ticketsDir, ticketId)
+    if (!found) {
       throw new Error(`Ticket ${ticketId} not found`)
     }
 
-    const filepath = path.join(ticketsDir, filename)
+    const { filepath, folder } = found
     const raw = fs.readFileSync(filepath, 'utf-8')
     const { data: frontmatter, content } = matter(raw)
 
@@ -161,7 +192,8 @@ export const updateTicket = createServerFn({ method: 'POST' })
     if (updates.title !== undefined) {
       const cleanTitle = sanitizeTitle(updates.title as string)
       const newFilename = `${cleanTitle} (${ticketId}).md`
-      newFilepath = path.join(ticketsDir, newFilename)
+      const fileDir = folder ? path.join(ticketsDir, folder) : ticketsDir
+      newFilepath = path.join(fileDir, newFilename)
       if (newFilepath !== filepath && fs.existsSync(newFilepath)) {
         throw new Error(`File already exists: ${newFilename}`)
       }
@@ -180,9 +212,8 @@ export const deleteTicket = createServerFn({ method: 'POST' })
   .inputValidator((data: { ticketId: string }) => data)
   .handler(async ({ data }) => {
     const ticketsDir = resolveTicketsDir()
-    const entries = fs.readdirSync(ticketsDir).filter(f => f.endsWith('.md'))
-    const filename = entries.find(f => f.includes(`(${data.ticketId})`))
-    if (!filename) throw new Error(`Ticket ${data.ticketId} not found`)
-    fs.unlinkSync(path.join(ticketsDir, filename))
+    const found = findTicketFile(ticketsDir, data.ticketId)
+    if (!found) throw new Error(`Ticket ${data.ticketId} not found`)
+    fs.unlinkSync(found.filepath)
     return { ok: true }
   })

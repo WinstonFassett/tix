@@ -9,6 +9,7 @@ import { TypeIcon } from '#/components/icons/TypeIcon'
 import { Button } from '#/components/ui'
 import { STATUS_LABELS, TYPE_LABELS, type TicketStatus } from '#/lib/types'
 import { Sun, Moon, Inbox } from 'lucide-react'
+import { FolderTree } from '#/components/FolderTree'
 
 import appCss from '../styles.css?url'
 
@@ -248,14 +249,21 @@ function AppLayout() {
           )}
         </div>
         <nav className="flex-1 overflow-y-auto py-2">
-          <div className="px-2 mb-1">
+          {/* Folder tree — outer context, above All Issues */}
+          <FolderTree
+            tickets={tickets}
+            selectedFolder={filters.folderScope}
+            onSelect={filters.setFolderScope}
+            totalCount={tickets.length}
+          />
+
+          <div className="px-2 mt-3 mb-1">
             <div
               className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors ${!filters.statusFilter && !filters.tagFilter && !filters.typeFilter ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50 text-foreground'}`}
-              onClick={() => navigate({ to: '/', search: {} })}
+              onClick={() => { filters.clearSubFilters(); navigate({ to: '/', search: {} }) }}
             >
-              <Inbox className="h-4 w-4 text-muted-foreground" />
-              <span>All Issues</span>
-              <span className="ml-auto text-xs text-muted-foreground">{tickets.length}</span>
+              <Inbox className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span>{filters.folderScope ? <>All Issues in{' '}<span className="font-medium whitespace-nowrap">{filters.folderScope}</span></> : 'All Issues'}</span>
             </div>
           </div>
 
