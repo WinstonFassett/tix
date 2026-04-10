@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Take screenshots of tix web UIs for documentation.
+"""Take screenshots of tix-ui for documentation.
 
 Usage:
-  python scripts/screenshots.py                    # Both UIs, default ports
-  python scripts/screenshots.py --svelte 5175      # Svelte only
-  python scripts/screenshots.py --react 5176       # React only
+  python scripts/screenshots.py                        # Default: localhost:3000
+  python scripts/screenshots.py --url http://my-project-tix.localhost:1355
+  python scripts/screenshots.py --port 3001
   python scripts/screenshots.py --width 1440 --height 900
 
 Requires: playwright (pip install playwright && playwright install chromium)
@@ -35,18 +35,18 @@ def set_theme(page, dark: bool):
     page.wait_for_timeout(200)
 
 
-def take_screenshots(p, port: int, out_dir: Path, label: str, width: int, height: int):
+def take_screenshots(p, base_url: str, out_dir: Path, width: int, height: int):
     out_dir.mkdir(parents=True, exist_ok=True)
     browser = p.chromium.launch(headless=True)
     page = browser.new_page(viewport={"width": width, "height": height})
 
     for theme in ("dark", "light"):
-        page.goto(f"http://localhost:{port}/")
+        page.goto(f"{base_url}/")
         set_theme(page, theme == "dark")
 
         # List view
         page.screenshot(path=str(out_dir / f"list-{theme}.png"))
-        print(f"  [{label}] list-{theme}.png")
+        print(f"  list-{theme}.png")
 
         # Detail view — click first ticket row
         row = page.locator('[role="button"]').first
@@ -57,31 +57,29 @@ def take_screenshots(p, port: int, out_dir: Path, label: str, width: int, height
             page.add_style_tag(content=HIDE_DEV_OVERLAYS)
             page.wait_for_timeout(200)
             page.screenshot(path=str(out_dir / f"detail-{theme}.png"))
-            print(f"  [{label}] detail-{theme}.png")
+            print(f"  detail-{theme}.png")
 
     browser.close()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Take tix UI screenshots")
-    parser.add_argument("--svelte", type=int, metavar="PORT", nargs="?", const=5175, default=None)
-    parser.add_argument("--react", type=int, metavar="PORT", nargs="?", const=5176, default=None)
+    parser = argparse.ArgumentParser(description="Take tix-ui screenshots")
+    parser.add_argument("--url", type=str, default=None,
+                        help="Base URL (e.g. http://my-project-tix.localhost:1355)")
+    parser.add_argument("--port", type=int, default=None,
+                        help="Port on localhost (default 3000)")
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=800)
     args = parser.parse_args()
 
-    # Default: both UIs
-    if args.svelte is None and args.react is None:
-        args.svelte = 5175
-        args.react = 5176
+    if args.url:
+        base_url = args.url.rstrip("/")
+    else:
+        base_url = f"http://localhost:{args.port or 3000}"
 
     with sync_playwright() as p:
-        if args.svelte:
-            print(f"Svelte UI (port {args.svelte}):")
-            take_screenshots(p, args.svelte, ROOT / "tix-ui" / "screenshots", "Svelte", args.width, args.height)
-        if args.react:
-            print(f"React UI (port {args.react}):")
-            take_screenshots(p, args.react, ROOT / "tix-ui-react" / "screenshots", "React", args.width, args.height)
+        print(f"tix-ui ({base_url}):")
+        take_screenshots(p, base_url, ROOT / "tix-ui" / "screenshots", args.width, args.height)
 
     print("\nDone!")
 

@@ -28,7 +28,7 @@ bats test/basic_operations.bats   # single test file
 - **`lib/yq`, `lib/jq`** — Vendored binaries (not checked in; downloaded by `setup-deps`).
 - **`ticket`** — Deprecated compat wrapper that exec's `tix`.
 - **`tix-vault`** — Obsidian vault integration wrapper.
-- **`tix-ui/`** — React + TanStack Start web dashboard. Reactive live updates via chokidar SSE endpoint at `tix-ui/server/routes/api/tickets-events.get.ts`. Built and symlinked by `./install-tix-ui`. Playwright e2e tests in `tix-ui/e2e/`.
+- **`tix-ui/`** — React + TanStack Start web dashboard. Reactive live updates via chokidar SSE endpoint at `tix-ui/server/routes/api/tickets-events.get.ts`. Built and symlinked by `./install-tix-ui`. Uses portless when available for named `.localhost` URLs (e.g. `project-tix.localhost:1355`). Playwright e2e tests in `tix-ui/e2e/`.
 - **`skills/tix/SKILL.md`** — Skill definition for AI agents to use tix.
 
 ## Ticket Format
@@ -40,6 +40,9 @@ Files named `Title Case (4hex).md` in `tickets/`. Frontmatter fields: `id`, `tit
 - `TIX_WORKSPACE` — Override workspace root (tickets dir = `$TIX_WORKSPACE/tickets/`)
 - `TICKET_WORKSPACE` — Legacy fallback for above
 - `TICKETS_DIR` — Direct override of tickets directory path
+- `PORTLESS` — Set to `0` to bypass portless proxy for tix-ui
+- `PORTLESS_PORT` — Override portless proxy port (default 1355)
+- `TIX_UI_DEV` — Set to `1` to run tix-ui in vite dev mode with HMR
 
 ## Key Conventions
 

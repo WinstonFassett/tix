@@ -28,8 +28,13 @@ Install and launch:
 
 ```bash
 ./install-tix-ui                          # builds and symlinks `tix-ui`
-cd your-project && tix-ui                 # opens http://localhost:3000
+cd your-project && tix-ui                 # opens the dashboard
 ```
+
+With [portless](https://www.npmjs.com/package/portless) installed, each project
+gets a stable named URL — e.g. `http://my-project-tix.localhost:1355` instead of
+a random port. Without portless, falls back to an available port starting at 3000.
+Set `PORTLESS=0` to bypass.
 
 ## How It Works
 
