@@ -8,7 +8,6 @@ import { $prose } from '@milkdown/utils'
 import { commandsCtx } from '@milkdown/core'
 import { highlightColors } from './highlight-colors'
 import { toggleHighlightCommand } from './highlight-mark'
-import { toggleTextColorCommand } from './text-color-mark'
 
 const PICKER_KEY = new PluginKey('color-picker')
 
@@ -19,6 +18,8 @@ function createSwatchGrid(
   const grid = document.createElement('div')
   grid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:4px;'
 
+  const isDark = document.documentElement.classList.contains('dark')
+
   for (const color of highlightColors) {
     const swatch = document.createElement('button')
     swatch.type = 'button'
@@ -27,10 +28,13 @@ function createSwatchGrid(
     swatch.style.cssText = `
       width:32px;height:32px;border-radius:6px;border:1.5px solid transparent;
       cursor:pointer;transition:border-color 0.15s,transform 0.1s;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:500;font-size:16px;line-height:1;font-family:inherit;
     `
-    if (prefix === 'text-color') {
-      swatch.style.backgroundColor = 'currentColor'
-    }
+    // Show "A" in the foreground color so users preview the text effect
+    const fg = isDark ? color.foreground.dark : color.foreground.light
+    swatch.textContent = 'A'
+    swatch.style.color = fg
     swatch.addEventListener('mouseenter', () => {
       swatch.style.borderColor = 'var(--ring,#999)'
       swatch.style.transform = 'scale(1.1)'
@@ -102,34 +106,12 @@ export const colorPickerPlugin = $prose((ctx) => {
         picker.style.display = 'none'
       }
 
-      function show(mode: 'highlight' | 'text-color', anchorRect: DOMRect) {
+      function show(anchorRect: DOMRect) {
         picker.innerHTML = ''
 
-        if (mode === 'text-color') {
-          // Text color button: show Color section + Background section
-          picker.appendChild(createSection(
-            'Color',
-            'text-color',
-            (colorName) => {
-              ctx.get(commandsCtx).call(toggleTextColorCommand.key, colorName)
-              hide()
-              editorView.focus()
-            },
-            () => {
-              ctx.get(commandsCtx).call(toggleTextColorCommand.key)
-              hide()
-              editorView.focus()
-            },
-          ))
-
-          const divider = document.createElement('div')
-          divider.style.cssText = 'height:1px;background:var(--border,#e5e5e5);margin:8px 0;'
-          picker.appendChild(divider)
-        }
-
-        // Background (highlight) section — always shown
+        // Highlight color swatches
         picker.appendChild(createSection(
-          'Background',
+          'Highlight',
           'highlight',
           (colorName) => {
             ctx.get(commandsCtx).call(toggleHighlightCommand.key, colorName)
@@ -171,18 +153,16 @@ export const colorPickerPlugin = $prose((ctx) => {
         }
 
         const isHighlightBtn = !!btn.querySelector('[data-mark="highlight"]')
-        const isTextColorBtn = !!btn.querySelector('[data-mark="text-color"]')
 
-        if (isHighlightBtn || isTextColorBtn) {
+        if (isHighlightBtn) {
           e.preventDefault()
           e.stopPropagation()
           e.stopImmediatePropagation()
-          const mode = isHighlightBtn ? 'highlight' as const : 'text-color' as const
           const rect = btn.getBoundingClientRect()
           if (picker.style.display !== 'none') {
             hide()
           } else {
-            show(mode, rect)
+            show(rect)
           }
         }
       }

@@ -63,4 +63,5 @@ describe('remarkHighlight', () => {
     const highlights = findNodes(tree, 'highlight')
     expect(highlights).toHaveLength(0)
   })
+
 })

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 import { highlightPlugins } from '#/lib/editor/highlight-mark'
-import { textColorPlugins } from '#/lib/editor/text-color-mark'
 import { underlinePlugins } from '#/lib/editor/underline-mark'
 import { colorPickerPlugin } from '#/lib/editor/color-picker-plugin'
 import { getEditorFeatureConfigs } from '#/lib/editor/editor-config'
@@ -38,7 +37,6 @@ export function MilkdownEditor({ defaultValue = '', onChange }: MilkdownEditorPr
       // Register custom plugins before creating
       crepe.editor
         .use(highlightPlugins as any)
-        .use(textColorPlugins as any)
         .use(underlinePlugins as any)
         .use(colorPickerPlugin as any)
 

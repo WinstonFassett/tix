@@ -31,6 +31,5 @@ describe('editor feature configs', () => {
     const keys = items['formatting'].map((i: any) => i.key)
     expect(keys).toContain('highlight')
     expect(keys).toContain('underline')
-    expect(keys).toContain('text-color')
   })
 })

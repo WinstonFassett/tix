@@ -148,34 +148,16 @@
 .highlight-purple { background-color: rgba(237, 221, 255, 1); }
 .highlight-grey { background-color: rgba(234, 236, 239, 1); }
 
-/* Dark mode: same vibrant colors with opacity so they glow, not mud */
-.dark .highlight-red { background-color: rgba(254, 213, 213, 0.18); }
-.dark .highlight-orange { background-color: rgba(254, 223, 187, 0.18); }
-.dark .highlight-yellow { background-color: rgba(254, 243, 161, 0.2); }
-.dark .highlight-green { background-color: rgba(225, 250, 177, 0.16); }
-.dark .highlight-teal { background-color: rgba(173, 248, 233, 0.16); }
-.dark .highlight-blue { background-color: rgba(204, 226, 254, 0.18); }
-.dark .highlight-purple { background-color: rgba(237, 221, 255, 0.2); }
-.dark .highlight-grey { background-color: rgba(234, 236, 239, 0.15); }
+/* Dark mode: AFFiNE dark palette + ensure readable text */
+.dark .highlight-red { background-color: rgba(108, 39, 39, 1); color: rgba(254, 213, 213, 1); }
+.dark .highlight-orange { background-color: rgba(112, 58, 21, 1); color: rgba(254, 223, 187, 1); }
+.dark .highlight-yellow { background-color: rgba(106, 84, 15, 1); color: rgba(254, 243, 161, 1); }
+.dark .highlight-green { background-color: rgba(26, 91, 50, 1); color: rgba(225, 250, 177, 1); }
+.dark .highlight-teal { background-color: rgba(14, 85, 97, 1); color: rgba(173, 248, 233, 1); }
+.dark .highlight-blue { background-color: rgba(56, 75, 122, 1); color: rgba(204, 226, 254, 1); }
+.dark .highlight-purple { background-color: rgba(80, 46, 111, 1); color: rgba(237, 221, 255, 1); }
+.dark .highlight-grey { background-color: rgba(64, 67, 74, 1); color: rgba(234, 236, 239, 1); }
 
-/* Text foreground color classes */
-.text-color-red { color: rgba(198, 34, 34, 1); }
-.text-color-orange { color: rgba(211, 79, 11, 1); }
-.text-color-yellow { color: rgba(182, 124, 4, 1); }
-.text-color-green { color: rgba(20, 147, 67, 1); }
-.text-color-teal { color: rgba(7, 130, 160, 1); }
-.text-color-blue { color: rgba(33, 89, 211, 1); }
-.text-color-purple { color: rgba(132, 46, 211, 1); }
-.text-color-grey { color: rgba(122, 122, 122, 1); }
-
-.dark .text-color-red { color: rgba(249, 141, 141, 1); }
-.dark .text-color-orange { color: rgba(252, 168, 99, 1); }
-.dark .text-color-yellow { color: rgba(251, 214, 68, 1); }
-.dark .text-color-green { color: rgba(110, 229, 153, 1); }
-.dark .text-color-teal { color: rgba(87, 221, 204, 1); }
-.dark .text-color-blue { color: rgba(128, 183, 251, 1); }
-.dark .text-color-purple { color: rgba(205, 157, 253, 1); }
-.dark .text-color-grey { color: rgba(86, 86, 86, 1); }
 
 /* Milkdown editor styling */
 .milkdown-editor .milkdown {

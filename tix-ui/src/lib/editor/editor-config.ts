@@ -1,27 +1,23 @@
 /**
  * Crepe editor feature configuration — extends the default toolbar with
- * custom marks (highlight, text color) and other enhancements.
+ * highlight mark and other enhancements.
  */
 import type { CrepeConfig } from '@milkdown/crepe'
 import { commandsCtx } from '@milkdown/core'
-import { highlightSchema, toggleHighlightCommand } from './highlight-mark'
-import { textColorSchema, toggleTextColorCommand } from './text-color-mark'
+import { highlightSchema } from './highlight-mark'
 import { underlineSchema, toggleUnderlineCommand } from './underline-mark'
 import { getSlashMenuConfig } from './slash-commands'
 
-// Real Lucide icon SVG paths wrapped with data-mark for color-picker-plugin detection
-const svgWrap = (mark: string, paths: string) =>
-  `<span data-mark="${mark}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg></span>`
+// Icons: inline SVG strings with data-mark attr for color-picker-plugin detection.
+const markIcon = (mark: string, svg: string) =>
+  `<span data-mark="${mark}">${svg}</span>`
 
-// Lucide "highlighter"
-const highlightIcon = svgWrap('highlight',
-  '<path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>')
-// Lucide "baseline" (A with underline — standard text-color icon)
-const textColorIcon = svgWrap('text-color',
-  '<path d="M4 20h16"/><path d="m6 16 6-12 6 12"/><path d="M8 12h8"/>')
-// Lucide "underline"
-const underlineIcon = svgWrap('underline',
-  '<path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" x2="20" y1="20" y2="20"/>')
+// Phosphor "highlighter-circle" — fits the circular picker metaphor
+const highlightIcon = markIcon('highlight',
+  '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M201.54,54.46A104,104,0,0,0,54.46,201.54,104,104,0,0,0,201.54,54.46ZM96,210V152h64v58a88.33,88.33,0,0,1-64,0Zm48-74H112V100.94l32-16Zm46.22,54.22A88.09,88.09,0,0,1,176,201.77V152a16,16,0,0,0-16-16V72a8,8,0,0,0-11.58-7.16l-48,24A8,8,0,0,0,96,96v40a16,16,0,0,0-16,16v49.77a88,88,0,1,1,110.22-11.55Z"/></svg>')
+// Material Design "format-underlined"
+const underlineIcon = markIcon('underline',
+  '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/></svg>')
 
 export function getEditorFeatureConfigs(): CrepeConfig['featureConfigs'] {
   return {
@@ -56,20 +52,6 @@ export function getEditorFeatureConfigs(): CrepeConfig['featureConfigs'] {
           onRun: (ctx: any) => {
             const commands = ctx.get(commandsCtx)
             commands.call(toggleUnderlineCommand.key)
-          },
-        })
-        formatting.addItem('text-color', {
-          icon: textColorIcon,
-          active: (ctx: any) => {
-            const commands = ctx.get(commandsCtx)
-            try {
-              return commands.call('isMarkSelected', textColorSchema.type(ctx))
-            } catch {
-              return false
-            }
-          },
-          onRun: () => {
-            // Color picker plugin intercepts the click — no-op here
           },
         })
       },
