@@ -14,6 +14,12 @@ import { webDevMcp } from '@winstonfassett/web-dev-mcp-vite'
 // both dev and prod. No vite-plugin watcher needed.
 
 const config = defineConfig({
+  optimizeDeps: {
+    exclude: ['fsevents', '@livestore/adapter-node', 'better-sqlite3'],
+  },
+  ssr: {
+    external: ['@livestore/adapter-node', 'better-sqlite3', 'fsevents'],
+  },
   plugins: [
     devtools(),
     nitro({

@@ -30,6 +30,18 @@ function ensureLiveUpdateStream() {
   if (typeof window === 'undefined' || typeof EventSource === 'undefined') return
   if (liveUpdateStream) return
   const es = new EventSource('/api/tickets-events')
+  // Granular events: invalidate specific ticket + list queries
+  es.addEventListener('ticket-upsert', (e) => {
+    const { id } = JSON.parse((e as MessageEvent).data)
+    queryClient.invalidateQueries({ queryKey: ['tickets'] })
+    queryClient.invalidateQueries({ queryKey: ['ticket', id] })
+  })
+  es.addEventListener('ticket-delete', (e) => {
+    const { id } = JSON.parse((e as MessageEvent).data)
+    queryClient.invalidateQueries({ queryKey: ['tickets'] })
+    queryClient.removeQueries({ queryKey: ['ticket', id] })
+  })
+  // Keep backwards compat with old-style events during transition
   es.addEventListener('tickets-update', () => {
     queryClient.invalidateQueries({ queryKey: ['tickets'] })
   })
