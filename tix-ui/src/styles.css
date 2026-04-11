@@ -137,6 +137,16 @@
   padding: 0.75rem 0.75rem 0.5rem;
 }
 
+/* Highlight mark default styling */
+.milkdown mark {
+  background-color: rgba(254, 243, 161, 1);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+.dark .milkdown mark {
+  background-color: rgba(106, 84, 15, 1);
+}
+
 /* Milkdown editor styling */
 .milkdown-editor .milkdown {
   outline: none;

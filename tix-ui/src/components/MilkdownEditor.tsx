@@ -1,4 +1,8 @@
 import { useEffect, useRef } from 'react'
+import { highlightPlugins } from '#/lib/editor/highlight-mark'
+import { textColorPlugins } from '#/lib/editor/text-color-mark'
+import { underlinePlugins } from '#/lib/editor/underline-mark'
+import { getEditorFeatureConfigs } from '#/lib/editor/editor-config'
 
 interface MilkdownEditorProps {
   defaultValue?: string
@@ -23,7 +27,14 @@ export function MilkdownEditor({ defaultValue = '', onChange }: MilkdownEditorPr
       const crepe = new Crepe({
         root: containerRef.current,
         defaultValue,
+        featureConfigs: getEditorFeatureConfigs(),
       })
+
+      // Register custom plugins before creating
+      crepe.editor
+        .use(highlightPlugins as any)
+        .use(textColorPlugins as any)
+        .use(underlinePlugins as any)
 
       crepe.on((listener: any) => {
         listener.markdownUpdated((_ctx: any, markdown: string) => {
