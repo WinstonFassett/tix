@@ -4,7 +4,7 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import type { Ticket } from '../types'
 import { getStore, getTicketsDir } from './livestore/singleton.js'
-import { events, type TicketRow } from './livestore/index.js'
+import { events, type TicketRow, type TicketListRow } from './livestore/index.js'
 import { projectTicketToFile } from './livestore/sync.js'
 
 const VALID_STATUSES = ['open', 'in-progress', 'review', 'on-hold', 'done', 'closed']
@@ -24,6 +24,25 @@ function rowToTicket(row: TicketRow): Ticket {
     links: JSON.parse(row.links),
     created: row.created,
     body: row.body,
+    filename: row.filename,
+    folder: row.folder,
+  }
+}
+
+/** Convert a list row (no body) to a Ticket with empty body. */
+function listRowToTicket(row: TicketListRow): Ticket {
+  return {
+    id: row.id,
+    title: row.title,
+    status: row.status as Ticket['status'],
+    type: row.type,
+    priority: row.priority,
+    assignee: row.assignee,
+    tags: JSON.parse(row.tags),
+    deps: JSON.parse(row.deps),
+    links: JSON.parse(row.links),
+    created: row.created,
+    body: '',
     filename: row.filename,
     folder: row.folder,
   }
@@ -69,8 +88,30 @@ function generateId(): string {
 
 export const getTickets = createServerFn({ method: 'GET' }).handler(async () => {
   const store = await getStore()
-  const rows = store.query('allTickets')
-  return rows.map(rowToTicket)
+  const rows = store.queryList()
+  return rows.map(listRowToTicket)
+})
+
+export const getTicket = createServerFn({ method: 'GET' })
+  .inputValidator((data: { ticketId: string }) => data)
+  .handler(async ({ data }) => {
+    const store = await getStore()
+    const row = store.queryById(data.ticketId)
+    if (!row) throw new Error(`Ticket ${data.ticketId} not found`)
+    return rowToTicket(row)
+  })
+
+export const searchTickets = createServerFn({ method: 'GET' })
+  .inputValidator((data: { query: string; limit?: number }) => data)
+  .handler(async ({ data }) => {
+    const store = await getStore()
+    const rows = store.search(data.query, data.limit)
+    return rows.map(rowToTicket)
+  })
+
+export const getFolderCounts = createServerFn({ method: 'GET' }).handler(async () => {
+  const store = await getStore()
+  return store.queryFolderCounts()
 })
 
 export const getConfig = createServerFn({ method: 'GET' }).handler(async () => {
