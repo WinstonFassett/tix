@@ -1,18 +1,19 @@
 /**
  * Custom slash commands for the block edit menu.
- * Extends Crepe's default / menu with formatting and utility commands.
+ * Extends Crepe's default / menu with additional formatting commands.
+ *
+ * Crepe defaults already provide: Text, H1-H6, Quote, Divider, Bullet/Ordered/Task list,
+ * Image, Code block, Table, Math. We add formatting marks here.
  */
 import type { CrepeConfig } from '@milkdown/crepe'
 import { CrepeFeature } from '@milkdown/crepe'
 import { commandsCtx } from '@milkdown/core'
+import { toggleHighlightCommand } from './highlight-mark'
 
 type BlockEditConfig = NonNullable<NonNullable<CrepeConfig['featureConfigs']>[typeof CrepeFeature.BlockEdit]>
-import { toggleHighlightCommand } from './highlight-mark'
-import { toggleTextColorCommand } from './text-color-mark'
 
-// Lucide SVG icons
-const highlightIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>`
-const textColorIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="m6 16 6-12 6 12"/><path d="M8 12h8"/></svg>`
+// Phosphor "highlighter-circle" (regular weight, 24x24 viewbox scaled to 16)
+const highlightSlashIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M201.54,54.46A104,104,0,0,0,54.46,201.54,104,104,0,0,0,201.54,54.46ZM96,210V152h64v58a88.33,88.33,0,0,1-64,0Zm48-74H112V100.94l32-16Zm46.22,54.22A88.09,88.09,0,0,1,176,201.77V152a16,16,0,0,0-16-16V72a8,8,0,0,0-11.58-7.16l-48,24A8,8,0,0,0,96,96v40a16,16,0,0,0-16,16v49.77a88,88,0,1,1,110.22-11.55Z"/></svg>'
 
 export function getSlashMenuConfig(): BlockEditConfig {
   return {
@@ -20,18 +21,10 @@ export function getSlashMenuConfig(): BlockEditConfig {
       const formatting = builder.addGroup('formatting', 'Formatting')
       formatting.addItem('highlight', {
         label: 'Highlight',
-        icon: highlightIcon,
+        icon: highlightSlashIcon,
         onRun: (ctx: any) => {
           const commands = ctx.get(commandsCtx)
-          commands.call(toggleHighlightCommand.key)
-        },
-      })
-      formatting.addItem('text-color', {
-        label: 'Text Color',
-        icon: textColorIcon,
-        onRun: (ctx: any) => {
-          const commands = ctx.get(commandsCtx)
-          commands.call(toggleTextColorCommand.key)
+          commands.call(toggleHighlightCommand.key, 'yellow')
         },
       })
     },
