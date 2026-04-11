@@ -32,30 +32,36 @@ export async function getStore(): Promise<TicketStore> {
   if (_g.__tixInitPromise) return _g.__tixInitPromise
 
   _g.__tixInitPromise = (async () => {
-    const storageDir = resolveStorageDir()
-    const ticketsDir = resolveTicketsDir()
-    const store = await createTicketStore({ storageDir })
-
-    // Wire up loop guard — dynamically import the SSE module's markAsProjected
-    // if available (only when the server is running, not in tests)
     try {
-      const { markAsProjected } = await import('../../../../server/routes/api/tickets-events.get.js')
-      setProjectionGuard(markAsProjected)
-    } catch {
-      // Not available (e.g. in tests) — no guard needed
-    }
+      const storageDir = resolveStorageDir()
+      const ticketsDir = resolveTicketsDir()
+      const store = await createTicketStore({ storageDir })
 
-    // If store is empty (fresh DB), hydrate from existing .md files
-    const existing = store.query('allTickets')
-    if (existing.length === 0) {
-      const count = await hydrateFromFiles(store, ticketsDir)
-      if (count > 0) {
-        console.log(`[tix-store] Hydrated ${count} tickets from ${ticketsDir}`)
+      // Wire up loop guard — dynamically import the SSE module's markAsProjected
+      // if available (only when the server is running, not in tests)
+      try {
+        const { markAsProjected } = await import('../../../../server/routes/api/tickets-events.get.js')
+        setProjectionGuard(markAsProjected)
+      } catch {
+        // Not available (e.g. in tests) — no guard needed
       }
-    }
 
-    _g.__tixStore = store
-    return store
+      // If store is empty (fresh DB), hydrate from existing .md files
+      const existing = store.query('allTickets')
+      if (existing.length === 0) {
+        const count = await hydrateFromFiles(store, ticketsDir)
+        if (count > 0) {
+          console.log(`[tix-store] Hydrated ${count} tickets from ${ticketsDir}`)
+        }
+      }
+
+      _g.__tixStore = store
+      return store
+    } catch (err) {
+      // Reset so next call retries instead of returning a rejected promise
+      _g.__tixInitPromise = null
+      throw err
+    }
   })()
 
   return _g.__tixInitPromise

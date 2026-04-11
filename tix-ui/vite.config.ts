@@ -23,7 +23,8 @@ const config = defineConfig({
   plugins: [
     devtools(),
     nitro({
-      rollupConfig: { external: [/^@sentry\//] },
+      rollupConfig: { external: [/^@sentry\//, /^@livestore\//, 'fsevents'] },
+      externals: { inline: [], external: ['@livestore/livestore', '@livestore/adapter-node', '@livestore/common', 'fsevents'] },
       // Enable scanning ./server for api/ and routes/ so our SSE endpoint
       // at server/routes/api/tickets-events.get.ts is registered.
       serverDir: './server',
