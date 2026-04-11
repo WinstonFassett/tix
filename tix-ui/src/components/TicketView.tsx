@@ -1,4 +1,4 @@
-import { useTickets, useUpdateTicket } from '#/lib/hooks/use-tickets'
+import { useTickets, useTicket, useUpdateTicket } from '#/lib/hooks/use-tickets'
 import { TicketDetail } from '#/components/TicketDetail'
 import { Button } from '#/components/ui'
 import { useNavigate } from '@tanstack/react-router'
@@ -58,7 +58,10 @@ export function TicketView({ ticketId }: TicketViewProps) {
     if (nextId) navigate({ to: '/ticket/$ticketId', params: { ticketId: nextId } })
   }, [nextId, navigate])
 
-  const ticket = tickets.find(t => String(t.id) === ticketId)
+  const listTicket = tickets.find(t => String(t.id) === ticketId)
+  // Fetch full ticket with body (list data has empty body for perf)
+  const { data: fullTicket } = useTicket(ticketId)
+  const ticket = fullTicket ?? listTicket
 
   const handleUpdate = useCallback(async (updates: Record<string, any>) => {
     await updateMutation.mutateAsync({ ticketId, updates })
