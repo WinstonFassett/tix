@@ -4,7 +4,7 @@
  * Serializes as <u> tag in HTML within markdown.
  */
 import { toggleMark } from '@milkdown/prose/commands'
-import { $command, $markAttr, $markSchema, $useKeymap } from '@milkdown/utils'
+import { $command, $markAttr, $markSchema, $useKeymap, $remark } from '@milkdown/utils'
 import { commandsCtx } from '@milkdown/core'
 
 /// HTML attributes for the underline mark.
@@ -53,8 +53,25 @@ export const underlineKeymap = $useKeymap('underlineKeymap', {
   },
 })
 
+/// Remark plugin to handle underline serialization (→ inline HTML <u> tags)
+const remarkUnderline = $remark('remarkUnderline', () => function (this: any) {
+  const data = this.data() as Record<string, any>
+  const toMarkdownExtensions = data.toMarkdownExtensions || (data.toMarkdownExtensions = [])
+  toMarkdownExtensions.push({
+    handlers: {
+      underline(node: any, _parent: any, state: any, info: any) {
+        const exit = state.enter('underline')
+        const value = state.containerPhrasing(node, info)
+        exit()
+        return `<u>${value}</u>`
+      },
+    },
+  })
+})
+
 /// All plugins needed for underline support
 export const underlinePlugins = [
+  remarkUnderline,
   underlineAttr,
   underlineSchema,
   toggleUnderlineCommand,

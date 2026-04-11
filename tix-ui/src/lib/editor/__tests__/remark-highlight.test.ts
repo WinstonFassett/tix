@@ -24,14 +24,24 @@ describe('remarkHighlight', () => {
     const highlights = findNodes(tree, 'highlight')
     expect(highlights).toHaveLength(1)
     expect(highlights[0].children[0].value).toBe('world')
+    expect(highlights[0].color).toBeNull()
+  })
+
+  it('parses =={color}text== with color attribute', () => {
+    const tree = parse('hello =={green}world== bye')
+    const highlights = findNodes(tree, 'highlight')
+    expect(highlights).toHaveLength(1)
+    expect(highlights[0].children[0].value).toBe('world')
+    expect(highlights[0].color).toBe('green')
   })
 
   it('handles multiple highlights in one line', () => {
-    const tree = parse('==one== and ==two==')
+    const tree = parse('==one== and =={blue}two==')
     const highlights = findNodes(tree, 'highlight')
     expect(highlights).toHaveLength(2)
     expect(highlights[0].children[0].value).toBe('one')
     expect(highlights[1].children[0].value).toBe('two')
+    expect(highlights[1].color).toBe('blue')
   })
 
   it('preserves surrounding text', () => {

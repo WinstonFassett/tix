@@ -32,18 +32,17 @@ export const highlightSchema = $markSchema('highlight', (ctx) => ({
     },
   ],
   toDOM: (mark) => {
-    const attrs = ctx.get(highlightAttr.key)(mark)
     const colorName = mark.attrs.color || defaultHighlightColor
-    const colorDef = getHighlightColor(colorName)
-    const style = colorDef
-      ? `background-color: ${colorDef.background.light}`
-      : undefined
-    return ['mark', { ...attrs, style }, 0]
+    return ['mark', {
+      class: `highlight-${colorName}`,
+      'data-highlight-color': colorName,
+    }, 0]
   },
   parseMarkdown: {
     match: (node) => node.type === 'highlight',
     runner: (state, node, markType) => {
-      state.openMark(markType)
+      const color = (node as any).color || null
+      state.openMark(markType, { color })
       state.next(node.children)
       state.closeMark(markType)
     },
@@ -51,18 +50,38 @@ export const highlightSchema = $markSchema('highlight', (ctx) => ({
   toMarkdown: {
     match: (mark) => mark.type.name === 'highlight',
     runner: (state, mark) => {
-      state.withMark(mark, 'highlight')
+      // Pass color through to the mdast node
+      state.withMark(mark, 'highlight', undefined, {
+        color: mark.attrs.color,
+      })
     },
   },
 }))
 
 /// A command to toggle the highlight mark.
+/// When a color is provided, removes any existing highlight then applies with that color.
+/// When no color is provided, toggles the mark off.
 export const toggleHighlightCommand = $command(
   'ToggleHighlight',
   (ctx) =>
     (color?: string) => {
-      const attrs = color ? { color } : {}
-      return toggleMark(highlightSchema.type(ctx), attrs)
+      const markType = highlightSchema.type(ctx)
+      if (!color) {
+        // No color = remove highlight
+        return toggleMark(markType)
+      }
+      // Apply with specific color: first remove, then add
+      return (state, dispatch) => {
+        const { from, to } = state.selection
+        if (!dispatch) return true
+        let tr = state.tr
+        // Remove existing highlight marks in range
+        tr = tr.removeMark(from, to, markType)
+        // Add new mark with color
+        tr = tr.addMark(from, to, markType.create({ color }))
+        dispatch(tr)
+        return true
+      }
     }
 )
 
