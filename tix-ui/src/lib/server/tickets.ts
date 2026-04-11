@@ -68,16 +68,9 @@ function generateId(): string {
 // --- Server Functions ---
 
 export const getTickets = createServerFn({ method: 'GET' }).handler(async () => {
-  fs.appendFileSync('/tmp/tix-debug.log', `[${new Date().toISOString()}] getTickets called\n`)
-  try {
-    const store = await getStore()
-    const rows = store.query('allTickets')
-    fs.appendFileSync('/tmp/tix-debug.log', `[${new Date().toISOString()}] returning ${rows.length} tickets\n`)
-    return rows.map(rowToTicket)
-  } catch (err) {
-    fs.appendFileSync('/tmp/tix-debug.log', `[${new Date().toISOString()}] ERROR: ${err}\n`)
-    throw err
-  }
+  const store = await getStore()
+  const rows = store.query('allTickets')
+  return rows.map(rowToTicket)
 })
 
 export const getConfig = createServerFn({ method: 'GET' }).handler(async () => {

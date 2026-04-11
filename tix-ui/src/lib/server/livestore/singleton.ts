@@ -3,8 +3,13 @@ import fs from 'node:fs'
 import { createTicketStore, type TicketStore } from './index.js'
 import { hydrateFromFiles, setProjectionGuard } from './sync.js'
 
-let _store: TicketStore | null = null
-let _initPromise: Promise<TicketStore> | null = null
+// Use globalThis to share the singleton across Vite's module contexts.
+// Nitro server routes and TanStack Start server functions run in isolated
+// module scopes — module-level variables are NOT shared between them.
+const _g = globalThis as unknown as {
+  __tixStore?: TicketStore | null
+  __tixInitPromise?: Promise<TicketStore> | null
+}
 
 function resolveTicketsDir(): string {
   return process.env.TICKETS_DIR
@@ -23,10 +28,10 @@ function resolveStorageDir(): string {
  * First call hydrates from existing .md files on disk.
  */
 export async function getStore(): Promise<TicketStore> {
-  if (_store) return _store
-  if (_initPromise) return _initPromise
+  if (_g.__tixStore) return _g.__tixStore
+  if (_g.__tixInitPromise) return _g.__tixInitPromise
 
-  _initPromise = (async () => {
+  _g.__tixInitPromise = (async () => {
     const storageDir = resolveStorageDir()
     const ticketsDir = resolveTicketsDir()
     const store = await createTicketStore({ storageDir })
@@ -49,11 +54,11 @@ export async function getStore(): Promise<TicketStore> {
       }
     }
 
-    _store = store
+    _g.__tixStore = store
     return store
   })()
 
-  return _initPromise
+  return _g.__tixInitPromise
 }
 
 /**
@@ -67,9 +72,9 @@ export function getTicketsDir(): string {
  * Shutdown the store (for graceful shutdown / tests).
  */
 export async function shutdownStore(): Promise<void> {
-  if (_store) {
-    await _store.shutdown()
-    _store = null
-    _initPromise = null
+  if (_g.__tixStore) {
+    await _g.__tixStore.shutdown()
+    _g.__tixStore = null
+    _g.__tixInitPromise = null
   }
 }

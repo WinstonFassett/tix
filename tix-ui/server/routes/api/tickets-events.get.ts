@@ -71,7 +71,7 @@ async function syncFileToStore(filepath: string) {
   if (!ticketId) return null
 
   try {
-    const raw = fs.readFileSync(filepath, 'utf-8')
+        const raw = fs.readFileSync(filepath, 'utf-8')
     const { data, content } = matter(raw)
     const store = await getStore()
     const ticketsDir = resolveTicketsDir()
@@ -134,7 +134,7 @@ async function removeFileFromStore(filepath: string) {
       store.commit(events.ticketDeleted({ id: ticketId }))
     }
     return ticketId
-  } catch {
+  } catch (err) {
     return null
   }
 }
