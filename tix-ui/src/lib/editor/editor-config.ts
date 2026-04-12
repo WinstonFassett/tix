@@ -7,6 +7,7 @@ import { commandsCtx } from '@milkdown/core'
 import { highlightSchema } from './highlight-mark'
 import { underlineSchema, toggleUnderlineCommand } from './underline-mark'
 import { getSlashMenuConfig } from './slash-commands'
+import { getMermaidCodeMirrorConfig } from './mermaid-preview'
 
 // Icons: inline SVG strings with data-mark attr for color-picker-plugin detection.
 const markIcon = (mark: string, svg: string) =>
@@ -22,6 +23,7 @@ const underlineIcon = markIcon('underline',
 export function getEditorFeatureConfigs(): CrepeConfig['featureConfigs'] {
   return {
     'block-edit': getSlashMenuConfig(),
+    'code-mirror': getMermaidCodeMirrorConfig(),
     toolbar: {
       buildToolbar: (builder) => {
         const formatting = builder.getGroup('formatting')
