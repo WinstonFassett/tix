@@ -36,6 +36,11 @@ if ln -sf "$SCRIPT_DIR/ticket" "$INSTALL_DIR/ticket"; then
     echo "ticket compat wrapper installed to $INSTALL_DIR/ticket"
 fi
 
+# Create symlink for tix-vault wrapper
+if ln -sf "$SCRIPT_DIR/tix-vault" "$INSTALL_DIR/tix-vault"; then
+    echo "tix-vault installed to $INSTALL_DIR/tix-vault"
+fi
+
 # Verify installation
 if "$INSTALL_DIR/tix" help >/dev/null 2>&1; then
     echo "Installation verified"
