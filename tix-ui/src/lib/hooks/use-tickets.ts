@@ -1,10 +1,33 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getTickets, getConfig, updateTicket, createTicket, deleteTicket } from '../server/tickets'
+import { getTickets, getTicket, getConfig, searchTickets, getFolderCounts, updateTicket, createTicket, deleteTicket } from '../server/tickets'
 
 export function useTickets() {
   return useQuery({
     queryKey: ['tickets'],
     queryFn: () => getTickets(),
+  })
+}
+
+export function useTicket(ticketId: string | null) {
+  return useQuery({
+    queryKey: ['ticket', ticketId],
+    queryFn: () => getTicket({ data: { ticketId: ticketId! } }),
+    enabled: !!ticketId,
+  })
+}
+
+export function useSearch(query: string) {
+  return useQuery({
+    queryKey: ['search', query],
+    queryFn: () => searchTickets({ data: { query, limit: 50 } }),
+    enabled: query.length >= 2,
+  })
+}
+
+export function useFolderCounts() {
+  return useQuery({
+    queryKey: ['folders'],
+    queryFn: () => getFolderCounts(),
   })
 }
 

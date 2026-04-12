@@ -2360,6 +2360,34 @@ cmd_add_ac() {
 }
 
 
+cmd_backup() {
+    local output="${1:-}"
+    local timestamp
+    timestamp=$(_iso_date | sed 's/[:]/-/g' | sed 's/T/_/')
+
+    if [[ ! -d "$TICKETS_DIR" ]]; then
+        echo "Error: No tickets directory found at $TICKETS_DIR" >&2
+        return 1
+    fi
+
+    local base_dir
+    base_dir=$(dirname "$TICKETS_DIR")
+    local tickets_name
+    tickets_name=$(basename "$TICKETS_DIR")
+
+    if [[ -z "$output" ]]; then
+        output="${base_dir}/tix-backup-${timestamp}.zip"
+    fi
+
+    # zip from the parent dir so paths inside are tickets/...
+    (cd "$base_dir" && zip -r -q "$output" "$tickets_name" -x '*.DS_Store')
+
+    local count
+    count=$(find "$TICKETS_DIR" -name '*.md' | wc -l | tr -d ' ')
+    echo "Backed up $count ticket files to $output"
+}
+
+
 cmd_remove_ac() {
     if [[ $# -lt 2 ]]; then
         echo "Usage: tix remove-ac <id> <ac-number>" >&2
@@ -2519,6 +2547,11 @@ Commands:
     Move done/closed tickets to archive/YYYY-MM-DD/.
     --days: age in days (default 30). --all: archive all regardless of age.
 
+  backup [output-path]
+    Create a zip backup of the entire tickets directory.
+    Default output: ./tix-backup-<timestamp>.zip
+    Example: tix backup, tix backup ~/my-backup.zip
+
   delete <id>
     Permanently delete a ticket file. Prompts for confirmation.
     Example: tix delete w-abcd
@@ -2565,6 +2598,7 @@ main() {
         blocked) cmd_blocked "$@" ;;
         closed) cmd_closed "$@" ;;
         archive) cmd_archive "$@" ;;
+        backup) cmd_backup "$@" ;;
         delete) cmd_delete "$@" ;;
         vault) cmd_vault "$@" ;;
         *)

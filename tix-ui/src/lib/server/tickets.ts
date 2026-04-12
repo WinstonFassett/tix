@@ -1,48 +1,51 @@
 import { createServerFn } from '@tanstack/react-start'
 import fs from 'node:fs'
 import path from 'node:path'
-import matter from 'gray-matter'
-import { execFile } from 'node:child_process'
+import crypto from 'node:crypto'
 import type { Ticket } from '../types'
+import { getStore, getTicketsDir } from './livestore/singleton.js'
+import { events, type TicketRow, type TicketListRow } from './livestore/index.js'
+import { projectTicketToFile } from './livestore/sync.js'
 
 const VALID_STATUSES = ['open', 'in-progress', 'review', 'on-hold', 'done', 'closed']
 export const DEFAULT_IGNORED_FOLDERS = ['archive']
 
-function resolveTicketsDir(): string {
-  return process.env.TICKETS_DIR
-    || path.join(process.env.TIX_WORKSPACE || process.env.TICKET_WORKSPACE || process.cwd(), 'tickets')
+/** Convert a LiveStore row (JSON string arrays) to the Ticket interface (real arrays). */
+function rowToTicket(row: TicketRow): Ticket {
+  return {
+    id: row.id,
+    title: row.title,
+    status: row.status as Ticket['status'],
+    type: row.type,
+    priority: row.priority,
+    assignee: row.assignee,
+    tags: JSON.parse(row.tags),
+    deps: JSON.parse(row.deps),
+    links: JSON.parse(row.links),
+    created: row.created,
+    body: row.body,
+    filename: row.filename,
+    folder: row.folder,
+  }
 }
 
-/** Recursively walk tickets dir, returning { filepath, filename, folder } tuples.
- *  `folder` is relative to ticketsDir (empty string for root). */
-function walkTickets(ticketsDir: string, rel = ''): Array<{ filepath: string; filename: string; folder: string }> {
-  const results: Array<{ filepath: string; filename: string; folder: string }> = []
-  const dir = rel ? path.join(ticketsDir, rel) : ticketsDir
-  let entries: fs.Dirent[]
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true })
-  } catch {
-    return results
+/** Convert a list row (no body) to a Ticket with empty body. */
+function listRowToTicket(row: TicketListRow): Ticket {
+  return {
+    id: row.id,
+    title: row.title,
+    status: row.status as Ticket['status'],
+    type: row.type,
+    priority: row.priority,
+    assignee: row.assignee,
+    tags: JSON.parse(row.tags),
+    deps: JSON.parse(row.deps),
+    links: JSON.parse(row.links),
+    created: row.created,
+    body: '',
+    filename: row.filename,
+    folder: row.folder,
   }
-  for (const entry of entries) {
-    if (entry.isDirectory()) {
-      const childRel = rel ? `${rel}/${entry.name}` : entry.name
-      results.push(...walkTickets(ticketsDir, childRel))
-    } else if (entry.isFile() && /\([0-9a-f]{4}\)\.md$/i.test(entry.name)) {
-      results.push({
-        filepath: path.join(dir, entry.name),
-        filename: rel ? `${rel}/${entry.name}` : entry.name,
-        folder: rel,
-      })
-    }
-  }
-  return results
-}
-
-/** Find a single ticket file by ID anywhere in the tree (including ignored folders). */
-function findTicketFile(ticketsDir: string, ticketId: string): { filepath: string; filename: string; folder: string } | null {
-  const all = walkTickets(ticketsDir)
-  return all.find(f => f.filename.includes(`(${ticketId})`)) || null
 }
 
 function sanitizeTitle(title: string): string {
@@ -77,40 +80,42 @@ function syncBodyTitle(content: string, newTitle: string): string {
   return lines.join('\n')
 }
 
+function generateId(): string {
+  return crypto.randomBytes(2).toString('hex')
+}
+
+// --- Server Functions ---
+
 export const getTickets = createServerFn({ method: 'GET' }).handler(async () => {
-  const ticketsDir = resolveTicketsDir()
-  const tickets: Ticket[] = []
+  const store = await getStore()
+  const rows = store.queryList()
+  return rows.map(listRowToTicket)
+})
 
-  try {
-    const files = walkTickets(ticketsDir)
-    for (const { filepath, filename, folder } of files) {
-      const raw = fs.readFileSync(filepath, 'utf-8')
-      const { data, content } = matter(raw)
-      tickets.push({
-        id: String(data.id || ''),
-        title: data.title || '',
-        status: (data.status || 'open') as Ticket['status'],
-        deps: data.deps || [],
-        links: data.links || [],
-        created: data.created || '',
-        type: data.type || '',
-        priority: data.priority ?? 2,
-        assignee: data.assignee || '',
-        tags: data.tags || [],
-        body: content.trim(),
-        filename,
-        folder,
-      })
-    }
-  } catch {
-    // tickets dir may not exist yet
-  }
+export const getTicket = createServerFn({ method: 'GET' })
+  .inputValidator((data: { ticketId: string }) => data)
+  .handler(async ({ data }) => {
+    const store = await getStore()
+    const row = store.queryById(data.ticketId)
+    if (!row) throw new Error(`Ticket ${data.ticketId} not found`)
+    return rowToTicket(row)
+  })
 
-  return tickets
+export const searchTickets = createServerFn({ method: 'GET' })
+  .inputValidator((data: { query: string; limit?: number }) => data)
+  .handler(async ({ data }) => {
+    const store = await getStore()
+    const rows = store.search(data.query, data.limit)
+    return rows.map(rowToTicket)
+  })
+
+export const getFolderCounts = createServerFn({ method: 'GET' }).handler(async () => {
+  const store = await getStore()
+  return store.queryFolderCounts()
 })
 
 export const getConfig = createServerFn({ method: 'GET' }).handler(async () => {
-  const ticketsDir = resolveTicketsDir()
+  const ticketsDir = getTicketsDir()
   const resolvedDir = path.resolve(ticketsDir)
   const workspacePath = path.dirname(resolvedDir)
   return {
@@ -129,80 +134,99 @@ export const createTicket = createServerFn({ method: 'POST' })
       throw new Error('Title is required')
     }
 
-    const args = ['create', title]
-    if (description) args.push('-d', description)
-    if (type) args.push('--type', type)
-    if (priority !== undefined) args.push('--priority', String(priority))
-    if (assignee) args.push('--assignee', assignee)
-    if (tags && tags.length > 0) {
-      for (const t of tags) args.push('--tag', t)
+    const store = await getStore()
+    const ticketsDir = getTicketsDir()
+    const id = generateId()
+    const cleanTitle = sanitizeTitle(title)
+    const filename = `${cleanTitle} (${id}).md`
+    const body = description || ''
+
+    store.commit(events.ticketCreated({
+      id,
+      title,
+      status: 'open',
+      type: type || 'task',
+      priority: priority ?? 2,
+      assignee: assignee || '',
+      tags: tags || [],
+      deps: [],
+      links: [],
+      created: new Date().toISOString(),
+      body,
+      folder: '',
+      filename,
+    }))
+
+    // Project to .md file
+    const rows = store.query('allTickets')
+    const row = rows.find(r => r.id === id)
+    if (row) {
+      projectTicketToFile(row, ticketsDir)
     }
 
-    const workspace = process.env.TIX_WORKSPACE || process.env.TICKET_WORKSPACE || process.cwd()
-
-    const result = await new Promise<{ ok: true; id: string | null; output: string }>((resolve, reject) => {
-      execFile('tix', args, { cwd: workspace }, (err, stdout, stderr) => {
-        if (err) {
-          reject(new Error(stderr || err.message))
-        } else {
-          const idMatch = stdout.match(/([a-f0-9]{4})/)
-          resolve({ ok: true, id: idMatch?.[1] || null, output: stdout.trim() })
-        }
-      })
-    })
-
-    return result
+    return { ok: true as const, id, output: `Created ${filename}` }
   })
 
 export const updateTicket = createServerFn({ method: 'POST' })
   .inputValidator((data: { ticketId: string; updates: Record<string, unknown> }) => data)
   .handler(async ({ data }) => {
     const { ticketId, updates } = data
-    const ticketsDir = resolveTicketsDir()
+    const store = await getStore()
+    const ticketsDir = getTicketsDir()
 
     if (updates.status && typeof updates.status === 'string' && !VALID_STATUSES.includes(updates.status)) {
       throw new Error(`Invalid status: ${updates.status}. Valid: ${VALID_STATUSES.join(', ')}`)
     }
 
-    const found = findTicketFile(ticketsDir, ticketId)
-    if (!found) {
+    // Find current ticket to get old filename for cleanup
+    const rows = store.query('allTickets')
+    const existing = rows.find(r => r.id === ticketId)
+    if (!existing) {
       throw new Error(`Ticket ${ticketId} not found`)
     }
 
-    const { filepath, folder } = found
-    const raw = fs.readFileSync(filepath, 'utf-8')
-    const { data: frontmatter, content } = matter(raw)
+    const oldFilename = existing.filename
 
-    if (updates.title !== undefined) frontmatter.title = updates.title
-    if (updates.status !== undefined) frontmatter.status = updates.status
-    if (updates.priority !== undefined) frontmatter.priority = updates.priority
-    if (updates.assignee !== undefined) frontmatter.assignee = updates.assignee
-    if (updates.type !== undefined) frontmatter.type = updates.type
-    if (updates.tags !== undefined) frontmatter.tags = updates.tags
+    // Build update event payload
+    const eventUpdates: Record<string, unknown> = { id: ticketId }
+    if (updates.title !== undefined) eventUpdates.title = updates.title
+    if (updates.status !== undefined) eventUpdates.status = updates.status
+    if (updates.priority !== undefined) eventUpdates.priority = updates.priority
+    if (updates.assignee !== undefined) eventUpdates.assignee = updates.assignee
+    if (updates.type !== undefined) eventUpdates.type = updates.type
+    if (updates.tags !== undefined) eventUpdates.tags = updates.tags
 
-    let newContent = updates.body !== undefined ? (updates.body as string) : content
-
-    if (updates.title !== undefined) {
-      newContent = syncBodyTitle(newContent, updates.title as string)
+    // Handle body + title sync
+    if (updates.body !== undefined) {
+      let body = updates.body as string
+      if (updates.title !== undefined) {
+        body = syncBodyTitle(body, updates.title as string)
+      }
+      eventUpdates.body = body
+    } else if (updates.title !== undefined) {
+      eventUpdates.body = syncBodyTitle(existing.body, updates.title as string)
     }
 
-    const updated = matter.stringify(newContent, frontmatter)
-
-    let newFilepath = filepath
+    // Handle filename change on title rename
     if (updates.title !== undefined) {
       const cleanTitle = sanitizeTitle(updates.title as string)
-      const newFilename = `${cleanTitle} (${ticketId}).md`
-      const fileDir = folder ? path.join(ticketsDir, folder) : ticketsDir
-      newFilepath = path.join(fileDir, newFilename)
-      if (newFilepath !== filepath && fs.existsSync(newFilepath)) {
-        throw new Error(`File already exists: ${newFilename}`)
-      }
+      const folder = existing.folder
+      const newBasename = `${cleanTitle} (${ticketId}).md`
+      eventUpdates.filename = folder ? `${folder}/${newBasename}` : newBasename
     }
 
-    fs.writeFileSync(newFilepath, updated)
+    store.commit(events.ticketUpdated(eventUpdates as any))
 
-    if (newFilepath !== filepath) {
-      fs.unlinkSync(filepath)
+    // Project updated ticket to file
+    const updatedRows = store.query('allTickets')
+    const updatedRow = updatedRows.find(r => r.id === ticketId)
+    if (updatedRow) {
+      projectTicketToFile(updatedRow, ticketsDir)
+      // Clean up old file if renamed
+      if (updatedRow.filename !== oldFilename) {
+        const oldPath = path.join(ticketsDir, oldFilename)
+        try { fs.unlinkSync(oldPath) } catch { /* may not exist */ }
+      }
     }
 
     return { ok: true }
@@ -211,9 +235,20 @@ export const updateTicket = createServerFn({ method: 'POST' })
 export const deleteTicket = createServerFn({ method: 'POST' })
   .inputValidator((data: { ticketId: string }) => data)
   .handler(async ({ data }) => {
-    const ticketsDir = resolveTicketsDir()
-    const found = findTicketFile(ticketsDir, data.ticketId)
-    if (!found) throw new Error(`Ticket ${data.ticketId} not found`)
-    fs.unlinkSync(found.filepath)
+    const store = await getStore()
+    const ticketsDir = getTicketsDir()
+
+    // Find file to delete
+    const rows = store.query('allTickets')
+    const existing = rows.find(r => r.id === data.ticketId)
+    if (!existing) throw new Error(`Ticket ${data.ticketId} not found`)
+
+    // Delete from store
+    store.commit(events.ticketDeleted({ id: data.ticketId }))
+
+    // Delete file
+    const filepath = path.join(ticketsDir, existing.filename)
+    try { fs.unlinkSync(filepath) } catch { /* may not exist */ }
+
     return { ok: true }
   })

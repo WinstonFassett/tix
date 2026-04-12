@@ -14,10 +14,17 @@ import { webDevMcp } from '@winstonfassett/web-dev-mcp-vite'
 // both dev and prod. No vite-plugin watcher needed.
 
 const config = defineConfig({
+  optimizeDeps: {
+    exclude: ['fsevents', '@livestore/adapter-node', 'better-sqlite3'],
+  },
+  ssr: {
+    external: ['@livestore/adapter-node', 'better-sqlite3', 'fsevents'],
+  },
   plugins: [
     devtools(),
     nitro({
-      rollupConfig: { external: [/^@sentry\//] },
+      rollupConfig: { external: [/^@sentry\//, /^@livestore\//, 'fsevents'] },
+      externals: { inline: [], external: ['@livestore/livestore', '@livestore/adapter-node', '@livestore/common', 'fsevents'] },
       // Enable scanning ./server for api/ and routes/ so our SSE endpoint
       // at server/routes/api/tickets-events.get.ts is registered.
       serverDir: './server',

@@ -28,7 +28,13 @@ bats test/basic_operations.bats   # single test file
 - **`lib/yq`, `lib/jq`** — Vendored binaries (not checked in; downloaded by `setup-deps`).
 - **`ticket`** — Deprecated compat wrapper that exec's `tix`.
 - **`tix-vault`** — Obsidian vault integration wrapper.
-- **`tix-ui/`** — React + TanStack Start web dashboard. Reactive live updates via chokidar SSE endpoint at `tix-ui/server/routes/api/tickets-events.get.ts`. Built and symlinked by `./install-tix-ui`. Uses portless when available for named `.localhost` URLs (e.g. `project-tix.localhost:1355`). Playwright e2e tests in `tix-ui/e2e/`.
+- **`tix-ui/`** — React + TanStack Start web dashboard. Data layer is **LiveStore** (event-sourced reactive SQLite) — see `tix-ui/src/lib/server/livestore/`. Server functions query the store; .md files are projected as a side-effect. Chokidar SSE endpoint at `tix-ui/server/routes/api/tickets-events.get.ts` syncs external file edits back into the store and pushes granular events to browsers. Built and symlinked by `./install-tix-ui`. Uses portless when available for named `.localhost` URLs (e.g. `project-tix.localhost:1355`). Playwright e2e tests in `tix-ui/e2e/`.
+- **`tix-ui/src/lib/server/livestore/`** — LiveStore integration:
+  - `schema.ts` — Event definitions (ticketCreated/Updated/Deleted), SQLite table, materializers
+  - `index.ts` — Store wrapper with query methods (allTickets, queryList, queryById, search, folderCounts)
+  - `singleton.ts` — globalThis-based singleton shared across Vite SSR contexts
+  - `sync.ts` — Hydration from .md files and projection back to .md files
+  - `__tests__/store.test.ts` — 8 vitest tests (CRUD, hydration, projection, round-trip)
 - **`skills/tix/SKILL.md`** — Skill definition for AI agents to use tix.
 
 ## Ticket Format
@@ -43,6 +49,18 @@ Files named `Title Case (4hex).md` in `tickets/`. Frontmatter fields: `id`, `tit
 - `PORTLESS` — Set to `0` to bypass portless proxy for tix-ui
 - `PORTLESS_PORT` — Override portless proxy port (default 1355)
 - `TIX_UI_DEV` — Set to `1` to run tix-ui in vite dev mode with HMR
+
+## Data Architecture (LiveStore)
+
+tix-ui uses LiveStore (0.3.x) as an event-sourced reactive data layer. The **database is canonical** at runtime; markdown files are a projection for git/editor compatibility.
+
+**Write path:** UI mutation → store.commit(event) → materializer updates SQLite → projectTicketToFile() writes .md → chokidar loop guard skips re-ingestion.
+
+**External edit path:** CLI/editor writes .md → chokidar detects → parse file → store.commit(event) → SSE broadcasts ticket-upsert → browser React Query refetches.
+
+**Persistence:** LiveStore event log persists in `.tix/` (gitignored). On restart, state rebuilds from event replay. If event log is empty, hydrates from .md files on disk.
+
+**Store singleton:** Shared via `globalThis` across Vite's SSR module contexts (Nitro server routes + TanStack Start server functions).
 
 ## Key Conventions
 

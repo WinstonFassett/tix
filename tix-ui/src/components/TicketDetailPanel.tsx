@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import type { Ticket } from '#/lib/types'
 import { Button } from './ui'
 import { TicketDetailBody } from './TicketDetailBody'
-import { useUpdateTicket } from '#/lib/hooks/use-tickets'
+import { useUpdateTicket, useTicket } from '#/lib/hooks/use-tickets'
 import { useDetailPanel } from '#/lib/AppContext'
 import { useNavigate } from '@tanstack/react-router'
 import { X, Maximize2, Loader2 } from 'lucide-react'
@@ -11,9 +11,12 @@ interface TicketDetailPanelProps {
   ticket: Ticket
 }
 
-export function TicketDetailPanel({ ticket }: TicketDetailPanelProps) {
+export function TicketDetailPanel({ ticket: listTicket }: TicketDetailPanelProps) {
   const navigate = useNavigate()
   const updateMutation = useUpdateTicket()
+  // Fetch full ticket with body (list data has empty body for perf)
+  const { data: fullTicket } = useTicket(listTicket.id)
+  const ticket = fullTicket ?? listTicket
   const { setSelectedId, width, setWidth } = useDetailPanel()
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const draggingRef = useRef(false)

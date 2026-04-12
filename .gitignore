@@ -1,5 +1,6 @@
 tickets
 archive
+.tix
 *.local.*
 
 .web-dev-mcp
@@ -17,4 +18,4 @@ lib/yq
 lib/jq
 
 node_modules
-dist
+disttest-tickets
