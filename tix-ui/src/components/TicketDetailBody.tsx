@@ -7,7 +7,7 @@ import { TypeSelector } from './TypeSelector'
 import { MilkdownEditor } from './MilkdownEditor'
 import { useTickets, useDeleteTicket } from '#/lib/hooks/use-tickets'
 import { useNavigate } from '@tanstack/react-router'
-import { AlertTriangle, Folder } from 'lucide-react'
+import { AlertTriangle, Folder, Trash2 } from 'lucide-react'
 import { useFilters } from '#/lib/AppContext'
 import { TicketTagsField } from './TicketTagsField'
 
@@ -98,10 +98,10 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
   return (
     <>
       <div className={innerWrapperClass}>
-        <div className="flex items-start gap-3 mb-4">
+        <div className="mb-4">
           <input
             type="text"
-            className="flex-1 min-w-0 bg-transparent text-2xl font-bold rounded-md outline-none placeholder:text-muted-foreground -mx-2 px-2 py-1 cursor-text border border-transparent hover:border-border hover:bg-accent/30 focus:border-ring focus:bg-background focus:ring-2 focus:ring-ring/30 transition-colors"
+            className="w-full bg-transparent text-2xl font-bold rounded-md outline-none placeholder:text-muted-foreground -mx-2 px-2 py-1 cursor-text border border-transparent hover:border-border hover:bg-accent/30 focus:border-ring focus:bg-background focus:ring-2 focus:ring-ring/30 transition-colors"
             defaultValue={ticket.title}
             key={ticket.id}
             onChange={(e) => handleFieldChange('title', e.target.value)}
@@ -109,11 +109,6 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
             title="Click to edit title"
             aria-label="Ticket title (editable)"
           />
-          {ticket.created && (
-            <span className="shrink-0 text-xs text-muted-foreground mt-3" title={new Date(ticket.created).toLocaleString()}>
-              Created {new Date(ticket.created).toLocaleDateString()}
-            </span>
-          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -139,6 +134,21 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
               {ticket.folder}
             </button>
           )}
+          <div className="ml-auto flex items-center gap-2">
+            {ticket.created && (
+              <span className="text-xs text-muted-foreground" title={new Date(ticket.created).toLocaleString()}>
+                Created {new Date(ticket.created).toLocaleDateString()}
+              </span>
+            )}
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-md h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              onClick={() => setShowDeleteConfirm(true)}
+              title="Delete ticket"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <div className="flex items-start gap-2 mb-4">
@@ -177,17 +187,6 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
           <MilkdownEditor key={ticket.id} defaultValue={displayBody} onChange={(md) => save({ body: md })} />
         </div>
 
-        <div className="flex justify-end mt-6">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-destructive"
-            onClick={() => setShowDeleteConfirm(true)}
-          >
-            Delete ticket
-          </Button>
-        </div>
       </div>
 
       <Dialog open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} className="sm:max-w-md p-0">
@@ -215,7 +214,7 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
               size="sm"
               onClick={confirmDelete}
               disabled={deleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-white hover:bg-destructive/90"
             >
               {deleteMutation.isPending ? 'Deleting...' : 'Delete ticket'}
             </Button>
