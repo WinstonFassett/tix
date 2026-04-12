@@ -11,6 +11,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useMemo, useState, useEffect } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useRowHighlight } from '#/lib/hooks/use-row-highlights'
+import { motion, LayoutGroup, AnimatePresence } from 'framer-motion'
 
 interface TicketTableProps {
   grouped: Record<string, Ticket[]>
@@ -99,47 +100,51 @@ export function TicketTable({ grouped, groupBy, onUpdate, onRowClick, selectedId
   }, [grouped, groupBy])
 
   return (
-    <div className="w-full">
-      {orderedGroups.map(groupKey => (
-        <div key={groupKey}>
-          {groupBy !== 'none' && (
-            <div
-              className="sticky top-0 z-10 w-full h-10 flex items-center justify-between px-6 bg-background cursor-pointer select-none"
-              // Solid background so sticky headers don't let scrolling rows
-              // bleed through; color-mix blends the group tint into the
-              // theme bg so we still get a subtle color accent.
-              style={{ backgroundColor: `color-mix(in srgb, ${groupColor(groupKey, groupBy)} 6%, var(--background))` }}
-              onClick={() => toggleGroup(groupKey)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGroup(groupKey) } }}
-              aria-expanded={!collapsed.has(groupKey)}
-            >
-              <div className="flex items-center gap-2">
-                {collapsed.has(groupKey)
-                  ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                  : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
-                {groupBy === 'status' && <StatusIcon status={groupKey} />}
-                {groupBy === 'priority' && <PriorityIcon priority={Number(groupKey)} size={14} />}
-                {groupBy === 'type' && <TypeIcon type={groupKey} size={14} />}
-                <span className="text-sm font-medium">{groupLabel(groupKey, groupBy)}</span>
-                <span className="text-sm text-muted-foreground">{grouped[groupKey]?.length}</span>
+    <LayoutGroup>
+      <div className="w-full">
+        {orderedGroups.map(groupKey => (
+          <div key={groupKey}>
+            {groupBy !== 'none' && (
+              <div
+                className="sticky top-0 z-10 w-full h-10 flex items-center justify-between px-6 bg-background cursor-pointer select-none"
+                // Solid background so sticky headers don't let scrolling rows
+                // bleed through; color-mix blends the group tint into the
+                // theme bg so we still get a subtle color accent.
+                style={{ backgroundColor: `color-mix(in srgb, ${groupColor(groupKey, groupBy)} 6%, var(--background))` }}
+                onClick={() => toggleGroup(groupKey)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGroup(groupKey) } }}
+                aria-expanded={!collapsed.has(groupKey)}
+              >
+                <div className="flex items-center gap-2">
+                  {collapsed.has(groupKey)
+                    ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+                  {groupBy === 'status' && <StatusIcon status={groupKey} />}
+                  {groupBy === 'priority' && <PriorityIcon priority={Number(groupKey)} size={14} />}
+                  {groupBy === 'type' && <TypeIcon type={groupKey} size={14} />}
+                  <span className="text-sm font-medium">{groupLabel(groupKey, groupBy)}</span>
+                  <span className="text-sm text-muted-foreground">{grouped[groupKey]?.length}</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {!collapsed.has(groupKey) && (grouped[groupKey] || []).map(ticket => (
-            <TicketRow
-              key={ticket.id}
-              ticket={ticket}
-              selected={selectedId === ticket.id}
-              onOpen={openTicket}
-              onUpdate={onUpdate}
-            />
-          ))}
-        </div>
-      ))}
-    </div>
+            <AnimatePresence>
+              {!collapsed.has(groupKey) && (grouped[groupKey] || []).map(ticket => (
+                <TicketRow
+                  key={ticket.id}
+                  ticket={ticket}
+                  selected={selectedId === ticket.id}
+                  onOpen={openTicket}
+                  onUpdate={onUpdate}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        ))}
+      </div>
+    </LayoutGroup>
   )
 }
 
@@ -154,11 +159,39 @@ function TicketRow({ ticket, selected, onOpen, onUpdate }: TicketRowProps) {
   const highlightGen = useRowHighlight(ticket.id)
 
   return (
-    <div
+    <motion.div
+      layoutId={`ticket-row-${ticket.id}`}
+      layout="position"
       data-ticket-row={ticket.id}
-      className={`relative w-full flex items-center justify-start h-11 px-6 cursor-pointer transition-colors outline-none focus:outline-none ${selected ? 'bg-accent' : 'hover:bg-accent/50'}`}
+      className={`relative w-full flex items-center justify-start h-11 px-6 cursor-pointer outline-none focus:outline-none ${selected ? 'bg-accent' : 'hover:bg-accent/50'} bg-background`}
       onClick={() => onOpen(ticket.id)}
       role="button"
+      transition={{
+        layout: { type: 'spring', stiffness: 350, damping: 30 },
+      }}
+      // Elevated look while animating — shadow + z-index
+      whileHover={{ backgroundColor: undefined }}
+      style={{ zIndex: 1 }}
+      onLayoutAnimationStart={() => {
+        const el = document.querySelector(`[data-ticket-row="${ticket.id}"]`) as HTMLElement | null
+        if (el) {
+          el.style.zIndex = '20'
+          el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'
+          el.style.borderRadius = '4px'
+        }
+      }}
+      onLayoutAnimationComplete={() => {
+        const el = document.querySelector(`[data-ticket-row="${ticket.id}"]`) as HTMLElement | null
+        if (el) {
+          el.style.zIndex = '1'
+          el.style.boxShadow = ''
+          el.style.borderRadius = ''
+        }
+      }}
+      // Entry/exit animations
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 4, transition: { duration: 0.15 } }}
     >
       {highlightGen > 0 && (
         <div
@@ -212,6 +245,6 @@ function TicketRow({ ticket, selected, onOpen, onUpdate }: TicketRowProps) {
           <span className="w-6 h-6 rounded-full border border-dashed border-muted-foreground/30 shrink-0" />
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }
