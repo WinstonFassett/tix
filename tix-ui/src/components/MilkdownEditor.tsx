@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { highlightPlugins } from '#/lib/editor/highlight-mark'
 import { underlinePlugins } from '#/lib/editor/underline-mark'
 import { colorPickerPlugin } from '#/lib/editor/color-picker-plugin'
+import { mermaidPlugin } from '#/lib/editor/mermaid-preview'
 import { getEditorFeatureConfigs } from '#/lib/editor/editor-config'
 
 interface MilkdownEditorProps {
@@ -39,6 +40,7 @@ export function MilkdownEditor({ defaultValue = '', onChange }: MilkdownEditorPr
         .use(highlightPlugins as any)
         .use(underlinePlugins as any)
         .use(colorPickerPlugin as any)
+        .use(mermaidPlugin as any)
 
       crepe.on((listener: any) => {
         listener.markdownUpdated((_ctx: any, markdown: string) => {
