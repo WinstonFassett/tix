@@ -174,7 +174,7 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
         <hr className="border-border my-4" />
 
         <div className="min-h-50">
-          <MilkdownEditor key={ticket.id} defaultValue={displayBody} onChange={(md) => save({ body: md })} />
+          <MilkdownEditor key={`${ticket.id}-${ticket.body ? 'full' : 'stub'}`} defaultValue={displayBody} onChange={(md) => save({ body: md })} />
         </div>
 
         <div className="flex justify-end mt-6">
