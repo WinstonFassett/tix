@@ -11,6 +11,7 @@ import { Button } from '#/components/ui'
 import { STATUS_LABELS, TYPE_LABELS, type TicketStatus } from '#/lib/types'
 import { Sun, Moon, Inbox } from 'lucide-react'
 import { FolderTree } from '#/components/FolderTree'
+import { useChangeHighlight } from '#/components/AnimatedCount'
 
 import appCss from '../styles.css?url'
 
@@ -286,15 +287,14 @@ function AppLayout() {
           </div>
           <div className="px-2">
             {Object.entries(statusCounts).map(([status, count]) => (
-              <div
+              <SidebarFacetRow
                 key={status}
-                className={`flex items-center gap-2 rounded-md px-2 py-1 text-sm cursor-pointer transition-colors ${filters.statusFilter === status ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}
+                count={count}
+                active={filters.statusFilter === status}
                 onClick={() => toggleStatusFilter(status)}
-              >
-                <StatusIcon status={status} size={12} />
-                <span>{STATUS_LABELS[status as TicketStatus]}</span>
-                <span className="ml-auto text-xs">{count}</span>
-              </div>
+                icon={<StatusIcon status={status} size={12} />}
+                label={STATUS_LABELS[status as TicketStatus]}
+              />
             ))}
           </div>
 
@@ -303,15 +303,14 @@ function AppLayout() {
           </div>
           <div className="px-2">
             {Object.entries(typeCounts).map(([type, count]) => (
-              <div
+              <SidebarFacetRow
                 key={type}
-                className={`flex items-center gap-2 rounded-md px-2 py-1 text-sm cursor-pointer transition-colors ${filters.typeFilter === type ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}
+                count={count}
+                active={filters.typeFilter === type}
                 onClick={() => toggleTypeFilter(type)}
-              >
-                <TypeIcon type={type} size={12} />
-                <span>{TYPE_LABELS[type]}</span>
-                <span className="ml-auto text-xs">{count}</span>
-              </div>
+                icon={<TypeIcon type={type} size={12} />}
+                label={TYPE_LABELS[type]}
+              />
             ))}
           </div>
 
@@ -322,15 +321,15 @@ function AppLayout() {
               </div>
               <div className="px-2">
                 {tagCounts.slice(0, 12).map(([tag, count]) => (
-                  <div
+                  <SidebarFacetRow
                     key={tag}
-                    className={`flex items-center gap-2 rounded-md px-2 py-1 text-sm cursor-pointer transition-colors ${filters.tagFilter === tag ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}
+                    count={count}
+                    active={filters.tagFilter === tag}
                     onClick={() => toggleTagFilter(tag)}
-                  >
-                    <svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="4"/></svg>
-                    <span className="truncate">{tag}</span>
-                    <span className="ml-auto text-xs">{count}</span>
-                  </div>
+                    icon={<svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="4"/></svg>}
+                    label={tag}
+                    truncateLabel
+                  />
                 ))}
               </div>
             </>
@@ -363,6 +362,34 @@ function AppLayout() {
       </div>
 
       <CommandPalette tickets={tickets} callbacks={paletteCallbacks} isTicketView={isTicketView} />
+    </div>
+  )
+}
+
+function SidebarFacetRow({ count, active, onClick, icon, label, truncateLabel }: {
+  count: number
+  active: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  label: string
+  truncateLabel?: boolean
+}) {
+  const gen = useChangeHighlight(count)
+
+  return (
+    <div
+      className={`relative flex items-center gap-2 rounded-md px-2 py-1 text-sm cursor-pointer transition-colors ${active ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}
+      onClick={onClick}
+    >
+      {gen > 0 && (
+        <div
+          key={gen}
+          className="absolute inset-0 anim-row-highlight pointer-events-none rounded-md"
+        />
+      )}
+      {icon}
+      <span className={truncateLabel ? 'truncate' : ''}>{label}</span>
+      <span className="ml-auto text-xs">{count}</span>
     </div>
   )
 }

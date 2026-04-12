@@ -143,6 +143,7 @@
   100% { background-color: transparent; }
 }
 
+
 /* Command palette group headings */
 [cmdk-group-heading] {
   font-size: 0.75rem;
