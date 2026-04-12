@@ -42,7 +42,7 @@ export const mermaidPlugin = $prose(() => {
         return buildDecorations(state)
       },
       apply(tr, old, _, newState) {
-        if (tr.docChanged) {
+        if (tr.docChanged || tr.getMeta(mermaidPluginKey)) {
           return buildDecorations(newState)
         }
         return old
