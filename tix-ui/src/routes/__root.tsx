@@ -2,6 +2,7 @@ import { useMemo, useEffect } from 'react'
 import { HeadContent, Outlet, Scripts, createRootRoute, useNavigate, useRouterState } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppProvider, useFilters, useViewSettings, useSidebar, useTheme, useCreateDialog, usePalette } from '#/lib/AppContext'
+import { bumpHighlight } from '#/lib/hooks/use-row-highlights'
 import { useTickets, useUpdateTicket, useConfig } from '#/lib/hooks/use-tickets'
 import { CommandPalette, type PaletteCallbacks } from '#/components/CommandPalette'
 import { StatusIcon } from '#/components/icons/StatusIcon'
@@ -33,6 +34,7 @@ function ensureLiveUpdateStream() {
   // Granular events: invalidate specific ticket + list queries
   es.addEventListener('ticket-upsert', (e) => {
     const { id } = JSON.parse((e as MessageEvent).data)
+    bumpHighlight(id)
     queryClient.invalidateQueries({ queryKey: ['tickets'] })
     queryClient.invalidateQueries({ queryKey: ['ticket', id] })
   })

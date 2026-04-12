@@ -127,6 +127,22 @@
 .anim-dialog-in { animation: tix-dialog-in 180ms cubic-bezier(0.16, 1, 0.3, 1); }
 .anim-palette-in { animation: tix-palette-in 180ms cubic-bezier(0.16, 1, 0.3, 1); }
 
+/* Live update: row highlight flash when a ticket changes via SSE */
+@keyframes tix-row-highlight {
+  0% { background-color: oklch(0.85 0.12 85); }
+  100% { background-color: transparent; }
+}
+.anim-row-highlight {
+  animation: tix-row-highlight 2s ease-out;
+}
+.dark .anim-row-highlight {
+  animation-name: tix-row-highlight-dark;
+}
+@keyframes tix-row-highlight-dark {
+  0% { background-color: oklch(0.35 0.08 85); }
+  100% { background-color: transparent; }
+}
+
 /* Command palette group headings */
 [cmdk-group-heading] {
   font-size: 0.75rem;

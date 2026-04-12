@@ -3,6 +3,7 @@ import { Badge, Card } from './ui'
 import { StatusIcon } from './icons/StatusIcon'
 import { PriorityIcon } from './icons/PriorityIcon'
 import { useNavigate } from '@tanstack/react-router'
+import { useRowHighlight } from '#/lib/hooks/use-row-highlights'
 
 interface TicketCardProps {
   ticket: Ticket
@@ -12,14 +13,21 @@ interface TicketCardProps {
 
 export function TicketCard({ ticket, onClick, selected }: TicketCardProps) {
   const navigate = useNavigate()
+  const highlightGen = useRowHighlight(ticket.id)
   const open = () => {
     if (onClick) onClick(ticket.id)
     else navigate({ to: '/ticket/$ticketId', params: { ticketId: ticket.id } })
   }
 
   return (
-    <div className="block cursor-pointer group" onClick={open}>
-      <Card className={`p-3 transition-colors ${selected ? 'bg-accent ring-1 ring-ring' : 'hover:bg-accent/50'}`}>
+    <div className="block cursor-pointer group" data-ticket-row={ticket.id} onClick={open}>
+      <Card className={`relative p-3 transition-colors ${selected ? 'bg-accent ring-1 ring-ring' : 'hover:bg-accent/50'}`}>
+        {highlightGen > 0 && (
+          <div
+            key={highlightGen}
+            className="absolute inset-0 anim-row-highlight pointer-events-none rounded-md"
+          />
+        )}
         <div className="flex items-center gap-1.5 mb-1">
           <PriorityIcon priority={ticket.priority} size={14} />
           <span className="font-mono text-xs text-muted-foreground">{ticket.id}</span>

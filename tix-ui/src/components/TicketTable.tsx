@@ -10,6 +10,7 @@ import { TypeSelector } from './TypeSelector'
 import { useNavigate } from '@tanstack/react-router'
 import { useMemo, useState, useEffect } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
+import { useRowHighlight } from '#/lib/hooks/use-row-highlights'
 
 interface TicketTableProps {
   grouped: Record<string, Ticket[]>
@@ -128,63 +129,89 @@ export function TicketTable({ grouped, groupBy, onUpdate, onRowClick, selectedId
           )}
 
           {!collapsed.has(groupKey) && (grouped[groupKey] || []).map(ticket => (
-            <div
+            <TicketRow
               key={ticket.id}
-              data-ticket-row={ticket.id}
-              className={`w-full flex items-center justify-start h-11 px-6 cursor-pointer transition-colors outline-none focus:outline-none ${selectedId === ticket.id ? 'bg-accent' : 'hover:bg-accent/50'}`}
-              onClick={() => openTicket(ticket.id)}
-              role="button"
-            >
-              <span className="w-8 shrink-0 flex items-center justify-center" onClick={e => e.stopPropagation()}>
-                <PrioritySelector
-                  priority={ticket.priority}
-                  onSelect={(p) => onUpdate?.(ticket.id, { priority: p })}
-                  compact
-                />
-              </span>
-              <span className="w-14 shrink-0 text-sm hidden sm:inline-block text-muted-foreground font-medium font-mono truncate">
-                {ticket.id}
-              </span>
-              <span className="w-8 shrink-0 flex items-center justify-center" onClick={e => e.stopPropagation()}>
-                <StatusSelector
-                  status={ticket.status}
-                  onSelect={(s) => onUpdate?.(ticket.id, { status: s })}
-                  compact
-                />
-              </span>
-              <span className="min-w-0 flex-1 truncate text-xs sm:text-sm font-medium sm:font-semibold">
-                {ticket.title}
-              </span>
-              <div className="flex items-center justify-end gap-2 ml-2 shrink-0">
-                <div className="items-center justify-end hidden sm:flex gap-1">
-                  {ticket.tags.slice(0, 3).map(tag => (
-                    <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0 rounded-full">{tag}</Badge>
-                  ))}
-                </div>
-                <span className="hidden sm:flex w-8 shrink-0 items-center justify-center" onClick={e => e.stopPropagation()}>
-                  <TypeSelector
-                    type={ticket.type}
-                    onSelect={(t) => onUpdate?.(ticket.id, { type: t })}
-                    compact
-                  />
-                </span>
-                {ticket.created && (
-                  <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline-block w-16 text-right">
-                    {new Date(ticket.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </span>
-                )}
-                {ticket.assignee ? (
-                  <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium shrink-0" title={ticket.assignee}>
-                    {ticket.assignee.charAt(0).toUpperCase()}
-                  </span>
-                ) : (
-                  <span className="w-6 h-6 rounded-full border border-dashed border-muted-foreground/30 shrink-0" />
-                )}
-              </div>
-            </div>
+              ticket={ticket}
+              selected={selectedId === ticket.id}
+              onOpen={openTicket}
+              onUpdate={onUpdate}
+            />
           ))}
         </div>
       ))}
+    </div>
+  )
+}
+
+interface TicketRowProps {
+  ticket: Ticket
+  selected: boolean
+  onOpen: (id: string) => void
+  onUpdate?: (ticketId: string, updates: Record<string, any>) => void
+}
+
+function TicketRow({ ticket, selected, onOpen, onUpdate }: TicketRowProps) {
+  const highlightGen = useRowHighlight(ticket.id)
+
+  return (
+    <div
+      data-ticket-row={ticket.id}
+      className={`relative w-full flex items-center justify-start h-11 px-6 cursor-pointer transition-colors outline-none focus:outline-none ${selected ? 'bg-accent' : 'hover:bg-accent/50'}`}
+      onClick={() => onOpen(ticket.id)}
+      role="button"
+    >
+      {highlightGen > 0 && (
+        <div
+          key={highlightGen}
+          className="absolute inset-0 anim-row-highlight pointer-events-none rounded-sm"
+        />
+      )}
+      <span className="w-8 shrink-0 flex items-center justify-center" onClick={e => e.stopPropagation()}>
+        <PrioritySelector
+          priority={ticket.priority}
+          onSelect={(p) => onUpdate?.(ticket.id, { priority: p })}
+          compact
+        />
+      </span>
+      <span className="w-14 shrink-0 text-sm hidden sm:inline-block text-muted-foreground font-medium font-mono truncate">
+        {ticket.id}
+      </span>
+      <span className="w-8 shrink-0 flex items-center justify-center" onClick={e => e.stopPropagation()}>
+        <StatusSelector
+          status={ticket.status}
+          onSelect={(s) => onUpdate?.(ticket.id, { status: s })}
+          compact
+        />
+      </span>
+      <span className="min-w-0 flex-1 truncate text-xs sm:text-sm font-medium sm:font-semibold">
+        {ticket.title}
+      </span>
+      <div className="flex items-center justify-end gap-2 ml-2 shrink-0">
+        <div className="items-center justify-end hidden sm:flex gap-1">
+          {ticket.tags.slice(0, 3).map(tag => (
+            <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0 rounded-full">{tag}</Badge>
+          ))}
+        </div>
+        <span className="hidden sm:flex w-8 shrink-0 items-center justify-center" onClick={e => e.stopPropagation()}>
+          <TypeSelector
+            type={ticket.type}
+            onSelect={(t) => onUpdate?.(ticket.id, { type: t })}
+            compact
+          />
+        </span>
+        {ticket.created && (
+          <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline-block w-16 text-right">
+            {new Date(ticket.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </span>
+        )}
+        {ticket.assignee ? (
+          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium shrink-0" title={ticket.assignee}>
+            {ticket.assignee.charAt(0).toUpperCase()}
+          </span>
+        ) : (
+          <span className="w-6 h-6 rounded-full border border-dashed border-muted-foreground/30 shrink-0" />
+        )}
+      </div>
     </div>
   )
 }
