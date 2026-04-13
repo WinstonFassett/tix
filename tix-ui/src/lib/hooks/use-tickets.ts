@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useSyncExternalStore } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getTickets, getTicket, getConfig, searchTickets, updateTicket, createTicket, deleteTicket } from '../server/tickets'
 import type { Ticket } from '../types'

@@ -14,17 +14,14 @@ import { useChangeHighlight } from '#/components/AnimatedCount'
 
 import appCss from '../styles.css?url'
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: { refetchOnWindowFocus: false },
   },
 })
 
-// SSE-driven live updates are now handled by the TanStack DB ticket collection
-// (see src/lib/client/ticket-collection.ts). The collection subscribes to
-// /api/tickets-events and refreshes its state on every event. React components
-// using useLiveQuery() get incremental updates via d2ts.
-// Row highlights are triggered by the collection's change subscription.
+// SSE + React Query invalidation for detail views is handled by the TanStack DB
+// collection (ticket-collection.ts) which imports queryClient directly.
 
 export const Route = createRootRoute({
   head: () => ({

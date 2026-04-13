@@ -5,6 +5,7 @@
 import { createCollection, type CollectionImpl } from "@tanstack/db";
 import type { Ticket } from "../types";
 import { getTickets, createTicket, updateTicket, deleteTicket } from "../server/tickets";
+import { queryClient } from "../../routes/__root";
 
 export type TicketCollection = CollectionImpl<Ticket, string, any, any, any>;
 
@@ -82,11 +83,19 @@ export function getTicketCollection(): TicketCollection {
           }
         };
 
-        // SSE listener — refresh collection on any ticket event
+        // SSE listener — refresh collection + invalidate detail queries
         if (typeof window !== "undefined" && typeof EventSource !== "undefined") {
           _eventSource = new EventSource("/api/tickets-events");
-          _eventSource.addEventListener("ticket-upsert", () => refresh());
-          _eventSource.addEventListener("ticket-delete", () => refresh());
+          _eventSource.addEventListener("ticket-upsert", (e) => {
+            refresh();
+            const { id } = JSON.parse((e as MessageEvent).data);
+            queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+          });
+          _eventSource.addEventListener("ticket-delete", (e) => {
+            refresh();
+            const { id } = JSON.parse((e as MessageEvent).data);
+            queryClient.removeQueries({ queryKey: ['ticket', id] });
+          });
         }
 
         load().catch((err) => {
