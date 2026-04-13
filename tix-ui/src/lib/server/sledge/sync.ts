@@ -38,8 +38,9 @@ export function isOwnProjection(filepath: string): boolean {
     projectedHashes.delete(filepath);
     return false;
   } catch {
+    // File doesn't exist — if we have a stored hash, we deleted it
     projectedHashes.delete(filepath);
-    return false;
+    return true;
   }
 }
 

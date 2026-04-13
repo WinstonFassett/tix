@@ -4,7 +4,8 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import type { Ticket } from '../types'
 import { getLedger, getTicketsDir } from './sledge/singleton'
-import { projectTicketToFile } from './sledge/sync'
+import { projectTicketToFile, markAsProjected } from './sledge/sync'
+import { notifyTicketChange } from '../../../server/routes/api/tickets-events.get'
 
 const VALID_STATUSES = ['open', 'in-progress', 'review', 'on-hold', 'done', 'closed']
 export const DEFAULT_IGNORED_FOLDERS = ['archive']
@@ -124,6 +125,7 @@ export const createTicket = createServerFn({ method: 'POST' })
       projectTicketToFile(ticket, ticketsDir)
     }
 
+    notifyTicketChange('ticket-upsert', id)
     return { ok: true as const, id, output: `Created ${filename}` }
   })
 
@@ -173,19 +175,23 @@ export const updateTicket = createServerFn({ method: 'POST' })
       eventUpdates.filename = folder ? `${folder}/${newBasename}` : newBasename
     }
 
+    console.log('[updateTicket] emitting update for', ticketId, Object.keys(eventUpdates))
     await ledger.emit('ticket.updated', eventUpdates)
+    console.log('[updateTicket] emit done, projecting file')
 
     // Project updated ticket to file
     const updatedTicket = await ledger.query('ticketById', { id: ticketId }) as Ticket | null
     if (updatedTicket) {
       projectTicketToFile(updatedTicket, ticketsDir)
-      // Clean up old file if renamed
+      // Clean up old file if renamed — mark it so chokidar skips the unlink
       if (updatedTicket.filename !== oldFilename) {
         const oldPath = path.join(ticketsDir, oldFilename)
+        markAsProjected(oldPath, '__deleted__')
         try { fs.unlinkSync(oldPath) } catch { /* may not exist */ }
       }
     }
 
+    notifyTicketChange('ticket-upsert', ticketId)
     return { ok: true }
   })
 
@@ -202,7 +208,9 @@ export const deleteTicket = createServerFn({ method: 'POST' })
 
     // Delete file
     const filepath = path.join(ticketsDir, existing.filename)
+    markAsProjected(filepath, '__deleted__')
     try { fs.unlinkSync(filepath) } catch { /* may not exist */ }
 
+    notifyTicketChange('ticket-delete', data.ticketId)
     return { ok: true }
   })

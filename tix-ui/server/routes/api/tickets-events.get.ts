@@ -11,21 +11,24 @@ function extractTicketId(filepath: string): string | null {
   return match ? match[1]! : null
 }
 
-// Debounced unlink: hold deletes for 200ms in case an add arrives
-// for the same ticket ID (rename = unlink + add).
 const pendingDeletes = new Map<string, NodeJS.Timeout>()
 
-type Listener = (eventType: string, ticketId: string, seq?: number) => void
+type Listener = (eventType: string, ticketId: string) => void
 
 interface WatcherState {
   listeners: Set<Listener>
   watcher: FSWatcher
   responses: Set<{ end: () => void }>
-  tailController: AbortController
 }
 
 let state: WatcherState | null = null
+let statePromise: Promise<WatcherState> | null = null
 let shutdownInstalled = false
+
+export function notifyTicketChange(eventType: 'ticket-upsert' | 'ticket-delete', ticketId: string) {
+  if (!state) return
+  for (const l of state.listeners) l(eventType, ticketId)
+}
 
 function installShutdown() {
   if (shutdownInstalled) return
@@ -35,7 +38,6 @@ function installShutdown() {
     if (shuttingDown) return
     shuttingDown = true
     if (!state) return
-    state.tailController.abort()
     for (const r of state.responses) {
       try { r.end() } catch { /* ignore */ }
     }
@@ -50,15 +52,17 @@ function installShutdown() {
 
 async function getState(): Promise<WatcherState> {
   if (state) return state
+  if (statePromise) return statePromise
+  statePromise = initState()
+  return statePromise
+}
 
+async function initState(): Promise<WatcherState> {
   const ticketsDir = getTicketsDir()
   const ledger = await getLedger()
   const listeners = new Set<Listener>()
   const responses = new Set<{ end: () => void }>()
-  const tailController = new AbortController()
 
-  // Chokidar watches for external file edits (CLI, editor)
-  // Changes go through syncFileToLedger which diffs before emitting
   const watcher = chokidar.watch(ticketsDir, {
     ignoreInitial: true,
     persistent: true,
@@ -67,53 +71,35 @@ async function getState(): Promise<WatcherState> {
 
   watcher
     .on('add', async (fp: string) => {
-      // Cancel pending delete for same ticket ID (rename = unlink + add)
       const id = extractTicketId(fp)
       if (id && pendingDeletes.has(id)) {
         clearTimeout(pendingDeletes.get(id)!)
         pendingDeletes.delete(id)
       }
-      await syncFileToLedger(fp, ledger, ticketsDir)
+      const ticketId = await syncFileToLedger(fp, ledger, ticketsDir)
+      if (ticketId) {
+        for (const l of listeners) l('ticket-upsert', ticketId)
+      }
     })
     .on('change', async (fp: string) => {
-      await syncFileToLedger(fp, ledger, ticketsDir)
+      const ticketId = await syncFileToLedger(fp, ledger, ticketsDir)
+      if (ticketId) {
+        for (const l of listeners) l('ticket-upsert', ticketId)
+      }
     })
     .on('unlink', async (fp: string) => {
       const id = extractTicketId(fp)
       if (!id) return
-      // Debounce: wait 200ms for a matching add (rename) before deleting
       pendingDeletes.set(id, setTimeout(async () => {
         pendingDeletes.delete(id)
-        await removeFileFromLedger(fp, ledger)
+        const ticketId = await removeFileFromLedger(fp, ledger)
+        if (ticketId) {
+          for (const l of listeners) l('ticket-delete', ticketId)
+        }
       }, 200))
     })
 
-  // Sledge tailEvents — streams ALL events (from UI mutations, file sync, etc.)
-  // and broadcasts to SSE clients. This is the single notification path.
-  ;(async () => {
-    try {
-      for await (const item of ledger.tailEvents({
-        last: 0,
-        signal: tailController.signal,
-      })) {
-        const { eventName, payload } = item.event
-        const p = payload as Record<string, unknown>
-        const seq = item.cursor as unknown as number
-
-        if (eventName === 'ticket.created' || eventName === 'ticket.updated') {
-          for (const l of listeners) l('ticket-upsert', p.id as string, seq)
-        } else if (eventName === 'ticket.deleted') {
-          for (const l of listeners) l('ticket-delete', p.id as string, seq)
-        }
-      }
-    } catch (err: unknown) {
-      if ((err as Error)?.name !== 'AbortError') {
-        console.error('[tix-sse] tailEvents error:', err)
-      }
-    }
-  })()
-
-  state = { listeners, watcher, responses, tailController }
+  state = { listeners, watcher, responses }
   installShutdown()
   return state
 }
@@ -126,18 +112,15 @@ export default defineEventHandler(async (event) => {
   res.setHeader('Cache-Control', 'no-cache, no-transform')
   res.setHeader('Connection', 'keep-alive')
   res.setHeader('X-Accel-Buffering', 'no')
-  res.flushHeaders?.()
+  res.flushHeaders()
 
-  // Hello event so client knows stream is live
   res.write(`event: hello\ndata: {}\n\n`)
 
-  const listener: Listener = (eventType, ticketId, seq) => {
-    const data = JSON.stringify({ id: ticketId, seq })
-    res.write(`id: ${seq}\nevent: ${eventType}\ndata: ${data}\n\n`)
+  const listener: Listener = (eventType, ticketId) => {
+    res.write(`event: ${eventType}\ndata: ${JSON.stringify({ id: ticketId })}\n\n`)
   }
   listeners.add(listener)
 
-  // Heartbeat every 20s
   const heartbeat = setInterval(() => {
     res.write(`: heartbeat\n\n`)
   }, 20_000)
@@ -155,9 +138,8 @@ export default defineEventHandler(async (event) => {
   event.node.req.on('close', cleanup)
   event.node.req.on('error', cleanup)
 
+  // Hold the handler open — this is an SSE stream
   await new Promise<void>((resolve) => {
     event.node.req.on('close', () => resolve())
   })
-
-  return ''
 })
