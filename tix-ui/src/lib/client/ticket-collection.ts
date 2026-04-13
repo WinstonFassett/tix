@@ -23,6 +23,7 @@ export function getTicketCollection(): TicketCollection {
     getKey: (ticket) => ticket.id,
 
     sync: {
+      rowUpdateMode: 'full',
       sync: ({ begin, write, commit, markReady }) => {
         let disposed = false;
 
