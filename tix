@@ -314,9 +314,13 @@ cmd_create() {
                     return 1
                 fi
                 shift 2 ;;
-            -t|--type) 
+            -T|--type)
                 issue_type="$2"
                 validate_input "$issue_type" "general" || return 1
+                shift 2 ;;
+            -t|--title)
+                title="$2"
+                validate_input "$title" "general" || return 1
                 shift 2 ;;
             -a|--assignee) 
                 assignee="$2"
@@ -364,7 +368,10 @@ cmd_create() {
         esac
     done
 
-    title="${title:-Untitled}"
+    if [[ -z "$title" ]]; then
+        echo "Error: title is required. Pass as first argument or use -t/--title." >&2
+        return 1
+    fi
     local id
     id=$(generate_id)
     
@@ -2251,12 +2258,12 @@ cmd_add_note() {
 
     # Add Notes section if missing
     if ! grep -q '^## Notes' "$file"; then
-        printf '\\n## Notes\\n' >> "$file"
+        printf '\n## Notes\n' >> "$file"
     fi
-    
+
     # Append timestamped note, ensuring markdown and special characters are preserved
-    printf '\\n**%s**\\n\\n' "$timestamp" >> "$file"
-    printf '%s\\n' "$note" >> "$file"
+    printf '\n**%s**\n\n' "$timestamp" >> "$file"
+    printf '%s\n' "$note" >> "$file"
 
     echo "Note added to $(basename "$file" .md)"
 }
@@ -2444,8 +2451,8 @@ tix - minimal ticket system with dependency tracking
 Usage: tix <command> [arguments]
 
 Commands:
-  create <title> [--description <desc>] [--design <design>] [--acceptance <ac>]
-                 [--priority <p>] [--type <type>] [--assignee <assignee>]
+  create <title> [-t|--title <title>] [--description <desc>] [--design <design>] [--acceptance <ac>]
+                 [--priority <p>] [-T|--type <type>] [--assignee <assignee>]
                  [--external-ref <ref>] [--parent <id>] [--tags <tag1,tag2>]
                  [--tag <tag>]... [--dep <id>]... [-f|--folder <folder>]
     Create a new ticket. Title is required. Description, design, and acceptance
