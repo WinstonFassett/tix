@@ -192,6 +192,7 @@ export const updateTicket = createServerFn({ method: 'POST' })
     }
 
     console.log('[updateTicket] notifying SSE, listeners:', (globalThis as any).__tixSSEListeners?.size ?? 'undefined')
+    console.log('[updateTicket] calling notifyTicketChange, listeners:', (globalThis as any).__tixSSEListeners?.size ?? 'none')
     notifyTicketChange('ticket-upsert', ticketId)
     return { ok: true }
   })
