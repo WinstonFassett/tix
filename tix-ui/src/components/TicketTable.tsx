@@ -130,7 +130,7 @@ export function TicketTable({ grouped, groupBy, onUpdate, onRowClick, selectedId
               </div>
             )}
 
-            <AnimatePresence>
+            <AnimatePresence initial={false}>
               {!collapsed.has(groupKey) && (grouped[groupKey] || []).map(ticket => (
                 <TicketRow
                   key={ticket.id}

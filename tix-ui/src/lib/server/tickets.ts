@@ -3,50 +3,11 @@ import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import type { Ticket } from '../types'
-import { getStore, getTicketsDir } from './livestore/singleton.js'
-import { events, type TicketRow, type TicketListRow } from './livestore/index.js'
-import { projectTicketToFile } from './livestore/sync.js'
+import { getLedger, getTicketsDir } from './sledge/singleton'
+import { projectTicketToFile } from './sledge/sync'
 
 const VALID_STATUSES = ['open', 'in-progress', 'review', 'on-hold', 'done', 'closed']
 export const DEFAULT_IGNORED_FOLDERS = ['archive']
-
-/** Convert a LiveStore row (JSON string arrays) to the Ticket interface (real arrays). */
-function rowToTicket(row: TicketRow): Ticket {
-  return {
-    id: row.id,
-    title: row.title,
-    status: row.status as Ticket['status'],
-    type: row.type,
-    priority: row.priority,
-    assignee: row.assignee,
-    tags: JSON.parse(row.tags),
-    deps: JSON.parse(row.deps),
-    links: JSON.parse(row.links),
-    created: row.created,
-    body: row.body,
-    filename: row.filename,
-    folder: row.folder,
-  }
-}
-
-/** Convert a list row (no body) to a Ticket with empty body. */
-function listRowToTicket(row: TicketListRow): Ticket {
-  return {
-    id: row.id,
-    title: row.title,
-    status: row.status as Ticket['status'],
-    type: row.type,
-    priority: row.priority,
-    assignee: row.assignee,
-    tags: JSON.parse(row.tags),
-    deps: JSON.parse(row.deps),
-    links: JSON.parse(row.links),
-    created: row.created,
-    body: '',
-    filename: row.filename,
-    folder: row.folder,
-  }
-}
 
 function sanitizeTitle(title: string): string {
   let clean = title
@@ -87,31 +48,30 @@ function generateId(): string {
 // --- Server Functions ---
 
 export const getTickets = createServerFn({ method: 'GET' }).handler(async () => {
-  const store = await getStore()
-  const rows = store.queryList()
-  return rows.map(listRowToTicket)
+  const ledger = await getLedger()
+  const tickets = await ledger.query('allTickets', {}) as Ticket[]
+  return tickets
 })
 
 export const getTicket = createServerFn({ method: 'GET' })
   .inputValidator((data: { ticketId: string }) => data)
   .handler(async ({ data }) => {
-    const store = await getStore()
-    const row = store.queryById(data.ticketId)
-    if (!row) throw new Error(`Ticket ${data.ticketId} not found`)
-    return rowToTicket(row)
+    const ledger = await getLedger()
+    const ticket = await ledger.query('ticketById', { id: data.ticketId }) as Ticket | null
+    if (!ticket) throw new Error(`Ticket ${data.ticketId} not found`)
+    return ticket
   })
 
 export const searchTickets = createServerFn({ method: 'GET' })
   .inputValidator((data: { query: string; limit?: number }) => data)
   .handler(async ({ data }) => {
-    const store = await getStore()
-    const rows = store.search(data.query, data.limit)
-    return rows.map(rowToTicket)
+    const ledger = await getLedger()
+    return await ledger.query('search', { query: data.query, limit: data.limit }) as Ticket[]
   })
 
 export const getFolderCounts = createServerFn({ method: 'GET' }).handler(async () => {
-  const store = await getStore()
-  return store.queryFolderCounts()
+  const ledger = await getLedger()
+  return await ledger.query('folderCounts', {}) as Array<{ folder: string; count: number }>
 })
 
 export const getConfig = createServerFn({ method: 'GET' }).handler(async () => {
@@ -134,14 +94,15 @@ export const createTicket = createServerFn({ method: 'POST' })
       throw new Error('Title is required')
     }
 
-    const store = await getStore()
+    const ledger = await getLedger()
     const ticketsDir = getTicketsDir()
     const id = generateId()
     const cleanTitle = sanitizeTitle(title)
     const filename = `${cleanTitle} (${id}).md`
     const body = description || ''
+    const created = new Date().toISOString()
 
-    store.commit(events.ticketCreated({
+    await ledger.emit('ticket.created', {
       id,
       title,
       status: 'open',
@@ -151,17 +112,16 @@ export const createTicket = createServerFn({ method: 'POST' })
       tags: tags || [],
       deps: [],
       links: [],
-      created: new Date().toISOString(),
+      created,
       body,
       folder: '',
       filename,
-    }))
+    })
 
     // Project to .md file
-    const rows = store.query('allTickets')
-    const row = rows.find(r => r.id === id)
-    if (row) {
-      projectTicketToFile(row, ticketsDir)
+    const ticket = await ledger.query('ticketById', { id }) as Ticket | null
+    if (ticket) {
+      projectTicketToFile(ticket, ticketsDir)
     }
 
     return { ok: true as const, id, output: `Created ${filename}` }
@@ -171,16 +131,14 @@ export const updateTicket = createServerFn({ method: 'POST' })
   .inputValidator((data: { ticketId: string; updates: Record<string, unknown> }) => data)
   .handler(async ({ data }) => {
     const { ticketId, updates } = data
-    const store = await getStore()
+    const ledger = await getLedger()
     const ticketsDir = getTicketsDir()
 
     if (updates.status && typeof updates.status === 'string' && !VALID_STATUSES.includes(updates.status)) {
       throw new Error(`Invalid status: ${updates.status}. Valid: ${VALID_STATUSES.join(', ')}`)
     }
 
-    // Find current ticket to get old filename for cleanup
-    const rows = store.query('allTickets')
-    const existing = rows.find(r => r.id === ticketId)
+    const existing = await ledger.query('ticketById', { id: ticketId }) as Ticket | null
     if (!existing) {
       throw new Error(`Ticket ${ticketId} not found`)
     }
@@ -215,15 +173,14 @@ export const updateTicket = createServerFn({ method: 'POST' })
       eventUpdates.filename = folder ? `${folder}/${newBasename}` : newBasename
     }
 
-    store.commit(events.ticketUpdated(eventUpdates as any))
+    await ledger.emit('ticket.updated', eventUpdates)
 
     // Project updated ticket to file
-    const updatedRows = store.query('allTickets')
-    const updatedRow = updatedRows.find(r => r.id === ticketId)
-    if (updatedRow) {
-      projectTicketToFile(updatedRow, ticketsDir)
+    const updatedTicket = await ledger.query('ticketById', { id: ticketId }) as Ticket | null
+    if (updatedTicket) {
+      projectTicketToFile(updatedTicket, ticketsDir)
       // Clean up old file if renamed
-      if (updatedRow.filename !== oldFilename) {
+      if (updatedTicket.filename !== oldFilename) {
         const oldPath = path.join(ticketsDir, oldFilename)
         try { fs.unlinkSync(oldPath) } catch { /* may not exist */ }
       }
@@ -235,16 +192,13 @@ export const updateTicket = createServerFn({ method: 'POST' })
 export const deleteTicket = createServerFn({ method: 'POST' })
   .inputValidator((data: { ticketId: string }) => data)
   .handler(async ({ data }) => {
-    const store = await getStore()
+    const ledger = await getLedger()
     const ticketsDir = getTicketsDir()
 
-    // Find file to delete
-    const rows = store.query('allTickets')
-    const existing = rows.find(r => r.id === data.ticketId)
+    const existing = await ledger.query('ticketById', { id: data.ticketId }) as Ticket | null
     if (!existing) throw new Error(`Ticket ${data.ticketId} not found`)
 
-    // Delete from store
-    store.commit(events.ticketDeleted({ id: data.ticketId }))
+    await ledger.emit('ticket.deleted', { id: data.ticketId })
 
     // Delete file
     const filepath = path.join(ticketsDir, existing.filename)

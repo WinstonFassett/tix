@@ -15,16 +15,16 @@ import { webDevMcp } from '@winstonfassett/web-dev-mcp-vite'
 
 const config = defineConfig({
   optimizeDeps: {
-    exclude: ['fsevents', '@livestore/adapter-node', 'better-sqlite3'],
+    exclude: ['fsevents', 'better-sqlite3', '@torkbot/sledge'],
   },
   ssr: {
-    external: ['@livestore/adapter-node', 'better-sqlite3', 'fsevents'],
+    external: ['better-sqlite3', '@torkbot/sledge', 'fsevents'],
   },
   plugins: [
     devtools(),
     nitro({
-      rollupConfig: { external: [/^@sentry\//, /^@livestore\//, 'fsevents'] },
-      externals: { inline: [], external: ['@livestore/livestore', '@livestore/adapter-node', '@livestore/common', 'fsevents'] },
+      rollupConfig: { external: [/^@sentry\//, 'fsevents'] },
+      externals: { inline: [], external: ['@torkbot/sledge', 'better-sqlite3', 'fsevents'] },
       // Enable scanning ./server for api/ and routes/ so our SSE endpoint
       // at server/routes/api/tickets-events.get.ts is registered.
       serverDir: './server',

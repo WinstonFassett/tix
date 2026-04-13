@@ -2,7 +2,6 @@ import { useMemo, useEffect } from 'react'
 import { HeadContent, Outlet, Scripts, createRootRoute, useNavigate, useRouterState } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppProvider, useFilters, useViewSettings, useSidebar, useTheme, useCreateDialog, usePalette } from '#/lib/AppContext'
-import { bumpHighlight } from '#/lib/hooks/use-row-highlights'
 import { useTickets, useUpdateTicket, useConfig } from '#/lib/hooks/use-tickets'
 import { CommandPalette, type PaletteCallbacks } from '#/components/CommandPalette'
 import { StatusIcon } from '#/components/icons/StatusIcon'
@@ -21,35 +20,11 @@ const queryClient = new QueryClient({
   },
 })
 
-// Live reload: subscribe to the server-side file watcher via SSE and
-// invalidate the tickets query on every filesystem event. Works in both
-// vite dev and the built Nitro server, so live updates behave the same
-// in development and production (ticket d0ca). EventSource auto-reconnects
-// so no manual retry logic is needed. Uses a module-level guard so React
-// strict-mode double-mounts don't create multiple streams.
-let liveUpdateStream: EventSource | null = null
-function ensureLiveUpdateStream() {
-  if (typeof window === 'undefined' || typeof EventSource === 'undefined') return
-  if (liveUpdateStream) return
-  const es = new EventSource('/api/tickets-events')
-  // Granular events: invalidate specific ticket + list queries
-  es.addEventListener('ticket-upsert', (e) => {
-    const { id } = JSON.parse((e as MessageEvent).data)
-    bumpHighlight(id)
-    queryClient.invalidateQueries({ queryKey: ['tickets'] })
-    queryClient.invalidateQueries({ queryKey: ['ticket', id] })
-  })
-  es.addEventListener('ticket-delete', (e) => {
-    const { id } = JSON.parse((e as MessageEvent).data)
-    queryClient.invalidateQueries({ queryKey: ['tickets'] })
-    queryClient.removeQueries({ queryKey: ['ticket', id] })
-  })
-  // Keep backwards compat with old-style events during transition
-  es.addEventListener('tickets-update', () => {
-    queryClient.invalidateQueries({ queryKey: ['tickets'] })
-  })
-  liveUpdateStream = es
-}
+// SSE-driven live updates are now handled by the TanStack DB ticket collection
+// (see src/lib/client/ticket-collection.ts). The collection subscribes to
+// /api/tickets-events and refreshes its state on every event. React components
+// using useLiveQuery() get incremental updates via d2ts.
+// Row highlights are triggered by the collection's change subscription.
 
 export const Route = createRootRoute({
   head: () => ({
@@ -92,10 +67,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  useEffect(() => {
-    ensureLiveUpdateStream()
-  }, [])
-
   return (
     <QueryClientProvider client={queryClient}>
       <AppProvider>

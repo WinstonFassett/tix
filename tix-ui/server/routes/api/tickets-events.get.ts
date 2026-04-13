@@ -1,43 +1,19 @@
-import chokidar from 'chokidar'
-import path from 'node:path'
-import fs from 'node:fs'
-import matter from 'gray-matter'
+import chokidar, { type FSWatcher } from 'chokidar'
 import { defineEventHandler } from 'h3'
-import { getStore, getTicketsDir } from '../../../src/lib/server/livestore/singleton.js'
-import { events } from '../../../src/lib/server/livestore/index.js'
+import { getLedger, getTicketsDir } from '../../../src/lib/server/sledge/singleton'
+import { syncFileToLedger, removeFileFromLedger } from '../../../src/lib/server/sledge/sync'
 
-// Singleton chokidar watcher shared by all SSE clients. The first request
-// initializes it; subsequent requests reuse the same watcher. Each request
-// registers its own listener and cleans up on disconnect. Shutdown is
-// handled at the process level (see installShutdown below) so Ctrl+C can
-// tear everything down without hanging on persistent connections.
-
-const TICKET_PATTERN = /\(([0-9a-f]{4})\)\.md$/i
-
-function resolveTicketsDir(): string {
-  return getTicketsDir()
-}
-
-type Listener = (eventType: string, ticketId: string) => void
+type Listener = (eventType: string, ticketId: string, seq?: number) => void
 
 interface WatcherState {
   listeners: Set<Listener>
-  watcher: chokidar.FSWatcher
+  watcher: FSWatcher
   responses: Set<{ end: () => void }>
+  tailController: AbortController
 }
 
 let state: WatcherState | null = null
 let shutdownInstalled = false
-
-// Loop guard: files we recently projected from the store.
-// Chokidar should ignore these to prevent feedback loops.
-const recentlyProjected = new Set<string>()
-const PROJECTION_GUARD_MS = 500
-
-export function markAsProjected(filepath: string): void {
-  recentlyProjected.add(filepath)
-  setTimeout(() => recentlyProjected.delete(filepath), PROJECTION_GUARD_MS)
-}
 
 function installShutdown() {
   if (shutdownInstalled) return
@@ -47,6 +23,7 @@ function installShutdown() {
     if (shuttingDown) return
     shuttingDown = true
     if (!state) return
+    state.tailController.abort()
     for (const r of state.responses) {
       try { r.end() } catch { /* ignore */ }
     }
@@ -59,142 +36,85 @@ function installShutdown() {
   process.on('beforeExit', shutdown)
 }
 
-function extractTicketId(filepath: string): string | null {
-  const match = path.basename(filepath).match(TICKET_PATTERN)
-  return match ? match[1]! : null
-}
-
-async function syncFileToStore(filepath: string) {
-  if (recentlyProjected.has(filepath)) return null
-
-  const ticketId = extractTicketId(filepath)
-  if (!ticketId) return null
-
-  try {
-        const raw = fs.readFileSync(filepath, 'utf-8')
-    const { data, content } = matter(raw)
-    const store = await getStore()
-    const ticketsDir = resolveTicketsDir()
-    const relPath = path.relative(ticketsDir, filepath)
-    const folder = path.dirname(relPath) === '.' ? '' : path.dirname(relPath)
-
-    const existing = store.query('allTickets').find(r => r.id === ticketId)
-
-    if (existing) {
-      // Update existing ticket
-      store.commit(events.ticketUpdated({
-        id: ticketId,
-        title: data.title || existing.title,
-        status: data.status || existing.status,
-        type: data.type || existing.type,
-        priority: data.priority ?? existing.priority,
-        assignee: data.assignee ?? existing.assignee,
-        tags: data.tags || JSON.parse(existing.tags),
-        deps: data.deps || JSON.parse(existing.deps),
-        links: data.links || JSON.parse(existing.links),
-        body: content.trim(),
-        folder,
-        filename: relPath,
-      }))
-    } else {
-      // New ticket from external source
-      store.commit(events.ticketCreated({
-        id: ticketId,
-        title: data.title || '',
-        status: data.status || 'open',
-        type: data.type || 'task',
-        priority: data.priority ?? 2,
-        assignee: data.assignee || '',
-        tags: data.tags || [],
-        deps: data.deps || [],
-        links: data.links || [],
-        created: data.created ? String(data.created) : new Date().toISOString(),
-        body: content.trim(),
-        folder,
-        filename: relPath,
-      }))
-    }
-
-    return ticketId
-  } catch {
-    return null
-  }
-}
-
-async function removeFileFromStore(filepath: string) {
-  if (recentlyProjected.has(filepath)) return null
-
-  const ticketId = extractTicketId(filepath)
-  if (!ticketId) return null
-
-  try {
-    const store = await getStore()
-    const existing = store.query('allTickets').find(r => r.id === ticketId)
-    if (existing) {
-      store.commit(events.ticketDeleted({ id: ticketId }))
-    }
-    return ticketId
-  } catch (err) {
-    return null
-  }
-}
-
-function getState(): WatcherState {
+async function getState(): Promise<WatcherState> {
   if (state) return state
-  const ticketsDir = resolveTicketsDir()
+
+  const ticketsDir = getTicketsDir()
+  const ledger = await getLedger()
   const listeners = new Set<Listener>()
   const responses = new Set<{ end: () => void }>()
+  const tailController = new AbortController()
+
+  // Chokidar watches for external file edits (CLI, editor)
+  // Changes go through syncFileToLedger which diffs before emitting
   const watcher = chokidar.watch(ticketsDir, {
     ignoreInitial: true,
     persistent: true,
     awaitWriteFinish: { stabilityThreshold: 50, pollInterval: 20 },
   })
 
-  const notifyUpsert = (ticketId: string) => {
-    for (const l of listeners) l('ticket-upsert', ticketId)
-  }
-  const notifyDelete = (ticketId: string) => {
-    for (const l of listeners) l('ticket-delete', ticketId)
-  }
-
   watcher
     .on('add', async (fp: string) => {
-      const id = await syncFileToStore(fp)
-      if (id) notifyUpsert(id)
+      await syncFileToLedger(fp, ledger, ticketsDir)
+      // tailEvents will pick up the resulting event and notify listeners
     })
     .on('change', async (fp: string) => {
-      const id = await syncFileToStore(fp)
-      if (id) notifyUpsert(id)
+      await syncFileToLedger(fp, ledger, ticketsDir)
     })
     .on('unlink', async (fp: string) => {
-      const id = await removeFileFromStore(fp)
-      if (id) notifyDelete(id)
+      await removeFileFromLedger(fp, ledger)
     })
 
-  state = { listeners, watcher, responses }
+  // Sledge tailEvents — streams ALL events (from UI mutations, file sync, etc.)
+  // and broadcasts to SSE clients. This is the single notification path.
+  ;(async () => {
+    try {
+      for await (const item of ledger.tailEvents({
+        last: 0,
+        signal: tailController.signal,
+      })) {
+        const { eventName, payload } = item.event
+        const p = payload as Record<string, unknown>
+        const seq = item.cursor as unknown as number
+
+        if (eventName === 'ticket.created' || eventName === 'ticket.updated') {
+          for (const l of listeners) l('ticket-upsert', p.id as string, seq)
+        } else if (eventName === 'ticket.deleted') {
+          for (const l of listeners) l('ticket-delete', p.id as string, seq)
+        }
+      }
+    } catch (err: unknown) {
+      if ((err as Error)?.name !== 'AbortError') {
+        console.error('[tix-sse] tailEvents error:', err)
+      }
+    }
+  })()
+
+  state = { listeners, watcher, responses, tailController }
   installShutdown()
   return state
 }
 
 export default defineEventHandler(async (event) => {
-  const { listeners, responses } = getState()
+  const { listeners, responses } = await getState()
 
-  const res = event.node.res
+  const res = event.node.res as any
   res.setHeader('Content-Type', 'text/event-stream')
   res.setHeader('Cache-Control', 'no-cache, no-transform')
   res.setHeader('Connection', 'keep-alive')
   res.setHeader('X-Accel-Buffering', 'no')
   res.flushHeaders?.()
 
-  // Hello + initial tick so client knows the stream is live.
+  // Hello event so client knows stream is live
   res.write(`event: hello\ndata: {}\n\n`)
 
-  const listener: Listener = (eventType, ticketId) => {
-    res.write(`event: ${eventType}\ndata: ${JSON.stringify({ id: ticketId })}\n\n`)
+  const listener: Listener = (eventType, ticketId, seq) => {
+    const data = JSON.stringify({ id: ticketId, seq })
+    res.write(`id: ${seq}\nevent: ${eventType}\ndata: ${data}\n\n`)
   }
   listeners.add(listener)
 
-  // Heartbeat every 20s to keep intermediaries from closing the connection.
+  // Heartbeat every 20s
   const heartbeat = setInterval(() => {
     res.write(`: heartbeat\n\n`)
   }, 20_000)
