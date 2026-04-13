@@ -35,6 +35,13 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
 
   const displayBody = stripLeadingTitle(ticket.body || '')
 
+  // Controlled title with dirty tracking — accept server updates unless user is editing
+  const [localTitle, setLocalTitle] = useState(ticket.title)
+  const [titleDirty, setTitleDirty] = useState(false)
+  useEffect(() => {
+    if (!titleDirty) setLocalTitle(ticket.title)
+  }, [ticket.title, titleDirty])
+
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
@@ -102,9 +109,13 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
           <input
             type="text"
             className="w-full bg-transparent text-2xl font-bold rounded-md outline-none placeholder:text-muted-foreground -mx-2 px-2 py-1 cursor-text border border-transparent hover:border-border hover:bg-accent/30 focus:border-ring focus:bg-background focus:ring-2 focus:ring-ring/30 transition-colors"
-            defaultValue={ticket.title}
-            key={ticket.id}
-            onChange={(e) => handleFieldChange('title', e.target.value)}
+            value={localTitle}
+            onChange={(e) => {
+              setLocalTitle(e.target.value)
+              setTitleDirty(true)
+              handleFieldChange('title', e.target.value)
+            }}
+            onBlur={() => setTitleDirty(false)}
             placeholder="Ticket title"
             title="Click to edit title"
             aria-label="Ticket title (editable)"
