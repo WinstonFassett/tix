@@ -1,7 +1,19 @@
 import chokidar, { type FSWatcher } from 'chokidar'
+import path from 'node:path'
 import { defineEventHandler } from 'h3'
 import { getLedger, getTicketsDir } from '../../../src/lib/server/sledge/singleton'
 import { syncFileToLedger, removeFileFromLedger } from '../../../src/lib/server/sledge/sync'
+
+const TICKET_PATTERN = /\(([0-9a-f]{4})\)\.md$/i
+
+function extractTicketId(filepath: string): string | null {
+  const match = path.basename(filepath).match(TICKET_PATTERN)
+  return match ? match[1]! : null
+}
+
+// Debounced unlink: hold deletes for 200ms in case an add arrives
+// for the same ticket ID (rename = unlink + add).
+const pendingDeletes = new Map<string, NodeJS.Timeout>()
 
 type Listener = (eventType: string, ticketId: string, seq?: number) => void
 
@@ -55,14 +67,25 @@ async function getState(): Promise<WatcherState> {
 
   watcher
     .on('add', async (fp: string) => {
+      // Cancel pending delete for same ticket ID (rename = unlink + add)
+      const id = extractTicketId(fp)
+      if (id && pendingDeletes.has(id)) {
+        clearTimeout(pendingDeletes.get(id)!)
+        pendingDeletes.delete(id)
+      }
       await syncFileToLedger(fp, ledger, ticketsDir)
-      // tailEvents will pick up the resulting event and notify listeners
     })
     .on('change', async (fp: string) => {
       await syncFileToLedger(fp, ledger, ticketsDir)
     })
     .on('unlink', async (fp: string) => {
-      await removeFileFromLedger(fp, ledger)
+      const id = extractTicketId(fp)
+      if (!id) return
+      // Debounce: wait 200ms for a matching add (rename) before deleting
+      pendingDeletes.set(id, setTimeout(async () => {
+        pendingDeletes.delete(id)
+        await removeFileFromLedger(fp, ledger)
+      }, 200))
     })
 
   // Sledge tailEvents — streams ALL events (from UI mutations, file sync, etc.)

@@ -4,6 +4,7 @@ import { getTickets, getTicket, getConfig, searchTickets, updateTicket, createTi
 import type { Ticket } from '../types'
 
 import { getTicketCollection } from '../client/ticket-collection'
+import { bumpHighlight } from './use-row-highlights'
 
 function getCollection() {
   if (typeof window === 'undefined') return null
@@ -28,7 +29,10 @@ export function useTickets() {
     const collection = getCollection()
     if (!collection) return
 
-    const sub = collection.subscribeChanges(() => {
+    const sub = collection.subscribeChanges((changes) => {
+      for (const change of changes) {
+        if (change.key) bumpHighlight(String(change.key))
+      }
       setTickets([...collection.state.values()] as Ticket[])
     })
 
