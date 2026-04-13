@@ -217,6 +217,12 @@ export async function removeFileFromLedger(
       id: ticketId,
     })) as Ticket | null;
     if (existing) {
+      // If the ticket's filename differs from the deleted file, it was renamed — don't delete
+      const deletedBasename = path.basename(filepath);
+      const currentBasename = path.basename(existing.filename);
+      if (deletedBasename !== currentBasename) {
+        return null;
+      }
       await ledger.emit("ticket.deleted", { id: ticketId });
     }
     return ticketId;
