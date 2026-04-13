@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getTickets, getTicket, getConfig, searchTickets, updateTicket, createTicket, deleteTicket } from '../server/tickets'
 import type { Ticket } from '../types'
 
-import { getTicketCollection } from '../client/ticket-collection'
+import { getTicketCollection, seedTicketCollection } from '../client/ticket-collection'
 import { bumpHighlight } from './use-row-highlights'
 
 function getCollection() {
@@ -13,17 +13,25 @@ function getCollection() {
 
 /**
  * All tickets — React Query for SSR, TanStack DB collection for client-side live updates.
+ * React Query data shows immediately (SSR hydrated). Once the collection is ready,
+ * it takes over for live updates. No blank gap.
  */
 export function useTickets() {
-  // React Query for SSR + initial hydration
   const queryResult = useQuery({
     queryKey: ['tickets'],
     queryFn: () => getTickets(),
   })
 
-  // On client, subscribe to the TanStack DB collection for live updates
-  const [tickets, setTickets] = useState<Ticket[]>([])
-  const [isLive, setIsLive] = useState(false)
+  // Seed the collection with SSR data so it doesn't need to re-fetch
+  const ssrData = queryResult.data
+  useEffect(() => {
+    if (ssrData && ssrData.length > 0) {
+      seedTicketCollection(ssrData)
+    }
+  }, [ssrData])
+
+  // Subscribe to collection for live updates
+  const [tickets, setTickets] = useState<Ticket[] | null>(null)
 
   useEffect(() => {
     const collection = getCollection()
@@ -36,36 +44,30 @@ export function useTickets() {
       setTickets([...collection.state.values()] as Ticket[])
     })
 
-    // Wait for collection to be ready, then mark as live
-    const checkReady = () => {
-      if (collection.status === 'ready') {
-        setTickets([...collection.state.values()] as Ticket[])
-        setIsLive(true)
-      } else {
-        setTimeout(checkReady, 50)
+    // Once ready, take over from React Query
+    if (collection.status === 'ready') {
+      setTickets([...collection.state.values()] as Ticket[])
+    } else {
+      const checkReady = () => {
+        if (collection.status === 'ready') {
+          setTickets([...collection.state.values()] as Ticket[])
+        } else {
+          setTimeout(checkReady, 50)
+        }
       }
+      checkReady()
     }
-    checkReady()
 
     return () => sub.unsubscribe()
   }, [])
 
-  if (isLive) {
-    return {
-      data: tickets,
-      isLoading: false,
-      isError: false,
-      error: null as Error | null,
-      refetch: () => {},
-    }
-  }
-
+  // Show collection data if available, otherwise React Query data (SSR)
   return {
-    data: queryResult.data ?? [],
-    isLoading: queryResult.isLoading,
-    isError: queryResult.isError,
-    error: queryResult.error,
-    refetch: queryResult.refetch,
+    data: tickets ?? queryResult.data ?? [],
+    isLoading: !tickets && queryResult.isLoading,
+    isError: !tickets && queryResult.isError,
+    error: !tickets ? queryResult.error : null,
+    refetch: () => {},
   }
 }
 

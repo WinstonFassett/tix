@@ -175,9 +175,7 @@ export const updateTicket = createServerFn({ method: 'POST' })
       eventUpdates.filename = folder ? `${folder}/${newBasename}` : newBasename
     }
 
-    console.log('[updateTicket] emitting update for', ticketId, Object.keys(eventUpdates))
-    await ledger.emit('ticket.updated', eventUpdates)
-    console.log('[updateTicket] emit done, projecting file')
+    await ledger.emit('ticket.updated', eventUpdates as any)
 
     // Project updated ticket to file
     const updatedTicket = await ledger.query('ticketById', { id: ticketId }) as Ticket | null
@@ -191,8 +189,6 @@ export const updateTicket = createServerFn({ method: 'POST' })
       }
     }
 
-    console.log('[updateTicket] notifying SSE, listeners:', (globalThis as any).__tixSSEListeners?.size ?? 'undefined')
-    console.log('[updateTicket] calling notifyTicketChange, listeners:', (globalThis as any).__tixSSEListeners?.size ?? 'none')
     notifyTicketChange('ticket-upsert', ticketId)
     return { ok: true }
   })

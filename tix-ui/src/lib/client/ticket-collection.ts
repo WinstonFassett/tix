@@ -10,10 +10,20 @@ export type TicketCollection = CollectionImpl<Ticket, string, any, any, any>;
 
 let _collection: TicketCollection | null = null;
 let _eventSource: EventSource | null = null;
+let _seedData: Ticket[] | null = null;
+
+/**
+ * Seed the collection with data from SSR (avoids redundant fetch).
+ * Call before getTicketCollection() — typically from useTickets() with React Query data.
+ */
+export function seedTicketCollection(tickets: Ticket[]) {
+  if (!_seedData && tickets.length > 0) {
+    _seedData = tickets;
+  }
+}
 
 /**
  * Get the singleton ticket collection.
- * Call this from React components via useTicketCollection().
  */
 export function getTicketCollection(): TicketCollection {
   if (_collection) return _collection;
@@ -27,9 +37,10 @@ export function getTicketCollection(): TicketCollection {
       sync: ({ begin, write, commit, markReady }) => {
         let disposed = false;
 
-        // Load initial data from server
+        // Load initial data — use seed from SSR if available, otherwise fetch
         const load = async () => {
-          const tickets = await getTickets();
+          const tickets = _seedData ?? await getTickets();
+          _seedData = null;
           if (disposed) return;
           begin();
           for (const ticket of tickets) {
