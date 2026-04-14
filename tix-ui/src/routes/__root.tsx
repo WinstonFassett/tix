@@ -8,7 +8,7 @@ import { StatusIcon } from '#/components/icons/StatusIcon'
 import { TypeIcon } from '#/components/icons/TypeIcon'
 import { Button } from '#/components/ui'
 import { STATUS_LABELS, TYPE_LABELS, type TicketStatus } from '#/lib/types'
-import { Sun, Moon, Inbox } from 'lucide-react'
+import { Sun, Moon, Inbox, Activity } from 'lucide-react'
 import { FolderTree } from '#/components/FolderTree'
 import { useChangeHighlight } from '#/components/AnimatedCount'
 
@@ -247,6 +247,16 @@ function AppLayout() {
             >
               <Inbox className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span>{filters.folderScope ? <>All Issues in{' '}<span className="font-medium whitespace-nowrap">{filters.folderScope}</span></> : 'All Issues'}</span>
+            </div>
+          </div>
+
+          <div className="px-2 mt-1">
+            <div
+              className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors ${routerState.location.pathname === '/activity' ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'}`}
+              onClick={() => navigate({ to: '/activity' })}
+            >
+              <Activity className="h-4 w-4 shrink-0" />
+              <span>Activity</span>
             </div>
           </div>
 

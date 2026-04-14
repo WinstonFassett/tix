@@ -9,6 +9,7 @@ import { hydrateFromFiles } from "./sync";
 const _g = globalThis as unknown as {
   __tixLedger?: ReturnType<typeof createTicketLedger> | null;
   __tixLedgerPromise?: Promise<ReturnType<typeof createTicketLedger>> | null;
+  __tixDb?: Database.Database | null;
 };
 
 function resolveTicketsDir(): string {
@@ -47,6 +48,7 @@ export async function getLedger(): Promise<
       const db = new Database(dbPath);
       db.pragma("journal_mode = WAL");
 
+      _g.__tixDb = db;
       const ledger = createTicketLedger(db);
 
       // If projection table is empty, hydrate from .md files on disk
@@ -77,6 +79,15 @@ export async function getLedger(): Promise<
  */
 export function getTicketsDir(): string {
   return resolveTicketsDir();
+}
+
+/**
+ * Get the underlying better-sqlite3 database (for direct queries like events).
+ * Must be called after getLedger() has initialized.
+ */
+export function getDb(): Database.Database {
+  if (!_g.__tixDb) throw new Error('Ledger not initialized — call getLedger() first')
+  return _g.__tixDb
 }
 
 /**

@@ -259,7 +259,9 @@ function diffTicket(
   ] as const;
 
   for (const f of fields) {
-    if (existing[f] !== parsed[f]) {
+    const a = f === "body" ? String(existing[f]).trim() : existing[f];
+    const b = f === "body" ? String(parsed[f]).trim() : parsed[f];
+    if (a !== b) {
       changes[f] = parsed[f];
     }
   }

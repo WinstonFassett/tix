@@ -175,21 +175,42 @@ export const updateTicket = createServerFn({ method: 'POST' })
       eventUpdates.filename = folder ? `${folder}/${newBasename}` : newBasename
     }
 
-    await ledger.emit('ticket.updated', eventUpdates as any)
-
-    // Project updated ticket to file
-    const updatedTicket = await ledger.query('ticketById', { id: ticketId }) as Ticket | null
-    if (updatedTicket) {
-      projectTicketToFile(updatedTicket, ticketsDir)
-      // Clean up old file if renamed — mark it so chokidar skips the unlink
-      if (updatedTicket.filename !== oldFilename) {
-        const oldPath = path.join(ticketsDir, oldFilename)
-        markAsProjected(oldPath, '__deleted__')
-        try { fs.unlinkSync(oldPath) } catch { /* may not exist */ }
+    // Diff against existing — skip emit if nothing actually changed
+    const actualChanges: Record<string, unknown> = { id: ticketId }
+    let hasChanges = false
+    for (const [key, val] of Object.entries(eventUpdates)) {
+      if (key === 'id') continue
+      const existingVal = (existing as any)[key]
+      const same = Array.isArray(val)
+        ? JSON.stringify(val) === JSON.stringify(existingVal)
+        : key === 'body'
+          ? String(val).trim() === String(existingVal ?? '').trim()
+          : val === existingVal
+      if (!same) {
+        actualChanges[key] = val
+        hasChanges = true
       }
     }
 
-    notifyTicketChange('ticket-upsert', ticketId)
+    if (hasChanges) {
+      await ledger.emit('ticket.updated', actualChanges as any)
+    }
+
+    if (hasChanges) {
+      // Project updated ticket to file
+      const updatedTicket = await ledger.query('ticketById', { id: ticketId }) as Ticket | null
+      if (updatedTicket) {
+        projectTicketToFile(updatedTicket, ticketsDir)
+        // Clean up old file if renamed — mark it so chokidar skips the unlink
+        if (updatedTicket.filename !== oldFilename) {
+          const oldPath = path.join(ticketsDir, oldFilename)
+          markAsProjected(oldPath, '__deleted__')
+          try { fs.unlinkSync(oldPath) } catch { /* may not exist */ }
+        }
+      }
+      notifyTicketChange('ticket-upsert', ticketId)
+    }
+
     return { ok: true }
   })
 

@@ -90,11 +90,14 @@ export function getTicketCollection(): TicketCollection {
             refresh();
             const { id } = JSON.parse((e as MessageEvent).data);
             queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+            queryClient.invalidateQueries({ queryKey: ['activity'] });
+            queryClient.invalidateQueries({ queryKey: ['ticket-history', id] });
           });
           _eventSource.addEventListener("ticket-delete", (e) => {
             refresh();
             const { id } = JSON.parse((e as MessageEvent).data);
             queryClient.removeQueries({ queryKey: ['ticket', id] });
+            queryClient.invalidateQueries({ queryKey: ['activity'] });
           });
         }
 

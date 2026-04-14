@@ -8,12 +8,17 @@ import { getEditorFeatureConfigs } from '#/lib/editor/editor-config'
 interface MilkdownEditorProps {
   defaultValue?: string
   onChange?: (markdown: string) => void
+  /** Raw keystroke signal — fires on every DOM input event, before Milkdown's
+   *  internal 200ms debounce serializes markdown. Use to reset debounce timers. */
+  onInput?: () => void
 }
 
-export function MilkdownEditor({ defaultValue = '', onChange }: MilkdownEditorProps) {
+export function MilkdownEditor({ defaultValue = '', onChange, onInput }: MilkdownEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const crepeRef = useRef<any>(null)
   const lastValueRef = useRef(defaultValue)
+  const onInputRef = useRef(onInput)
+  onInputRef.current = onInput
 
   useEffect(() => {
     let destroyed = false
@@ -53,13 +58,30 @@ export function MilkdownEditor({ defaultValue = '', onChange }: MilkdownEditorPr
 
       await crepe.create()
       crepeRef.current = crepe
+
+      // Raw DOM input listener — fires on every keystroke, before Milkdown's
+      // 200ms debounce. Lets the consumer reset debounce timers.
+      const el = containerRef.current
+      if (el) {
+        const handler = () => onInputRef.current?.()
+        el.addEventListener('input', handler)
+        // stash for cleanup
+        ;(crepe as any).__inputHandler = handler
+        ;(crepe as any).__inputEl = el
+      }
     }
 
     init()
 
     return () => {
       destroyed = true
-      crepeRef.current?.destroy()
+      const c = crepeRef.current
+      if (c) {
+        const handler = (c as any).__inputHandler
+        const el = (c as any).__inputEl
+        if (handler && el) el.removeEventListener('input', handler)
+        c.destroy()
+      }
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

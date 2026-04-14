@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { Ticket } from '#/lib/types'
+import { STATUS_LABELS, PRIORITY_LABELS, TYPE_LABELS } from '#/lib/types'
 import { Button, Input, Dialog } from './ui'
 import { StatusSelector } from './StatusSelector'
 import { PrioritySelector } from './PrioritySelector'
@@ -7,9 +8,11 @@ import { TypeSelector } from './TypeSelector'
 import { MilkdownEditor } from './MilkdownEditor'
 import { useTickets, useDeleteTicket } from '#/lib/hooks/use-tickets'
 import { useNavigate } from '@tanstack/react-router'
-import { AlertTriangle, Folder, Trash2 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { AlertTriangle, Folder, Trash2, ChevronDown, FilePlus, Pencil } from 'lucide-react'
 import { useFilters } from '#/lib/AppContext'
 import { TicketTagsField } from './TicketTagsField'
+import { getTicketEvents, type ActivityEvent } from '#/lib/server/activity'
 
 interface TicketDetailBodyProps {
   ticket: Ticket
@@ -31,6 +34,7 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const bodyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const serverBody = stripLeadingTitle(ticket.body || '')
@@ -38,6 +42,7 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
   // Track body dirty state for cross-tab sync
   const [bodyKey, setBodyKey] = useState(0)
   const bodyDirtyRef = useRef(false)
+  const pendingBodyRef = useRef<string | null>(null)
   const lastServerBodyRef = useRef(serverBody)
   useEffect(() => {
     if (serverBody !== lastServerBodyRef.current) {
@@ -58,6 +63,7 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      if (bodyTimerRef.current) clearTimeout(bodyTimerRef.current)
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
     }
   }, [])
@@ -66,23 +72,50 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
     onSaveStateChange?.(saveState)
   }, [saveState, onSaveStateChange])
 
-  const save = useCallback((updates: Record<string, any>) => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+  const saveImmediate = useCallback(async (updates: Record<string, any>) => {
     setSaveState('saving')
     if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-    saveTimerRef.current = setTimeout(async () => {
-      try {
-        await onUpdate(updates)
-        setSaveState('saved')
-        savedTimerRef.current = setTimeout(() => setSaveState('idle'), 2000)
-      } catch {
-        setSaveState('error')
-      }
-    }, 1000)
+    try {
+      await onUpdate(updates)
+      setSaveState('saved')
+      savedTimerRef.current = setTimeout(() => setSaveState('idle'), 2000)
+    } catch {
+      setSaveState('error')
+    }
   }, [onUpdate])
 
+  const DEBOUNCE_MS = 2000
+
+  const resetBodyTimer = useCallback(() => {
+    if (bodyTimerRef.current) clearTimeout(bodyTimerRef.current)
+    if (pendingBodyRef.current !== null) {
+      bodyTimerRef.current = setTimeout(() => {
+        if (pendingBodyRef.current !== null) {
+          saveImmediate({ body: pendingBodyRef.current })
+          pendingBodyRef.current = null
+        }
+      }, DEBOUNCE_MS)
+    }
+  }, [saveImmediate])
+
+  // Called on every raw DOM input event in the editor (per-keystroke)
+  const handleBodyInput = useCallback(() => {
+    resetBodyTimer()
+  }, [resetBodyTimer])
+
+  // Called on markdownUpdated (after Milkdown's internal 200ms debounce)
+  const handleBodyChange = useCallback((body: string) => {
+    pendingBodyRef.current = body
+    resetBodyTimer()
+  }, [resetBodyTimer])
+
+  const saveTitleDebounced = useCallback((title: string) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => saveImmediate({ title }), DEBOUNCE_MS)
+  }, [saveImmediate])
+
   function handleFieldChange(field: string, value: any) {
-    save({ [field]: value })
+    saveImmediate({ [field]: value })
   }
 
   // Tags
@@ -100,8 +133,8 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
 
   const handleTagsChange = useCallback((next: string[]) => {
     setLocalTags(next)
-    save({ tags: next })
-  }, [save])
+    saveImmediate({ tags: next })
+  }, [saveImmediate])
 
   async function confirmDelete() {
     try {
@@ -126,9 +159,10 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
             onChange={(e) => {
               setLocalTitle(e.target.value)
               setTitleDirty(true)
-              handleFieldChange('title', e.target.value)
+              saveTitleDebounced(e.target.value)
             }}
-            onBlur={() => setTitleDirty(false)}
+            onBlur={() => { setTitleDirty(false); if (saveTimerRef.current) clearTimeout(saveTimerRef.current); saveImmediate({ title: localTitle }) }}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
             placeholder="Ticket title"
             title="Click to edit title"
             aria-label="Ticket title (editable)"
@@ -139,7 +173,10 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
           <StatusSelector status={ticket.status} onSelect={(s) => handleFieldChange('status', s)} />
           <PrioritySelector priority={ticket.priority} onSelect={(p) => handleFieldChange('priority', p)} />
           <TypeSelector type={ticket.type} onSelect={(t) => handleFieldChange('type', t)} />
-          <AssigneeInput assignee={ticket.assignee} onChange={(v) => handleFieldChange('assignee', v)} />
+          <AssigneeInput
+            assignee={ticket.assignee}
+            onCommit={(v) => saveImmediate({ assignee: v })}
+          />
           {ticket.folder && (
             <button
               type="button"
@@ -200,18 +237,27 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
 
         <hr className="border-border my-4" />
 
-        <div className="min-h-50">
+        <div
+          className="min-h-50"
+          onFocusCapture={() => { bodyDirtyRef.current = true }}
+          onBlurCapture={() => {
+            bodyDirtyRef.current = false
+            if (pendingBodyRef.current !== null) {
+              if (bodyTimerRef.current) clearTimeout(bodyTimerRef.current)
+              saveImmediate({ body: pendingBodyRef.current })
+              pendingBodyRef.current = null
+            }
+          }}
+        >
           <MilkdownEditor
             key={`${ticket.id}-${bodyKey}`}
             defaultValue={serverBody}
-            onChange={(md) => {
-              bodyDirtyRef.current = true
-              save({ body: md })
-              // Clear dirty after save completes (debounced 1s + buffer)
-              setTimeout(() => { bodyDirtyRef.current = false }, 3000)
-            }}
+            onInput={handleBodyInput}
+            onChange={handleBodyChange}
           />
         </div>
+
+        <TicketHistory ticketId={ticket.id} />
 
       </div>
 
@@ -251,8 +297,81 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
   )
 }
 
-/** Controlled assignee input with dirty guard */
-function AssigneeInput({ assignee, onChange }: { assignee: string; onChange: (v: string) => void }) {
+/** Collapsible per-ticket event history */
+function TicketHistory({ ticketId }: { ticketId: string }) {
+  const [open, setOpen] = useState(false)
+
+  const { data: events = [] } = useQuery({
+    queryKey: ['ticket-history', ticketId],
+    queryFn: async () => (await getTicketEvents({ data: { ticketId } })) as ActivityEvent[],
+    enabled: open,
+  })
+
+  return (
+    <div className="mt-6 border-t pt-4">
+      <button
+        type="button"
+        className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+        onClick={() => setOpen(o => !o)}
+      >
+        <ChevronDown className={`h-3 w-3 transition-transform ${open ? '' : '-rotate-90'}`} />
+        History
+        {events.length > 0 && <span className="text-xs">({events.length})</span>}
+      </button>
+      {open && events.length > 0 && (
+        <div className="mt-2 space-y-0.5">
+          {events.map(event => (
+            <div key={event.eventId} className="flex items-start gap-2 py-1 text-sm">
+              <div className="mt-0.5 shrink-0">
+                {event.eventName === 'ticket.created'
+                  ? <FilePlus className="h-3 w-3 text-green-500" />
+                  : <Pencil className="h-3 w-3 text-blue-500" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-muted-foreground">
+                  {event.eventName === 'ticket.created' ? 'Created' : 'Updated'}
+                </span>
+                {event.changes && <HistoryChangeSummary changes={event.changes} />}
+              </div>
+              <span className="text-xs text-muted-foreground shrink-0">
+                {new Date(event.tsMs).toLocaleString(undefined, {
+                  month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+                })}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HistoryChangeSummary({ changes }: { changes: Record<string, unknown> }) {
+  const parts: string[] = []
+  for (const [key, value] of Object.entries(changes)) {
+    if (key === 'body' || key === 'filename') continue
+    if (key === 'status' && typeof value === 'string') {
+      parts.push(`status → ${STATUS_LABELS[value as keyof typeof STATUS_LABELS] ?? value}`)
+    } else if (key === 'priority' && typeof value === 'number') {
+      parts.push(`priority → ${PRIORITY_LABELS[value] ?? value}`)
+    } else if (key === 'type' && typeof value === 'string') {
+      parts.push(`type → ${TYPE_LABELS[value] ?? value}`)
+    } else if (key === 'title' && typeof value === 'string') {
+      parts.push(`title → "${value}"`)
+    } else if (key === 'assignee' && typeof value === 'string') {
+      parts.push(value ? `assigned to ${value}` : 'unassigned')
+    } else if (key === 'tags' && Array.isArray(value)) {
+      parts.push(`tags → [${value.join(', ')}]`)
+    } else {
+      parts.push(`${key} changed`)
+    }
+  }
+  if (parts.length === 0) return <span className="text-muted-foreground text-xs ml-1">— fields changed</span>
+  return <span className="text-muted-foreground text-xs ml-1">— {parts.join(', ')}</span>
+}
+
+/** Controlled assignee input — debounce while typing, flush on blur/enter */
+function AssigneeInput({ assignee, onCommit }: { assignee: string; onCommit: (v: string) => void }) {
   const [local, setLocal] = useState(assignee)
   const [dirty, setDirty] = useState(false)
   useEffect(() => {
@@ -263,8 +382,9 @@ function AssigneeInput({ assignee, onChange }: { assignee: string; onChange: (v:
       type="text"
       className="w-40 h-8 text-sm"
       value={local}
-      onChange={(e) => { setLocal(e.target.value); setDirty(true); onChange(e.target.value) }}
-      onBlur={() => setDirty(false)}
+      onChange={(e) => { setLocal(e.target.value); setDirty(true) }}
+      onBlur={() => { setDirty(false); onCommit(local) }}
+      onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur() } }}
       placeholder="Assignee"
     />
   )
