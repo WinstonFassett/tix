@@ -2,7 +2,7 @@ import path from "node:path";
 import fs from "node:fs";
 import Database from "better-sqlite3";
 import { createTicketLedger } from "./ticket-ledger";
-import { hydrateFromFiles } from "./sync";
+import { hydrateFromFiles, reconcile } from "./sync";
 
 // globalThis singleton — shared across Vite's SSR module contexts
 // (Nitro server routes + TanStack Start server functions).
@@ -61,6 +61,14 @@ export async function getLedger(): Promise<
             `[tix-sledge] Hydrated ${count} tickets from ${ticketsDir}`,
           );
         }
+      }
+
+      // Reconcile DB ↔ filesystem (safety net for crashes / failed projections)
+      const { projected, ingested } = await reconcile(ledger, ticketsDir);
+      if (projected > 0 || ingested > 0) {
+        console.log(
+          `[tix-sledge] Reconciled: ${projected} re-projected, ${ingested} ingested`,
+        );
       }
 
       _g.__tixLedger = ledger;

@@ -119,10 +119,16 @@ export const createTicket = createServerFn({ method: 'POST' })
       filename,
     })
 
-    // Project to .md file
+    // Project to .md file — compensate on failure
     const ticket = await ledger.query('ticketById', { id }) as Ticket | null
     if (ticket) {
-      projectTicketToFile(ticket, ticketsDir)
+      try {
+        projectTicketToFile(ticket, ticketsDir)
+      } catch (err) {
+        console.error(`[createTicket] projection failed for ${id}, rolling back:`, err)
+        await ledger.emit('ticket.deleted', { id })
+        throw err
+      }
     }
 
     notifyTicketChange('ticket-upsert', id)
@@ -197,15 +203,27 @@ export const updateTicket = createServerFn({ method: 'POST' })
     }
 
     if (hasChanges) {
-      // Project updated ticket to file
+      // Project updated ticket to file — compensate on failure
       const updatedTicket = await ledger.query('ticketById', { id: ticketId }) as Ticket | null
       if (updatedTicket) {
-        projectTicketToFile(updatedTicket, ticketsDir)
-        // Clean up old file if renamed — mark it so chokidar skips the unlink
-        if (updatedTicket.filename !== oldFilename) {
-          const oldPath = path.join(ticketsDir, oldFilename)
-          markAsProjected(oldPath, '__deleted__')
-          try { fs.unlinkSync(oldPath) } catch { /* may not exist */ }
+        try {
+          projectTicketToFile(updatedTicket, ticketsDir)
+          // Clean up old file if renamed — mark it so chokidar skips the unlink
+          if (updatedTicket.filename !== oldFilename) {
+            const oldPath = path.join(ticketsDir, oldFilename)
+            markAsProjected(oldPath, '__deleted__')
+            try { fs.unlinkSync(oldPath) } catch { /* may not exist */ }
+          }
+        } catch (err) {
+          console.error(`[updateTicket] projection failed for ${ticketId}, rolling back:`, err)
+          // Restore previous state
+          const rollback: Record<string, unknown> = { id: ticketId }
+          for (const key of Object.keys(actualChanges)) {
+            if (key === 'id') continue
+            rollback[key] = (existing as any)[key]
+          }
+          await ledger.emit('ticket.updated', rollback as any)
+          throw err
         }
       }
       notifyTicketChange('ticket-upsert', ticketId)

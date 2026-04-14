@@ -231,6 +231,55 @@ export async function removeFileFromLedger(
   }
 }
 
+// --- Startup Reconciliation ---
+
+/**
+ * Compare DB rows to files on disk and fix any drift.
+ * Re-projects DB rows missing files. Ingests files missing from DB.
+ * Safety net for process crashes and failed projections.
+ */
+export async function reconcile(
+  ledger: Ledger,
+  ticketsDir: string,
+): Promise<{ projected: number; ingested: number }> {
+  let projected = 0;
+  let ingested = 0;
+
+  // 1. DB rows missing files → re-project
+  const allTickets = (await ledger.query("allTickets", {})) as Ticket[];
+  for (const ticket of allTickets) {
+    const filepath = path.join(ticketsDir, ticket.filename);
+    if (!fs.existsSync(filepath)) {
+      try {
+        projectTicketToFile(ticket, ticketsDir);
+        projected++;
+      } catch (err) {
+        console.error(`[reconcile] failed to re-project ${ticket.id}:`, err);
+      }
+    }
+  }
+
+  // 2. Files on disk missing from DB → ingest
+  const files = walkTickets(ticketsDir);
+  const dbIds = new Set(allTickets.map((t) => t.id));
+  for (const { filepath, filename, folder } of files) {
+    const id = extractTicketId(filepath);
+    if (id && !dbIds.has(id)) {
+      try {
+        const ticket = parseTicketFile(filepath, filename, folder);
+        await ledger.emit("ticket.created", ticket, {
+          dedupeKey: `reconcile:${id}`,
+        });
+        ingested++;
+      } catch (err) {
+        console.error(`[reconcile] failed to ingest ${filepath}:`, err);
+      }
+    }
+  }
+
+  return { projected, ingested };
+}
+
 // --- Helpers ---
 
 function extractTicketId(filepath: string): string | null {
