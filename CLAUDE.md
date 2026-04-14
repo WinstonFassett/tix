@@ -28,13 +28,13 @@ bats test/basic_operations.bats   # single test file
 - **`lib/yq`, `lib/jq`** — Vendored binaries (not checked in; downloaded by `setup-deps`).
 - **`ticket`** — Deprecated compat wrapper that exec's `tix`.
 - **`tix-vault`** — Obsidian vault integration wrapper.
-- **`tix-ui/`** — React + TanStack Start web dashboard. Data layer is **LiveStore** (event-sourced reactive SQLite) — see `tix-ui/src/lib/server/livestore/`. Server functions query the store; .md files are projected as a side-effect. Chokidar SSE endpoint at `tix-ui/server/routes/api/tickets-events.get.ts` syncs external file edits back into the store and pushes granular events to browsers. Built and symlinked by `./install-tix-ui`. Uses portless when available for named `.localhost` URLs (e.g. `project-tix.localhost:1355`). Playwright e2e tests in `tix-ui/e2e/`.
-- **`tix-ui/src/lib/server/livestore/`** — LiveStore integration:
-  - `schema.ts` — Event definitions (ticketCreated/Updated/Deleted), SQLite table, materializers
-  - `index.ts` — Store wrapper with query methods (allTickets, queryList, queryById, search, folderCounts)
-  - `singleton.ts` — globalThis-based singleton shared across Vite SSR contexts
-  - `sync.ts` — Hydration from .md files and projection back to .md files
-  - `__tests__/store.test.ts` — 8 vitest tests (CRUD, hydration, projection, round-trip)
+- **`tix-ui/`** — React + TanStack Start web dashboard. Data layer is **Sledge** (`@torkbot/sledge`, better-sqlite3 event-sourced SQLite) on server + **TanStack DB** for client-side reactivity. Server functions query the store; .md files are projected as a side-effect. Chokidar SSE endpoint at `tix-ui/server/routes/api/tickets-events.get.ts` syncs external file edits back into the store and pushes granular events to browsers. Built and symlinked by `./install-tix-ui`. Uses portless when available for named `.localhost` URLs (e.g. `project-tix.localhost:1355`). Playwright e2e tests in `tix-ui/e2e/`.
+- **`tix-ui/src/lib/server/sledge/`** — Sledge integration:
+  - `ticket-ledger.ts` — Event definitions, projectors (events → tickets table), query definitions
+  - `singleton.ts` — globalThis-based singleton shared across Vite SSR contexts, exposes `getLedger()` and `getDb()`
+  - `sync.ts` — Hydration from .md files and projection back to .md files, content-hash loop guard
+  - `sledge-collection.ts` — TanStack DB collection backed by Sledge (client-side reactivity)
+  - `__tests__/` — vitest tests (ticket store CRUD, collection sync, live queries, SSE server)
 - **`skills/tix/SKILL.md`** — Skill definition for AI agents to use tix.
 
 ## Ticket Format
@@ -50,15 +50,17 @@ Files named `Title Case (4hex).md` in `tickets/`. Frontmatter fields: `id`, `tit
 - `PORTLESS_PORT` — Override portless proxy port (default 1355)
 - `TIX_UI_DEV` — Set to `1` to run tix-ui in vite dev mode with HMR
 
-## Data Architecture (LiveStore)
+## Data Architecture (Sledge + TanStack DB)
 
-tix-ui uses LiveStore (0.3.x) as an event-sourced reactive data layer. The **database is canonical** at runtime; markdown files are a projection for git/editor compatibility.
+tix-ui uses Sledge (`@torkbot/sledge`) as a server-side event-sourced data layer backed by a single better-sqlite3 database. The **database is canonical** at runtime; markdown files are a projection for git/editor compatibility.
 
-**Write path:** UI mutation → store.commit(event) → materializer updates SQLite → projectTicketToFile() writes .md → chokidar loop guard skips re-ingestion.
+**Write path:** UI mutation → server function → `ledger.emit(event)` → projector updates `tickets` table → `projectTicketToFile()` writes .md → content-hash loop guard skips re-ingestion → SSE broadcasts change to browsers.
 
-**External edit path:** CLI/editor writes .md → chokidar detects → parse file → store.commit(event) → SSE broadcasts ticket-upsert → browser React Query refetches.
+**External edit path:** CLI/editor writes .md → chokidar detects → diff against existing state → `ledger.emit(event)` if changed → SSE broadcasts → browser React Query refetches.
 
-**Persistence:** LiveStore event log persists in `.tix/` (gitignored). On restart, state rebuilds from event replay. If event log is empty, hydrates from .md files on disk.
+**Persistence:** Sledge event log + projected state live in a single SQLite DB at `.tix/sledge.db` (gitignored). On restart, state rebuilds from event replay. If DB is empty, hydrates from .md files on disk.
+
+**SSE:** Single EventSource per browser tab, managed in `tix-ui/src/lib/client/ticket-collection.ts`. Server broadcasts via `globalThis.__tixSSEListeners`. No polling, no Sledge `tailEvents` in SSE path (scheduler doesn't tick in Vite SSR).
 
 **Store singleton:** Shared via `globalThis` across Vite's SSR module contexts (Nitro server routes + TanStack Start server functions).
 
