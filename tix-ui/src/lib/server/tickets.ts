@@ -8,6 +8,20 @@ import { projectTicketToFile, markAsProjected } from './sledge/sync'
 import { notifyTicketChange } from '../../../server/routes/api/tickets-events.get'
 
 const VALID_STATUSES = ['open', 'in-progress', 'review', 'on-hold', 'done', 'closed']
+
+// Per-ticket mutex to prevent read-modify-write races
+// (e.g. concurrent auto-save body + status click)
+const ticketLocks = new Map<string, Promise<unknown>>()
+async function withTicketLock<T>(ticketId: string, fn: () => Promise<T>): Promise<T> {
+  const prev = ticketLocks.get(ticketId) ?? Promise.resolve()
+  const next = prev.then(fn, fn)
+  ticketLocks.set(ticketId, next)
+  try {
+    return await next
+  } finally {
+    if (ticketLocks.get(ticketId) === next) ticketLocks.delete(ticketId)
+  }
+}
 export const DEFAULT_IGNORED_FOLDERS = ['archive']
 
 function sanitizeTitle(title: string): string {
@@ -139,6 +153,7 @@ export const updateTicket = createServerFn({ method: 'POST' })
   .inputValidator((data: { ticketId: string; updates: Record<string, unknown> }) => data)
   .handler(async ({ data }) => {
     const { ticketId, updates } = data
+    return withTicketLock(ticketId, async () => {
     const ledger = await getLedger()
     const ticketsDir = getTicketsDir()
 
@@ -230,11 +245,13 @@ export const updateTicket = createServerFn({ method: 'POST' })
     }
 
     return { ok: true }
+    }) // end withTicketLock
   })
 
 export const deleteTicket = createServerFn({ method: 'POST' })
   .inputValidator((data: { ticketId: string }) => data)
   .handler(async ({ data }) => {
+    return withTicketLock(data.ticketId, async () => {
     const ledger = await getLedger()
     const ticketsDir = getTicketsDir()
 
@@ -250,4 +267,5 @@ export const deleteTicket = createServerFn({ method: 'POST' })
 
     notifyTicketChange('ticket-delete', data.ticketId)
     return { ok: true }
+    }) // end withTicketLock
   })

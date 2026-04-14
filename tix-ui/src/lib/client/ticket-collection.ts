@@ -85,7 +85,16 @@ export function getTicketCollection(): TicketCollection {
 
         // SSE listener — refresh collection + invalidate detail queries
         if (typeof window !== "undefined" && typeof EventSource !== "undefined") {
+          let connected = false;
           _eventSource = new EventSource("/api/tickets-events");
+          _eventSource.addEventListener("hello", () => {
+            if (connected) {
+              // Reconnected after a drop — full refresh to catch missed events
+              refresh();
+              queryClient.invalidateQueries({ queryKey: ['activity'] });
+            }
+            connected = true;
+          });
           _eventSource.addEventListener("ticket-upsert", (e) => {
             refresh();
             const { id } = JSON.parse((e as MessageEvent).data);

@@ -37,26 +37,21 @@ export function useTickets() {
     const collection = getCollection()
     if (!collection) return
 
+    function syncFromCollection() {
+      if (collection!.status === 'ready') {
+        setTickets([...collection!.state.values()] as Ticket[])
+      }
+    }
+
     const sub = collection.subscribeChanges((changes) => {
       for (const change of changes) {
         if (change.key) bumpHighlight(String(change.key))
       }
-      setTickets([...collection.state.values()] as Ticket[])
+      syncFromCollection()
     })
 
-    // Once ready, take over from React Query
-    if (collection.status === 'ready') {
-      setTickets([...collection.state.values()] as Ticket[])
-    } else {
-      const checkReady = () => {
-        if (collection.status === 'ready') {
-          setTickets([...collection.state.values()] as Ticket[])
-        } else {
-          setTimeout(checkReady, 50)
-        }
-      }
-      checkReady()
-    }
+    // Check if already ready (no poll — just one check)
+    syncFromCollection()
 
     return () => sub.unsubscribe()
   }, [])

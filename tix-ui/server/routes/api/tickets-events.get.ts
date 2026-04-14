@@ -11,8 +11,6 @@ function extractTicketId(filepath: string): string | null {
   return match ? match[1]! : null
 }
 
-const pendingDeletes = new Map<string, NodeJS.Timeout>()
-
 type Listener = (eventType: string, ticketId: string) => void
 
 // globalThis survives HMR
@@ -20,6 +18,12 @@ const _g = globalThis as unknown as {
   __tixSSEListeners?: Set<Listener>
   __tixSSEWatcherInit?: Promise<void> | null
   __tixSSEShutdown?: boolean
+  __tixPendingDeletes?: Map<string, NodeJS.Timeout>
+}
+
+function getPendingDeletes(): Map<string, NodeJS.Timeout> {
+  if (!_g.__tixPendingDeletes) _g.__tixPendingDeletes = new Map()
+  return _g.__tixPendingDeletes
 }
 
 function getListeners(): Set<Listener> {
@@ -48,9 +52,9 @@ function ensureWatcher() {
     watcher
       .on('add', async (fp: string) => {
         const id = extractTicketId(fp)
-        if (id && pendingDeletes.has(id)) {
-          clearTimeout(pendingDeletes.get(id)!)
-          pendingDeletes.delete(id)
+        if (id && getPendingDeletes().has(id)) {
+          clearTimeout(getPendingDeletes().get(id)!)
+          getPendingDeletes().delete(id)
         }
         const ticketId = await syncFileToLedger(fp, ledger, ticketsDir)
         if (ticketId) notifyTicketChange('ticket-upsert', ticketId)
@@ -62,8 +66,8 @@ function ensureWatcher() {
       .on('unlink', async (fp: string) => {
         const id = extractTicketId(fp)
         if (!id) return
-        pendingDeletes.set(id, setTimeout(async () => {
-          pendingDeletes.delete(id)
+        getPendingDeletes().set(id, setTimeout(async () => {
+          getPendingDeletes().delete(id)
           const ticketId = await removeFileFromLedger(fp, ledger)
           if (ticketId) notifyTicketChange('ticket-delete', ticketId)
         }, 200))

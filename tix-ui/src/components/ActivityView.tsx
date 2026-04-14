@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { getRecentEvents, type ActivityEvent } from '#/lib/server/activity'
 import { useSidebar } from '#/lib/AppContext'
@@ -9,31 +9,20 @@ import { Button } from '#/components/ui'
 
 export function ActivityView() {
   const { toggle: toggleSidebar } = useSidebar()
-  const [allEvents, setAllEvents] = useState<ActivityEvent[]>([])
-  const [loadingMore, setLoadingMore] = useState(false)
 
-  const { isLoading, error } = useQuery({
+  const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ['activity'],
-    queryFn: async () => {
-      const events = (await getRecentEvents({ data: { limit: 50 } })) as ActivityEvent[]
-      setAllEvents(events)
-      return events
+    queryFn: async ({ pageParam }) => {
+      return (await getRecentEvents({ data: { limit: 50, ...(pageParam ? { before: pageParam } : {}) } })) as ActivityEvent[]
+    },
+    initialPageParam: undefined as number | undefined,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.length < 50) return undefined
+      return lastPage[lastPage.length - 1]?.eventId
     },
   })
 
-  const loadMore = useCallback(async () => {
-    if (allEvents.length === 0) return
-    setLoadingMore(true)
-    try {
-      const lastId = allEvents[allEvents.length - 1]!.eventId
-      const older = (await getRecentEvents({ data: { limit: 50, before: lastId } })) as ActivityEvent[]
-      setAllEvents(prev => [...prev, ...older])
-    } finally {
-      setLoadingMore(false)
-    }
-  }, [allEvents])
-
-  // Group events by day
+  const allEvents = useMemo(() => data?.pages.flat() ?? [], [data])
   const grouped = groupByDay(allEvents)
 
   return (
@@ -80,15 +69,16 @@ export function ActivityView() {
             ))}
 
             {/* Load more */}
+            {hasNextPage && (
             <div className="flex justify-center py-4">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={loadMore}
-                disabled={loadingMore}
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
                 className="text-muted-foreground"
               >
-                {loadingMore ? (
+                {isFetchingNextPage ? (
                   <Loader2 className="h-3 w-3 animate-spin mr-1" />
                 ) : (
                   <ChevronDown className="h-3 w-3 mr-1" />
@@ -96,6 +86,7 @@ export function ActivityView() {
                 Load older
               </Button>
             </div>
+            )}
           </div>
         )}
       </div>
