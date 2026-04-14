@@ -143,20 +143,22 @@ function DroppableGroupHeader({ groupKey, groupBy, count, collapsed, onToggle }:
   collapsed: boolean
   onToggle: () => void
 }) {
-  // Only status groups are droppable
-  const droppableId = groupBy === 'status' ? `status:${groupKey}` : undefined
+  const droppableId = groupBy !== 'none' && groupBy !== 'folder' ? `group-${groupBy}:${groupKey}` : undefined
   const { setNodeRef, isOver } = useDroppable({
     id: droppableId || `_group_${groupKey}`,
     disabled: !droppableId,
   })
+  const { overTarget } = useDndState()
+  const crossHighlight = !isOver && overTarget && groupBy !== 'none' && groupBy !== 'folder' && overTarget.dimension === groupBy && overTarget.value === groupKey
+  const highlighted = isOver || crossHighlight
 
   return (
     <div
       ref={setNodeRef}
       className={`sticky top-0 z-10 w-full h-10 flex items-center justify-between px-6 bg-background cursor-pointer select-none transition-colors ${
-        isOver ? 'ring-1 ring-primary/40 bg-primary/10' : ''
+        highlighted ? 'ring-1 ring-primary/40 bg-primary/10' : ''
       }`}
-      style={!isOver ? { backgroundColor: `color-mix(in srgb, ${groupColor(groupKey, groupBy)} 6%, var(--background))` } : undefined}
+      style={!highlighted ? { backgroundColor: `color-mix(in srgb, ${groupColor(groupKey, groupBy)} 6%, var(--background))` } : undefined}
       onClick={onToggle}
       role="button"
       tabIndex={0}
@@ -182,17 +184,14 @@ function DroppableGroupBody({ groupKey, groupBy, children }: {
   groupBy: GroupBy
   children: React.ReactNode
 }) {
-  const droppableId = groupBy === 'status' ? `status-body:${groupKey}` : undefined
+  const droppableId = groupBy !== 'none' && groupBy !== 'folder' ? `group-${groupBy}-body:${groupKey}` : undefined
   const { setNodeRef, isOver } = useDroppable({
     id: droppableId || `_body_${groupKey}`,
     disabled: !droppableId,
   })
 
   return (
-    <div
-      ref={setNodeRef}
-      className={isOver ? 'bg-primary/5 ring-1 ring-inset ring-primary/20 rounded-sm' : ''}
-    >
+    <div ref={setNodeRef} className={`transition-colors ${isOver ? 'bg-primary/10 ring-1 ring-inset ring-primary/30 rounded-sm' : ''}`}>
       {children}
     </div>
   )

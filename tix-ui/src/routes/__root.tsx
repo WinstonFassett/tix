@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppProvider, useFilters, useViewSettings, useSidebar, useTheme, useCreateDialog, usePalette } from '#/lib/AppContext'
 import { bumpHighlight } from '#/lib/hooks/use-row-highlights'
 import { useTickets, useUpdateTicket, useConfig } from '#/lib/hooks/use-tickets'
-import { TicketDndProvider } from '#/lib/DndProvider'
+import { TicketDndProvider, useDndState } from '#/lib/DndProvider'
 import { useDroppable } from '@dnd-kit/core'
 import { CommandPalette, type PaletteCallbacks } from '#/components/CommandPalette'
 import { StatusIcon } from '#/components/icons/StatusIcon'
@@ -260,6 +260,10 @@ function AppLayout() {
     updateMutation.mutate({ ticketId, updates: { type } })
   }, [updateMutation])
 
+  const handlePriorityChange = useCallback((ticketId: string, priority: number) => {
+    updateMutation.mutate({ ticketId, updates: { priority } })
+  }, [updateMutation])
+
   const handleTagAdd = useCallback((ticketId: string, tag: string) => {
     const ticket = tickets.find(t => t.id === ticketId)
     if (!ticket) return
@@ -267,7 +271,7 @@ function AppLayout() {
   }, [updateMutation, tickets])
 
   return (
-    <TicketDndProvider tickets={tickets} onStatusChange={handleStatusChange} onTypeChange={handleTypeChange} onTagAdd={handleTagAdd}>
+    <TicketDndProvider tickets={tickets} onStatusChange={handleStatusChange} onTypeChange={handleTypeChange} onPriorityChange={handlePriorityChange} onTagAdd={handleTagAdd}>
     <div className="flex h-svh bg-background text-foreground overflow-hidden">
       {/* Sidebar */}
       <aside
@@ -312,6 +316,8 @@ function AppLayout() {
                 icon={<StatusIcon status={status} size={12} />}
                 label={STATUS_LABELS[status as TicketStatus]}
                 droppableId={`sidebar-status:${status}`}
+                dimension="status"
+                value={status}
               />
             ))}
           </div>
@@ -329,6 +335,8 @@ function AppLayout() {
                 icon={<TypeIcon type={type} size={12} />}
                 label={TYPE_LABELS[type]}
                 droppableId={`type:${type}`}
+                dimension="type"
+                value={type}
               />
             ))}
           </div>
@@ -349,6 +357,8 @@ function AppLayout() {
                     label={tag}
                     truncateLabel
                     droppableId={`tag:${tag}`}
+                    dimension="tag"
+                    value={tag}
                   />
                 ))}
               </div>
@@ -387,7 +397,7 @@ function AppLayout() {
   )
 }
 
-function SidebarFacetRow({ count, active, onClick, icon, label, truncateLabel, droppableId }: {
+function SidebarFacetRow({ count, active, onClick, icon, label, truncateLabel, droppableId, dimension, value }: {
   count: number
   active: boolean
   onClick: () => void
@@ -395,15 +405,21 @@ function SidebarFacetRow({ count, active, onClick, icon, label, truncateLabel, d
   label: string
   truncateLabel?: boolean
   droppableId?: string
+  /** Dimension name for cross-highlighting (e.g. 'status', 'type') */
+  dimension?: string
+  /** Value for cross-highlighting (e.g. 'open', 'task') */
+  value?: string
 }) {
   const gen = useChangeHighlight(count)
   const { setNodeRef, isOver } = useDroppable({ id: droppableId || `_noop_${label}`, disabled: !droppableId })
+  const { overTarget } = useDndState()
+  const crossHighlight = !isOver && overTarget && dimension && value && overTarget.dimension === dimension && overTarget.value === value
 
   return (
     <div
       ref={setNodeRef}
       className={`relative flex items-center gap-2 rounded-md px-2 py-1 text-sm cursor-pointer transition-colors ${
-        isOver ? 'bg-primary/15 ring-1 ring-primary/40' :
+        isOver || crossHighlight ? 'bg-primary/15 ring-1 ring-primary/40' :
         active ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
       }`}
       onClick={onClick}
