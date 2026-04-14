@@ -56,6 +56,7 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-react": "^5.1.4",
     "@winstonfassett/web-dev-mcp-vite": "^0.1.0-alpha.0",
     "jsdom": "^28.1.0",
