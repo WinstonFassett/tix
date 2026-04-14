@@ -1926,7 +1926,7 @@ cmd_link() {
     for arg in "$@"; do
         local file
         file=$(ticket_path "$arg") || return 1
-        ids+=("$(basename "$file" .md)")
+        ids+=("$(basename "$file" | sed -E 's/^.*\(([^()]*)\)\.md$/\1/')")
         files+=("$file")
     done
 
