@@ -47,8 +47,10 @@ export function MilkdownEditor({ defaultValue = '', onChange, onInput }: Milkdow
         .use(colorPickerPlugin as any)
         .use(mermaidPlugin as any)
 
+      let initialized = false
       crepe.on((listener: any) => {
         listener.markdownUpdated((_ctx: any, markdown: string) => {
+          if (!initialized) return
           if (markdown !== lastValueRef.current) {
             lastValueRef.current = markdown
             onChange?.(markdown)
@@ -57,6 +59,8 @@ export function MilkdownEditor({ defaultValue = '', onChange, onInput }: Milkdow
       })
 
       await crepe.create()
+      initialized = true
+      lastValueRef.current = crepe.getMarkdown()
       crepeRef.current = crepe
 
       // Raw DOM input listener — fires on every keystroke, before Milkdown's
