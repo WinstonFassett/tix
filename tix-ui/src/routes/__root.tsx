@@ -269,7 +269,7 @@ function AppLayout() {
             tickets={tickets}
             selectedFolder={filters.folderScope}
             onSelect={filters.setFolderScope}
-            totalCount={tickets.length}
+            totalCount={tickets.filter(t => !t.folder).length}
           />
 
           <div className="px-2 mt-3 mb-1">

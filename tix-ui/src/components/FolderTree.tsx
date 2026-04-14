@@ -25,11 +25,13 @@ function buildFolderTree(tickets: Ticket[]): FolderNode[] {
   const folderCounts = new Map<string, number>()
   for (const t of tickets) {
     if (!t.folder) continue
-    // Count ticket in its direct folder and all ancestors
+    // Count ticket only in its direct folder
+    folderCounts.set(t.folder, (folderCounts.get(t.folder) || 0) + 1)
+    // Ensure ancestor folders exist in the tree (with 0 count if they have no direct items)
     const parts = t.folder.split('/')
-    for (let i = 1; i <= parts.length; i++) {
+    for (let i = 1; i < parts.length; i++) {
       const ancestor = parts.slice(0, i).join('/')
-      folderCounts.set(ancestor, (folderCounts.get(ancestor) || 0) + 1)
+      if (!folderCounts.has(ancestor)) folderCounts.set(ancestor, 0)
     }
   }
 
