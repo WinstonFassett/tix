@@ -107,4 +107,8 @@ export async function shutdownLedger(): Promise<void> {
     _g.__tixLedger = null;
     _g.__tixLedgerPromise = null;
   }
+  if (_g.__tixDb) {
+    _g.__tixDb.close();
+    _g.__tixDb = null;
+  }
 }

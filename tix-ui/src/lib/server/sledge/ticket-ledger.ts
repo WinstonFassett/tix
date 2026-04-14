@@ -142,6 +142,11 @@ export function createTicketLedger(db: Database.Database) {
         );
       },
       patchTicket: async (input) => {
+        const ALLOWED_COLUMNS = new Set([
+          "title", "status", "type", "priority", "tags", "deps", "links",
+          "assignee", "body", "filename", "folder", "created",
+        ]);
+
         const existing = db
           .prepare("SELECT * FROM tickets WHERE id = ?")
           .get(input.id) as Record<string, unknown> | undefined;
@@ -151,6 +156,7 @@ export function createTicketLedger(db: Database.Database) {
         const values: unknown[] = [];
         for (const [key, val] of Object.entries(input)) {
           if (key === "id" || val === undefined) continue;
+          if (!ALLOWED_COLUMNS.has(key)) continue;
           updates.push(`${key} = ?`);
           values.push(
             Array.isArray(val) ? JSON.stringify(val) : val,
