@@ -72,6 +72,9 @@ export function createTestServer(port = 0) {
         links: ticket.links || [],
         assignee: ticket.assignee || "",
         body: ticket.body || "",
+        filename: ticket.filename || `${ticket.title || "Untitled"} (${ticket.id}).md`,
+        folder: ticket.folder || "",
+        created: ticket.created || new Date().toISOString(),
       });
       res.writeHead(201, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, id: ticket.id }));

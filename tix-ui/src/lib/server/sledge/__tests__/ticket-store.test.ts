@@ -1,6 +1,26 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
-import { createTicketLedger, type Ticket } from "../ticket-ledger";
+import { createTicketLedger } from "../ticket-ledger";
+import type { Ticket } from "../ticket-ledger";
+
+function makeTicket(id: string, title: string, overrides: Partial<Ticket> = {}): Ticket {
+  return {
+    id,
+    title,
+    status: "open",
+    type: "feature",
+    priority: 2,
+    tags: [],
+    deps: [],
+    links: [],
+    assignee: "",
+    body: "",
+    filename: `${title} (${id}).md`,
+    folder: "",
+    created: new Date().toISOString(),
+    ...overrides,
+  };
+}
 
 describe("Sledge Ticket Store", () => {
   let db: InstanceType<typeof Database>;
@@ -17,18 +37,12 @@ describe("Sledge Ticket Store", () => {
   });
 
   it("creates a ticket and retrieves it by id", async () => {
-    await ledger.emit("ticket.created", {
-      id: "0e48",
-      title: "Fix the login bug",
-      status: "open",
+    await ledger.emit("ticket.created", makeTicket("0e48", "Fix the login bug", {
       type: "bug",
       priority: 1,
       tags: ["urgent"],
-      deps: [],
-      links: [],
-      assignee: "",
       body: "The login form crashes on submit.",
-    });
+    }));
 
     const ticket = await ledger.query("ticketById", { id: "0e48" });
     expect(ticket).not.toBeNull();
@@ -40,18 +54,7 @@ describe("Sledge Ticket Store", () => {
   });
 
   it("updates a ticket with partial fields", async () => {
-    await ledger.emit("ticket.created", {
-      id: "1a2b",
-      title: "Add dark mode",
-      status: "open",
-      type: "feature",
-      priority: 2,
-      tags: [],
-      deps: [],
-      links: [],
-      assignee: "",
-      body: "",
-    });
+    await ledger.emit("ticket.created", makeTicket("1a2b", "Add dark mode"));
 
     await ledger.emit("ticket.updated", {
       id: "1a2b",
@@ -68,18 +71,7 @@ describe("Sledge Ticket Store", () => {
   });
 
   it("deletes a ticket", async () => {
-    await ledger.emit("ticket.created", {
-      id: "dead",
-      title: "To be removed",
-      status: "open",
-      type: "bug",
-      priority: 3,
-      tags: [],
-      deps: [],
-      links: [],
-      assignee: "",
-      body: "",
-    });
+    await ledger.emit("ticket.created", makeTicket("dead", "To be removed", { type: "bug", priority: 3 }));
 
     await ledger.emit("ticket.deleted", { id: "dead" });
 
@@ -88,30 +80,8 @@ describe("Sledge Ticket Store", () => {
   });
 
   it("lists all tickets ordered by priority", async () => {
-    await ledger.emit("ticket.created", {
-      id: "lo",
-      title: "Low priority",
-      status: "open",
-      type: "feature",
-      priority: 4,
-      tags: [],
-      deps: [],
-      links: [],
-      assignee: "",
-      body: "",
-    });
-    await ledger.emit("ticket.created", {
-      id: "hi",
-      title: "High priority",
-      status: "open",
-      type: "bug",
-      priority: 0,
-      tags: [],
-      deps: [],
-      links: [],
-      assignee: "",
-      body: "",
-    });
+    await ledger.emit("ticket.created", makeTicket("lo", "Low priority", { priority: 4 }));
+    await ledger.emit("ticket.created", makeTicket("hi", "High priority", { type: "bug", priority: 0 }));
 
     const tickets = await ledger.query("allTickets", {});
     expect(tickets).toHaveLength(2);
@@ -120,31 +90,8 @@ describe("Sledge Ticket Store", () => {
   });
 
   it("tails events and can resume from a cursor", async () => {
-    // Emit two events
-    await ledger.emit("ticket.created", {
-      id: "aa",
-      title: "First",
-      status: "open",
-      type: "feature",
-      priority: 2,
-      tags: [],
-      deps: [],
-      links: [],
-      assignee: "",
-      body: "",
-    });
-    await ledger.emit("ticket.created", {
-      id: "bb",
-      title: "Second",
-      status: "open",
-      type: "bug",
-      priority: 1,
-      tags: [],
-      deps: [],
-      links: [],
-      assignee: "",
-      body: "",
-    });
+    await ledger.emit("ticket.created", makeTicket("aa", "First"));
+    await ledger.emit("ticket.created", makeTicket("bb", "Second", { type: "bug", priority: 1 }));
 
     // Tail last 10 events, collect them
     const controller = new AbortController();
@@ -195,40 +142,10 @@ describe("Sledge Ticket Store", () => {
   });
 
   it("deduplicates events with the same dedupeKey", async () => {
-    await ledger.emit(
-      "ticket.created",
-      {
-        id: "dup1",
-        title: "Original",
-        status: "open",
-        type: "feature",
-        priority: 2,
-        tags: [],
-        deps: [],
-        links: [],
-        assignee: "",
-        body: "",
-      },
-      { dedupeKey: "file:dup1" },
-    );
+    await ledger.emit("ticket.created", makeTicket("dup1", "Original"), { dedupeKey: "file:dup1" });
 
     // Same dedupeKey — should be ignored
-    await ledger.emit(
-      "ticket.created",
-      {
-        id: "dup1",
-        title: "Duplicate attempt",
-        status: "open",
-        type: "feature",
-        priority: 2,
-        tags: [],
-        deps: [],
-        links: [],
-        assignee: "",
-        body: "",
-      },
-      { dedupeKey: "file:dup1" },
-    );
+    await ledger.emit("ticket.created", makeTicket("dup1", "Duplicate attempt"), { dedupeKey: "file:dup1" });
 
     const ticket = await ledger.query("ticketById", { id: "dup1" });
     expect(ticket!.title).toBe("Original"); // not overwritten

@@ -41,6 +41,9 @@ describe("TanStack DB Live Query over Sledge Collection", () => {
     links: [],
     assignee: "",
     body: "",
+    filename: `${title} (${id}).md`,
+    folder: "",
+    created: new Date().toISOString(),
     ...overrides,
   });
 

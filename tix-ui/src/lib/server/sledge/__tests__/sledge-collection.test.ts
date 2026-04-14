@@ -41,6 +41,9 @@ describe("Sledge → TanStack DB Collection", () => {
     links: [],
     assignee: "",
     body: "",
+    filename: `${title} (${id}).md`,
+    folder: "",
+    created: new Date().toISOString(),
   });
 
   it("collection loads initial tickets from Sledge", async () => {
