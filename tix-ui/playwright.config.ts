@@ -11,6 +11,8 @@ const port = mode === 'prod' ? 3459 : 3458
 const command = mode === 'prod'
   ? `node .output/server/index.mjs`
   : `bun run dev --port ${port}`
+// Dev server uses HTTPS (self-signed cert for HTTP/2)
+const protocol = mode === 'prod' ? 'http' : 'https'
 
 export default defineConfig({
   testDir: './e2e',
@@ -18,7 +20,8 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: `http://localhost:${port}`,
+    baseURL: `${protocol}://localhost:${port}`,
+    ignoreHTTPSErrors: true,
     trace: 'on-first-retry',
   },
   projects: [
@@ -26,7 +29,8 @@ export default defineConfig({
   ],
   webServer: {
     command,
-    url: `http://localhost:${port}`,
+    url: `${protocol}://localhost:${port}`,
+    ignoreHTTPSErrors: true,
     reuseExistingServer: false,
     timeout: 60_000,
     env: {
