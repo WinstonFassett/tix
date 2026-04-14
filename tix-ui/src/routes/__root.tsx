@@ -1,9 +1,11 @@
-import { useMemo, useEffect } from 'react'
+import { useMemo, useEffect, useCallback } from 'react'
 import { HeadContent, Outlet, Scripts, createRootRoute, useNavigate, useRouterState } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppProvider, useFilters, useViewSettings, useSidebar, useTheme, useCreateDialog, usePalette } from '#/lib/AppContext'
 import { bumpHighlight } from '#/lib/hooks/use-row-highlights'
 import { useTickets, useUpdateTicket, useConfig } from '#/lib/hooks/use-tickets'
+import { TicketDndProvider } from '#/lib/DndProvider'
+import { useDroppable } from '@dnd-kit/core'
 import { CommandPalette, type PaletteCallbacks } from '#/components/CommandPalette'
 import { StatusIcon } from '#/components/icons/StatusIcon'
 import { TypeIcon } from '#/components/icons/TypeIcon'
@@ -250,7 +252,22 @@ function AppLayout() {
     window.addEventListener('mouseup', onUp)
   }
 
+  const handleStatusChange = useCallback((ticketId: string, status: string) => {
+    updateMutation.mutate({ ticketId, updates: { status } })
+  }, [updateMutation])
+
+  const handleTypeChange = useCallback((ticketId: string, type: string) => {
+    updateMutation.mutate({ ticketId, updates: { type } })
+  }, [updateMutation])
+
+  const handleTagAdd = useCallback((ticketId: string, tag: string) => {
+    const ticket = tickets.find(t => t.id === ticketId)
+    if (!ticket) return
+    updateMutation.mutate({ ticketId, updates: { tags: [...ticket.tags, tag] } })
+  }, [updateMutation, tickets])
+
   return (
+    <TicketDndProvider tickets={tickets} onStatusChange={handleStatusChange} onTypeChange={handleTypeChange} onTagAdd={handleTagAdd}>
     <div className="flex h-svh bg-background text-foreground overflow-hidden">
       {/* Sidebar */}
       <aside
@@ -294,6 +311,7 @@ function AppLayout() {
                 onClick={() => toggleStatusFilter(status)}
                 icon={<StatusIcon status={status} size={12} />}
                 label={STATUS_LABELS[status as TicketStatus]}
+                droppableId={`sidebar-status:${status}`}
               />
             ))}
           </div>
@@ -310,6 +328,7 @@ function AppLayout() {
                 onClick={() => toggleTypeFilter(type)}
                 icon={<TypeIcon type={type} size={12} />}
                 label={TYPE_LABELS[type]}
+                droppableId={`type:${type}`}
               />
             ))}
           </div>
@@ -329,6 +348,7 @@ function AppLayout() {
                     icon={<svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="4"/></svg>}
                     label={tag}
                     truncateLabel
+                    droppableId={`tag:${tag}`}
                   />
                 ))}
               </div>
@@ -363,22 +383,29 @@ function AppLayout() {
 
       <CommandPalette tickets={tickets} callbacks={paletteCallbacks} isTicketView={isTicketView} />
     </div>
+    </TicketDndProvider>
   )
 }
 
-function SidebarFacetRow({ count, active, onClick, icon, label, truncateLabel }: {
+function SidebarFacetRow({ count, active, onClick, icon, label, truncateLabel, droppableId }: {
   count: number
   active: boolean
   onClick: () => void
   icon: React.ReactNode
   label: string
   truncateLabel?: boolean
+  droppableId?: string
 }) {
   const gen = useChangeHighlight(count)
+  const { setNodeRef, isOver } = useDroppable({ id: droppableId || `_noop_${label}`, disabled: !droppableId })
 
   return (
     <div
-      className={`relative flex items-center gap-2 rounded-md px-2 py-1 text-sm cursor-pointer transition-colors ${active ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}
+      ref={setNodeRef}
+      className={`relative flex items-center gap-2 rounded-md px-2 py-1 text-sm cursor-pointer transition-colors ${
+        isOver ? 'bg-primary/15 ring-1 ring-primary/40' :
+        active ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+      }`}
       onClick={onClick}
     >
       {gen > 0 && (

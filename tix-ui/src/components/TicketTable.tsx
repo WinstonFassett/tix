@@ -9,9 +9,11 @@ import { PrioritySelector } from './PrioritySelector'
 import { TypeSelector } from './TypeSelector'
 import { useNavigate } from '@tanstack/react-router'
 import { useMemo, useState, useEffect } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
 import { useRowHighlight } from '#/lib/hooks/use-row-highlights'
 import { motion, LayoutGroup, AnimatePresence } from 'framer-motion'
+import { useDraggable, useDroppable } from '@dnd-kit/core'
+import { useDndState } from '#/lib/DndProvider'
 
 interface TicketTableProps {
   grouped: Record<string, Ticket[]>
@@ -105,46 +107,94 @@ export function TicketTable({ grouped, groupBy, onUpdate, onRowClick, selectedId
         {orderedGroups.map(groupKey => (
           <div key={groupKey}>
             {groupBy !== 'none' && (
-              <div
-                className="sticky top-0 z-10 w-full h-10 flex items-center justify-between px-6 bg-background cursor-pointer select-none"
-                // Solid background so sticky headers don't let scrolling rows
-                // bleed through; color-mix blends the group tint into the
-                // theme bg so we still get a subtle color accent.
-                style={{ backgroundColor: `color-mix(in srgb, ${groupColor(groupKey, groupBy)} 6%, var(--background))` }}
-                onClick={() => toggleGroup(groupKey)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGroup(groupKey) } }}
-                aria-expanded={!collapsed.has(groupKey)}
-              >
-                <div className="flex items-center gap-2">
-                  {collapsed.has(groupKey)
-                    ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                    : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
-                  {groupBy === 'status' && <StatusIcon status={groupKey} />}
-                  {groupBy === 'priority' && <PriorityIcon priority={Number(groupKey)} size={14} />}
-                  {groupBy === 'type' && <TypeIcon type={groupKey} size={14} />}
-                  <span className="text-sm font-medium">{groupLabel(groupKey, groupBy)}</span>
-                  <span className="text-sm text-muted-foreground">{grouped[groupKey]?.length}</span>
-                </div>
-              </div>
+              <DroppableGroupHeader
+                groupKey={groupKey}
+                groupBy={groupBy}
+                count={grouped[groupKey]?.length ?? 0}
+                collapsed={collapsed.has(groupKey)}
+                onToggle={() => toggleGroup(groupKey)}
+              />
             )}
 
-            <AnimatePresence>
-              {!collapsed.has(groupKey) && (grouped[groupKey] || []).map(ticket => (
-                <TicketRow
-                  key={ticket.id}
-                  ticket={ticket}
-                  selected={selectedId === ticket.id}
-                  onOpen={openTicket}
-                  onUpdate={onUpdate}
-                />
-              ))}
-            </AnimatePresence>
+            <DroppableGroupBody groupKey={groupKey} groupBy={groupBy}>
+              <AnimatePresence>
+                {!collapsed.has(groupKey) && (grouped[groupKey] || []).map(ticket => (
+                  <TicketRow
+                    key={ticket.id}
+                    ticket={ticket}
+                    selected={selectedId === ticket.id}
+                    onOpen={openTicket}
+                    onUpdate={onUpdate}
+                  />
+                ))}
+              </AnimatePresence>
+            </DroppableGroupBody>
           </div>
         ))}
       </div>
     </LayoutGroup>
+  )
+}
+
+function DroppableGroupHeader({ groupKey, groupBy, count, collapsed, onToggle }: {
+  groupKey: string
+  groupBy: GroupBy
+  count: number
+  collapsed: boolean
+  onToggle: () => void
+}) {
+  // Only status groups are droppable
+  const droppableId = groupBy === 'status' ? `status:${groupKey}` : undefined
+  const { setNodeRef, isOver } = useDroppable({
+    id: droppableId || `_group_${groupKey}`,
+    disabled: !droppableId,
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`sticky top-0 z-10 w-full h-10 flex items-center justify-between px-6 bg-background cursor-pointer select-none transition-colors ${
+        isOver ? 'ring-1 ring-primary/40 bg-primary/10' : ''
+      }`}
+      style={!isOver ? { backgroundColor: `color-mix(in srgb, ${groupColor(groupKey, groupBy)} 6%, var(--background))` } : undefined}
+      onClick={onToggle}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() } }}
+      aria-expanded={!collapsed}
+    >
+      <div className="flex items-center gap-2">
+        {collapsed
+          ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+        {groupBy === 'status' && <StatusIcon status={groupKey} />}
+        {groupBy === 'priority' && <PriorityIcon priority={Number(groupKey)} size={14} />}
+        {groupBy === 'type' && <TypeIcon type={groupKey} size={14} />}
+        <span className="text-sm font-medium">{groupLabel(groupKey, groupBy)}</span>
+        <span className="text-sm text-muted-foreground">{count}</span>
+      </div>
+    </div>
+  )
+}
+
+function DroppableGroupBody({ groupKey, groupBy, children }: {
+  groupKey: string
+  groupBy: GroupBy
+  children: React.ReactNode
+}) {
+  const droppableId = groupBy === 'status' ? `status-body:${groupKey}` : undefined
+  const { setNodeRef, isOver } = useDroppable({
+    id: droppableId || `_body_${groupKey}`,
+    disabled: !droppableId,
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={isOver ? 'bg-primary/5 ring-1 ring-inset ring-primary/20 rounded-sm' : ''}
+    >
+      {children}
+    </div>
   )
 }
 
@@ -157,19 +207,22 @@ interface TicketRowProps {
 
 function TicketRow({ ticket, selected, onOpen, onUpdate }: TicketRowProps) {
   const highlightGen = useRowHighlight(ticket.id)
+  const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
+    id: ticket.id,
+  })
+  const { activeTicket } = useDndState()
 
   return (
     <motion.div
       layoutId={`ticket-row-${ticket.id}`}
       layout="position"
       data-ticket-row={ticket.id}
-      className={`relative w-full flex items-center justify-start h-11 px-6 cursor-pointer outline-none focus:outline-none ${selected ? 'bg-accent' : 'hover:bg-accent/50'} bg-background`}
-      onClick={() => onOpen(ticket.id)}
+      className={`relative w-full flex items-center justify-start h-11 px-6 cursor-pointer outline-none focus:outline-none ${selected ? 'bg-accent' : 'hover:bg-accent/50'} bg-background ${isDragging ? 'opacity-30' : ''}`}
+      onClick={() => !activeTicket && onOpen(ticket.id)}
       role="button"
       transition={{
         layout: { type: 'spring', stiffness: 350, damping: 30 },
       }}
-      // Elevated look while animating — shadow + z-index
       whileHover={{ backgroundColor: undefined }}
       style={{ zIndex: 1 }}
       onLayoutAnimationStart={() => {
@@ -188,7 +241,6 @@ function TicketRow({ ticket, selected, onOpen, onUpdate }: TicketRowProps) {
           el.style.borderRadius = ''
         }
       }}
-      // Entry/exit animations
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 4, transition: { duration: 0.15 } }}
@@ -199,6 +251,15 @@ function TicketRow({ ticket, selected, onOpen, onUpdate }: TicketRowProps) {
           className="absolute inset-0 anim-row-highlight pointer-events-none rounded-sm"
         />
       )}
+      <span
+        ref={setDragRef}
+        className="w-6 shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground"
+        {...listeners}
+        {...attributes}
+        onClick={e => e.stopPropagation()}
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </span>
       <span className="w-8 shrink-0 flex items-center justify-center" onClick={e => e.stopPropagation()}>
         <PrioritySelector
           priority={ticket.priority}

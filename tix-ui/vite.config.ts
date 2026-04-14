@@ -14,6 +14,9 @@ import { webDevMcp } from '@winstonfassett/web-dev-mcp-vite'
 // both dev and prod. No vite-plugin watcher needed.
 
 const config = defineConfig({
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+  },
   optimizeDeps: {
     exclude: ['fsevents', '@livestore/adapter-node', 'better-sqlite3'],
   },
