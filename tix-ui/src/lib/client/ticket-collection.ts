@@ -161,15 +161,3 @@ export function getTicketCollection(): TicketCollection {
 
   return _collection;
 }
-
-// Clean up on HMR — close leaked EventSource connections
-if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    if (_eventSource) {
-      _eventSource.close();
-      _eventSource = null;
-    }
-    _collection = null;
-    _seedData = null;
-  });
-}
