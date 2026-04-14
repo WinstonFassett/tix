@@ -33,7 +33,20 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const displayBody = stripLeadingTitle(ticket.body || '')
+  const serverBody = stripLeadingTitle(ticket.body || '')
+
+  // Track body dirty state for cross-tab sync
+  const [bodyKey, setBodyKey] = useState(0)
+  const bodyDirtyRef = useRef(false)
+  const lastServerBodyRef = useRef(serverBody)
+  useEffect(() => {
+    if (serverBody !== lastServerBodyRef.current) {
+      lastServerBodyRef.current = serverBody
+      if (!bodyDirtyRef.current) {
+        setBodyKey(k => k + 1) // remount editor with new content
+      }
+    }
+  }, [serverBody])
 
   // Controlled title with dirty tracking — accept server updates unless user is editing
   const [localTitle, setLocalTitle] = useState(ticket.title)
@@ -126,14 +139,7 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
           <StatusSelector status={ticket.status} onSelect={(s) => handleFieldChange('status', s)} />
           <PrioritySelector priority={ticket.priority} onSelect={(p) => handleFieldChange('priority', p)} />
           <TypeSelector type={ticket.type} onSelect={(t) => handleFieldChange('type', t)} />
-          <Input
-            type="text"
-            className="w-40 h-8 text-sm"
-            defaultValue={ticket.assignee}
-            key={`assignee-${ticket.id}`}
-            onChange={(e) => handleFieldChange('assignee', e.target.value)}
-            placeholder="Assignee"
-          />
+          <AssigneeInput assignee={ticket.assignee} onChange={(v) => handleFieldChange('assignee', v)} />
           {ticket.folder && (
             <button
               type="button"
@@ -195,7 +201,16 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
         <hr className="border-border my-4" />
 
         <div className="min-h-50">
-          <MilkdownEditor key={`${ticket.id}-${ticket.body ? 'full' : 'stub'}`} defaultValue={displayBody} onChange={(md) => save({ body: md })} />
+          <MilkdownEditor
+            key={`${ticket.id}-${bodyKey}`}
+            defaultValue={serverBody}
+            onChange={(md) => {
+              bodyDirtyRef.current = true
+              save({ body: md })
+              // Clear dirty after save completes (debounced 1s + buffer)
+              setTimeout(() => { bodyDirtyRef.current = false }, 3000)
+            }}
+          />
         </div>
 
       </div>
@@ -233,5 +248,24 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
         </div>
       </Dialog>
     </>
+  )
+}
+
+/** Controlled assignee input with dirty guard */
+function AssigneeInput({ assignee, onChange }: { assignee: string; onChange: (v: string) => void }) {
+  const [local, setLocal] = useState(assignee)
+  const [dirty, setDirty] = useState(false)
+  useEffect(() => {
+    if (!dirty) setLocal(assignee)
+  }, [assignee, dirty])
+  return (
+    <Input
+      type="text"
+      className="w-40 h-8 text-sm"
+      value={local}
+      onChange={(e) => { setLocal(e.target.value); setDirty(true); onChange(e.target.value) }}
+      onBlur={() => setDirty(false)}
+      placeholder="Assignee"
+    />
   )
 }
