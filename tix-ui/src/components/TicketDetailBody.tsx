@@ -152,17 +152,26 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
     <>
       <div className={innerWrapperClass}>
         <div className="mb-4">
-          <input
-            type="text"
-            className="w-full bg-transparent text-2xl font-bold rounded-md outline-none placeholder:text-muted-foreground -mx-2 px-2 py-1 cursor-text border border-transparent hover:border-border hover:bg-accent/30 focus:border-ring focus:bg-background focus:ring-2 focus:ring-ring/30 transition-colors"
+          <textarea
+            ref={(el) => {
+              if (el) {
+                el.style.height = '0'
+                el.style.height = el.scrollHeight + 'px'
+              }
+            }}
+            className="w-full bg-transparent text-2xl font-bold rounded-md outline-none placeholder:text-muted-foreground -mx-2 px-2 py-1 cursor-text border border-transparent hover:border-border hover:bg-accent/30 focus:border-ring focus:bg-background focus:ring-2 focus:ring-ring/30 transition-colors resize-none overflow-hidden"
+            rows={1}
             value={localTitle}
             onChange={(e) => {
               setLocalTitle(e.target.value)
               setTitleDirty(true)
               saveTitleDebounced(e.target.value)
+              // Auto-resize
+              e.target.style.height = '0'
+              e.target.style.height = e.target.scrollHeight + 'px'
             }}
             onBlur={() => { setTitleDirty(false); if (saveTimerRef.current) clearTimeout(saveTimerRef.current); saveImmediate({ title: localTitle }) }}
-            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) e.currentTarget.blur() }}
             placeholder="Ticket title"
             title="Click to edit title"
             aria-label="Ticket title (editable)"
