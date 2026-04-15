@@ -142,7 +142,7 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
       setShowDeleteConfirm(false)
       navigate({ to: '/' })
     } catch (e: any) {
-      alert(`Delete failed: ${e?.message || 'Unknown error'}`)
+      console.error('[deleteTicket] failed:', e)
     }
   }
 

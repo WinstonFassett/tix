@@ -220,7 +220,7 @@ export function DashboardView() {
         }
       }
     } catch (e: any) {
-      alert(`Failed: ${e.message || 'Unknown error'}`)
+      console.error('[createTicket] failed:', e)
     }
   }
 
