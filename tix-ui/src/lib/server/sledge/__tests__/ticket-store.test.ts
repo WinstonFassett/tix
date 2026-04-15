@@ -141,6 +141,40 @@ describe("Sledge Ticket Store", () => {
     expect(resumed[1].eventName).toBe("ticket.updated"); // the update
   });
 
+  it("updates folder and filename when folder changes", async () => {
+    await ledger.emit("ticket.created", makeTicket("mv01", "Move Me", {
+      filename: "Move Me (mv01).md",
+      folder: "",
+    }));
+
+    await ledger.emit("ticket.updated", {
+      id: "mv01",
+      folder: "backlog",
+      filename: "backlog/Move Me (mv01).md",
+    });
+
+    const ticket = await ledger.query("ticketById", { id: "mv01" });
+    expect(ticket!.folder).toBe("backlog");
+    expect(ticket!.filename).toBe("backlog/Move Me (mv01).md");
+  });
+
+  it("moves ticket back to root when folder set to empty", async () => {
+    await ledger.emit("ticket.created", makeTicket("mv02", "Root Bound", {
+      filename: "sub/Root Bound (mv02).md",
+      folder: "sub",
+    }));
+
+    await ledger.emit("ticket.updated", {
+      id: "mv02",
+      folder: "",
+      filename: "Root Bound (mv02).md",
+    });
+
+    const ticket = await ledger.query("ticketById", { id: "mv02" });
+    expect(ticket!.folder).toBe("");
+    expect(ticket!.filename).toBe("Root Bound (mv02).md");
+  });
+
   it("deduplicates events with the same dedupeKey", async () => {
     await ledger.emit("ticket.created", makeTicket("dup1", "Original"), { dedupeKey: "file:dup1" });
 

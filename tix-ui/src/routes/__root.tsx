@@ -238,8 +238,12 @@ function AppLayout() {
     updateMutation.mutate({ ticketId, updates: { tags: [...ticket.tags, tag] } })
   }, [updateMutation, tickets])
 
+  const handleFolderChange = useCallback((ticketId: string, folder: string) => {
+    updateMutation.mutate({ ticketId, updates: { folder } })
+  }, [updateMutation])
+
   return (
-    <TicketDndProvider tickets={tickets} onStatusChange={handleStatusChange} onTypeChange={handleTypeChange} onPriorityChange={handlePriorityChange} onTagAdd={handleTagAdd}>
+    <TicketDndProvider tickets={tickets} onStatusChange={handleStatusChange} onTypeChange={handleTypeChange} onPriorityChange={handlePriorityChange} onTagAdd={handleTagAdd} onFolderChange={handleFolderChange}>
     <div className="flex h-svh bg-background text-foreground overflow-hidden">
       {/* Sidebar */}
       <aside

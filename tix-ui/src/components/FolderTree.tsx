@@ -1,4 +1,6 @@
 import { useMemo } from 'react'
+import { useDroppable } from '@dnd-kit/core'
+import { useDndState } from '#/lib/DndProvider'
 import type { Ticket } from '#/lib/types'
 import {
   TreeProvider,
@@ -89,6 +91,8 @@ interface FolderTreeProps {
 
 export function FolderTree({ tickets, selectedFolder, onSelect, totalCount }: FolderTreeProps) {
   const tree = useMemo(() => buildFolderTree(tickets), [tickets])
+  const { activeTicket } = useDndState()
+  const { setNodeRef: setRootRef, isOver: isRootOver } = useDroppable({ id: 'folder:', disabled: !activeTicket })
 
   // Always show the tree — root entry is the way back
   const hasSubfolders = tree.length > 0
@@ -121,7 +125,7 @@ export function FolderTree({ tickets, selectedFolder, onSelect, totalCount }: Fo
         >
           <TreeView className="p-0">
             <TreeNode nodeId="__root__" level={0} isLast={!hasSubfolders}>
-              <TreeNodeTrigger className="py-1 px-2 mx-0 rounded-md">
+              <TreeNodeTrigger ref={setRootRef} className={`py-1 px-2 mx-0 rounded-md ${isRootOver ? 'ring-2 ring-ring bg-accent/30' : ''}`}>
                 <TreeExpander hasChildren={hasSubfolders} />
                 <TreeIcon hasChildren={true} />
                 <TreeLabel className="text-sm font-medium">tickets</TreeLabel>
@@ -144,10 +148,15 @@ export function FolderTree({ tickets, selectedFolder, onSelect, totalCount }: Fo
 
 function FolderNodeItem({ node, level, isLast }: { node: FolderNode; level: number; isLast: boolean }) {
   const hasChildren = node.children.length > 0
+  const { activeTicket } = useDndState()
+  const { setNodeRef, isOver } = useDroppable({ id: `folder:${node.path}`, disabled: !activeTicket })
 
   return (
     <TreeNode nodeId={node.path} level={level} isLast={isLast}>
-      <TreeNodeTrigger className={`py-1 px-2 mx-0 rounded-md ${node.ignored ? 'opacity-50' : ''}`}>
+      <TreeNodeTrigger
+        ref={setNodeRef}
+        className={`py-1 px-2 mx-0 rounded-md ${node.ignored ? 'opacity-50' : ''} ${isOver ? 'ring-2 ring-ring bg-accent/30' : ''}`}
+      >
         <TreeExpander hasChildren={hasChildren} />
         <TreeIcon hasChildren={hasChildren} />
         <TreeLabel className="text-sm">{node.name}</TreeLabel>

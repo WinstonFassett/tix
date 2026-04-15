@@ -176,6 +176,7 @@ export const updateTicket = createServerFn({ method: 'POST' })
     if (updates.assignee !== undefined) eventUpdates.assignee = updates.assignee
     if (updates.type !== undefined) eventUpdates.type = updates.type
     if (updates.tags !== undefined) eventUpdates.tags = updates.tags
+    if (updates.folder !== undefined) eventUpdates.folder = updates.folder
 
     // Handle body + title sync
     if (updates.body !== undefined) {
@@ -188,10 +189,10 @@ export const updateTicket = createServerFn({ method: 'POST' })
       eventUpdates.body = syncBodyTitle(existing.body, updates.title as string)
     }
 
-    // Handle filename change on title rename
-    if (updates.title !== undefined) {
-      const cleanTitle = sanitizeTitle(updates.title as string)
-      const folder = existing.folder
+    // Handle filename change on title rename or folder move
+    if (updates.title !== undefined || updates.folder !== undefined) {
+      const cleanTitle = sanitizeTitle((updates.title as string) ?? existing.title)
+      const folder = updates.folder !== undefined ? (updates.folder as string) : existing.folder
       const newBasename = `${cleanTitle} (${ticketId}).md`
       eventUpdates.filename = folder ? `${folder}/${newBasename}` : newBasename
     }

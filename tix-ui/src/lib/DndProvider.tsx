@@ -33,6 +33,8 @@ interface TicketDndProviderProps {
   onPriorityChange?: (ticketId: string, priority: number) => void
   /** Called when a ticket is dropped on a tag droppable. */
   onTagAdd?: (ticketId: string, tag: string) => void
+  /** Called when a ticket is dropped on a folder droppable. */
+  onFolderChange?: (ticketId: string, folder: string) => void
 }
 
 /** Parse a droppable ID like "group-status-body:open" into { dimension: 'status', value: 'open' } */
@@ -41,7 +43,7 @@ function parseDroppableId(id: string): { dimension: string; value: string } | nu
   // type:task, group-type:task, group-type-body:task → type / task
   // priority:2, group-priority:2, group-priority-body:2 → priority / 2
   // tag:foo → tag / foo
-  for (const dim of ['status', 'type', 'priority', 'tag']) {
+  for (const dim of ['status', 'type', 'priority', 'tag', 'folder']) {
     const patterns = [`sidebar-${dim}:`, `group-${dim}-body:`, `group-${dim}:`, `${dim}:`]
     for (const p of patterns) {
       if (id.startsWith(p)) return { dimension: dim, value: id.slice(p.length) }
@@ -50,7 +52,7 @@ function parseDroppableId(id: string): { dimension: string; value: string } | nu
   return null
 }
 
-export function TicketDndProvider({ children, tickets, onStatusChange, onTypeChange, onPriorityChange, onTagAdd }: TicketDndProviderProps) {
+export function TicketDndProvider({ children, tickets, onStatusChange, onTypeChange, onPriorityChange, onTagAdd, onFolderChange }: TicketDndProviderProps) {
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null)
   const [overTarget, setOverTarget] = useState<{ dimension: string; value: string } | null>(null)
 
@@ -119,7 +121,16 @@ export function TicketDndProvider({ children, tickets, onStatusChange, onTypeCha
       }
       return
     }
-  }, [tickets, onStatusChange, onTypeChange, onPriorityChange, onTagAdd])
+
+    // Folder drop — move ticket to a different folder
+    if (overId.startsWith('folder:')) {
+      const targetFolder = overId.slice('folder:'.length)
+      if ((ticket.folder || '') !== targetFolder) {
+        onFolderChange?.(ticketId, targetFolder)
+      }
+      return
+    }
+  }, [tickets, onStatusChange, onTypeChange, onPriorityChange, onTagAdd, onFolderChange])
 
   return (
     <DndStateContext.Provider value={{ activeTicket, overTarget }}>
