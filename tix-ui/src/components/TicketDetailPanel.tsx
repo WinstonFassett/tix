@@ -38,14 +38,17 @@ export function TicketDetailPanel({ ticket: listTicket }: TicketDetailPanelProps
     navigate({ to: '/ticket/$ticketId', params: { ticketId: ticket.id } })
   }
 
-  // Esc closes the panel — but skip when typing in inputs/editor.
+  // Two-phase Escape: first press blurs the active editable, second closes panel.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key !== 'Escape') return
       const target = e.target as HTMLElement | null
       const tag = target?.tagName
       const inEditable = tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable
-      if (inEditable) return
+      if (inEditable) {
+        target!.blur()
+        return
+      }
       close()
     }
     window.addEventListener('keydown', onKey)
