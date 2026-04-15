@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import { devtools } from '@tanstack/devtools-vite'
+// import { devtools } from '@tanstack/devtools-vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
@@ -24,7 +24,10 @@ const config = defineConfig({
     external: ['better-sqlite3', '@torkbot/sledge', 'fsevents'],
   },
   plugins: [
-    devtools(),
+    // devtools() removed — TanStack devtools opens a per-tab SSE connection
+    // to /__devtools/sse, consuming 1 of the browser's 6 HTTP/1.1 connection
+    // slots. Combined with our own SSE, 3 tabs = 6 SSE = total connection
+    // exhaustion. Re-enable only when actively debugging router/query.
     nitro({
       rollupConfig: { external: [/^@sentry\//, 'fsevents'] },
       externals: { inline: [], external: ['@torkbot/sledge', 'better-sqlite3', 'fsevents'] },
