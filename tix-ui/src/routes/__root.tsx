@@ -348,7 +348,7 @@ function AppLayout() {
           )}
         </nav>
 
-        <div className="border-t p-2 flex items-center justify-between">
+        <div className="px-3 pb-3 flex items-center">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={theme.toggle}>
             {theme.dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>

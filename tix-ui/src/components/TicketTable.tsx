@@ -8,7 +8,7 @@ import { StatusSelector } from './StatusSelector'
 import { PrioritySelector } from './PrioritySelector'
 import { TypeSelector } from './TypeSelector'
 import { useNavigate } from '@tanstack/react-router'
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
 import { useRowHighlight } from '#/lib/hooks/use-row-highlights'
 import { motion, LayoutGroup, AnimatePresence } from 'framer-motion'
@@ -69,6 +69,14 @@ export function TicketTable({ grouped, groupBy, onUpdate, onRowClick, selectedId
     else navigate({ to: '/ticket/$ticketId', params: { ticketId: id } })
   }
 
+  // Suppress entry animations for the initial data load (be2c).
+  // Once rows have rendered at least once, allow subsequent additions to animate in.
+  const initialLoadDone = useRef(false)
+  const totalRows = useMemo(() => Object.values(grouped).reduce((s, g) => s + g.length, 0), [grouped])
+  useEffect(() => {
+    if (totalRows > 0) initialLoadDone.current = true
+  }, [totalRows])
+
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set())
 
   // Load persisted state when groupBy changes.
@@ -103,7 +111,7 @@ export function TicketTable({ grouped, groupBy, onUpdate, onRowClick, selectedId
 
   return (
     <LayoutGroup>
-      <div className="w-full">
+      <div className="w-full" style={{ containerType: 'inline-size' }}>
         {orderedGroups.map(groupKey => (
           <div key={groupKey}>
             {groupBy !== 'none' && (
@@ -125,6 +133,7 @@ export function TicketTable({ grouped, groupBy, onUpdate, onRowClick, selectedId
                     selected={selectedId === ticket.id}
                     onOpen={openTicket}
                     onUpdate={onUpdate}
+                    animate={initialLoadDone.current}
                   />
                 ))}
               </AnimatePresence>
@@ -202,9 +211,11 @@ interface TicketRowProps {
   selected: boolean
   onOpen: (id: string) => void
   onUpdate?: (ticketId: string, updates: Record<string, any>) => void
+  /** When false, skip entry/exit/layout animations (used for initial data load). */
+  animate?: boolean
 }
 
-function TicketRow({ ticket, selected, onOpen, onUpdate }: TicketRowProps) {
+function TicketRow({ ticket, selected, onOpen, onUpdate, animate = true }: TicketRowProps) {
   const highlightGen = useRowHighlight(ticket.id)
   const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
     id: ticket.id,
@@ -224,25 +235,25 @@ function TicketRow({ ticket, selected, onOpen, onUpdate }: TicketRowProps) {
       }}
       whileHover={{ backgroundColor: undefined }}
       style={{ zIndex: 1 }}
-      onLayoutAnimationStart={() => {
+      onLayoutAnimationStart={animate ? () => {
         const el = document.querySelector(`[data-ticket-row="${ticket.id}"]`) as HTMLElement | null
         if (el) {
           el.style.zIndex = '20'
           el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'
           el.style.borderRadius = '4px'
         }
-      }}
-      onLayoutAnimationComplete={() => {
+      } : undefined}
+      onLayoutAnimationComplete={animate ? () => {
         const el = document.querySelector(`[data-ticket-row="${ticket.id}"]`) as HTMLElement | null
         if (el) {
           el.style.zIndex = '1'
           el.style.boxShadow = ''
           el.style.borderRadius = ''
         }
-      }}
-      initial={{ opacity: 0, y: -4 }}
+      } : undefined}
+      initial={animate ? { opacity: 0, y: -4 } : false}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 4, transition: { duration: 0.15 } }}
+      exit={animate ? { opacity: 0, y: 4, transition: { duration: 0.15 } } : undefined}
     >
       {highlightGen > 0 && (
         <div
@@ -276,33 +287,39 @@ function TicketRow({ ticket, selected, onOpen, onUpdate }: TicketRowProps) {
           compact
         />
       </span>
-      <span className="min-w-0 flex-1 truncate text-xs sm:text-sm font-medium sm:font-semibold">
+      <span className="min-w-0 truncate text-xs sm:text-sm font-medium sm:font-semibold" style={{ flex: '1 1 auto', minWidth: '4rem' }}>
         {ticket.title}
       </span>
-      <div className="flex items-center justify-end gap-2 ml-2 shrink-0">
-        <div className="items-center justify-end hidden sm:flex gap-1">
-          {ticket.tags.slice(0, 3).map(tag => (
-            <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0 rounded-full">{tag}</Badge>
+      {/* Tags — overlap like stacked cards when space is tight */}
+      {ticket.tags.length > 0 && (
+        <div className="hidden sm:flex items-center ml-2 overflow-visible tix-tag-cell">
+          {ticket.tags.slice(0, 3).map((tag, i) => (
+            <Badge key={tag} variant="outline"
+              className="text-[10px] px-1.5 py-0 rounded-md bg-background border-border truncate max-w-20 shrink"
+              style={{ marginLeft: i > 0 ? '-8px' : 0, zIndex: i + 1 }}
+            >{tag}</Badge>
           ))}
         </div>
-        <span className="hidden sm:flex w-8 shrink-0 items-center justify-center" onClick={e => e.stopPropagation()}>
+      )}
+      <div className="flex items-center gap-1 ml-1 shrink-0">
+        <span className="hidden sm:flex shrink-0 items-center justify-center" onClick={e => e.stopPropagation()}>
           <TypeSelector
             type={ticket.type}
             onSelect={(t) => onUpdate?.(ticket.id, { type: t })}
             compact
           />
         </span>
-        {ticket.created && (
-          <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline-block w-16 text-right">
-            {new Date(ticket.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          </span>
-        )}
         {ticket.assignee ? (
           <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium shrink-0" title={ticket.assignee}>
             {ticket.assignee.charAt(0).toUpperCase()}
           </span>
         ) : (
           <span className="w-6 h-6 rounded-full border border-dashed border-muted-foreground/30 shrink-0" />
+        )}
+        {ticket.created && (
+          <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline-block text-right">
+            {new Date(ticket.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </span>
         )}
       </div>
     </motion.div>

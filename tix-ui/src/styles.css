@@ -144,6 +144,21 @@
 }
 
 
+/* Tag cell — adaptive shrink ratio via container queries */
+.tix-tag-cell {
+  flex: 0 6 auto;
+  min-width: 2.5rem;
+}
+@container (min-width: 500px) {
+  .tix-tag-cell { flex: 0 3 auto; min-width: 3rem; }
+}
+@container (min-width: 800px) {
+  .tix-tag-cell { flex: 0 2 auto; min-width: 4rem; }
+}
+@container (min-width: 1100px) {
+  .tix-tag-cell { flex: 0 1 auto; min-width: 5rem; }
+}
+
 /* Command palette group headings */
 [cmdk-group-heading] {
   font-size: 0.75rem;

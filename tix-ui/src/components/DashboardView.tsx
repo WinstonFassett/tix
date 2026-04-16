@@ -329,18 +329,19 @@ export function DashboardView() {
       {/* Create ticket dialog */}
       <Dialog open={showCreate} onClose={() => setShowCreate(false)} className="sm:max-w-[750px] p-0">
         <form
+          className="flex flex-col min-h-0 overflow-hidden"
           onSubmit={(e) => { e.preventDefault(); handleCreate() }}
           onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); handleCreate() } }}
         >
           <button
             type="button"
-            className="absolute top-3 right-3 h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent transition-colors text-muted-foreground"
+            className="absolute top-3 right-3 h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent transition-colors text-muted-foreground z-10"
             onClick={() => setShowCreate(false)}
             aria-label="Close"
           >
             <X className="h-4 w-4" />
           </button>
-          <div className="px-4 pt-4 pb-0 space-y-3">
+          <div className="px-4 pt-4 pb-0 space-y-3 overflow-y-auto min-h-0">
             <input
               type="text"
               className="w-full bg-transparent text-2xl font-medium border-none outline-none placeholder:text-muted-foreground pr-8"
@@ -370,7 +371,7 @@ export function DashboardView() {
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-between py-2.5 px-4 border-t mt-3">
+          <div className="flex items-center justify-between py-2.5 px-4 border-t mt-3 shrink-0">
             <button
               type="button"
               className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${createMore ? 'bg-primary' : 'bg-input'}`}
