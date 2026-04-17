@@ -93,7 +93,6 @@ function parseTicketFile(
     assignee: data.assignee || "",
     tags: data.tags || [],
     deps: data.deps || [],
-    links: data.links || [],
     created: data.created ? String(data.created) : "",
     body: content.trim(),
     folder,
@@ -137,7 +136,6 @@ export function projectTicketToFile(ticket: Ticket, ticketsDir: string): string 
     title: ticket.title,
     status: ticket.status,
     deps: ticket.deps,
-    links: ticket.links,
     created: ticket.created,
     type: ticket.type,
     priority: ticket.priority,
@@ -316,7 +314,7 @@ function diffTicket(
   }
 
   // Array fields — compare by JSON
-  for (const f of ["tags", "deps", "links"] as const) {
+  for (const f of ["tags", "deps"] as const) {
     if (JSON.stringify(existing[f]) !== JSON.stringify(parsed[f])) {
       changes[f] = parsed[f];
     }

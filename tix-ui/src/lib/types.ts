@@ -3,7 +3,6 @@ export interface Ticket {
   title: string
   status: 'open' | 'in-progress' | 'review' | 'on-hold' | 'done' | 'closed'
   deps: string[]
-  links: string[]
   created: string
   type: string
   priority: number

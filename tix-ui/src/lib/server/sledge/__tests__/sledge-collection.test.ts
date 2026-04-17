@@ -38,7 +38,6 @@ describe("Sledge → TanStack DB Collection", () => {
     priority: 2,
     tags: [],
     deps: [],
-    links: [],
     assignee: "",
     body: "",
     filename: `${title} (${id}).md`,

@@ -38,7 +38,6 @@ describe("TanStack DB Live Query over Sledge Collection", () => {
     priority: 2,
     tags: [],
     deps: [],
-    links: [],
     assignee: "",
     body: "",
     filename: `${title} (${id}).md`,

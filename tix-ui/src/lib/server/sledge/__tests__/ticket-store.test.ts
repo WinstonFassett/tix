@@ -12,7 +12,6 @@ function makeTicket(id: string, title: string, overrides: Partial<Ticket> = {}):
     priority: 2,
     tags: [],
     deps: [],
-    links: [],
     assignee: "",
     body: "",
     filename: `${title} (${id}).md`,

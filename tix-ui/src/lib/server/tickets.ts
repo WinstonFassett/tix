@@ -126,7 +126,6 @@ export const createTicket = createServerFn({ method: 'POST' })
       assignee: assignee || '',
       tags: tags || [],
       deps: [],
-      links: [],
       created,
       body,
       folder: '',

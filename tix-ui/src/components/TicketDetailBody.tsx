@@ -235,15 +235,6 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
           </div>
         )}
 
-        {ticket.links.length > 0 && (
-          <div className="text-sm mb-2">
-            <span className="text-muted-foreground">Links:</span>
-            {ticket.links.map(link => (
-              <a key={link} href={`#/ticket/${link}`} className="text-primary underline underline-offset-4 font-mono ml-1" onClick={(e) => { e.preventDefault(); navigate({ to: '/ticket/$ticketId', params: { ticketId: link } }) }}>{link}</a>
-            ))}
-          </div>
-        )}
-
         <hr className="border-border my-4" />
 
         <div
@@ -263,6 +254,8 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
             defaultValue={serverBody}
             onInput={handleBodyInput}
             onChange={handleBodyChange}
+            tickets={allTickets}
+            onNavigateTicket={(id) => navigate({ to: '/ticket/$ticketId', params: { ticketId: id } })}
           />
         </div>
 

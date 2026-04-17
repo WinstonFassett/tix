@@ -200,3 +200,32 @@
 .milkdown-editor .milkdown .editor {
   padding: 0;
 }
+
+/* Ticket mention link chips */
+.tix-link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--accent);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.tix-link-chip:hover {
+  background: color-mix(in srgb, var(--accent) 80%, var(--foreground) 20%);
+}
+.tix-link-dot {
+  flex-shrink: 0;
+}
+
+/* Ticket mention dropdown */
+.tix-mention-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+.tix-mention-dropdown::-webkit-scrollbar-thumb {
+  background: var(--border, #ddd);
+  border-radius: 3px;
+}

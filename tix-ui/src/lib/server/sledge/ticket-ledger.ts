@@ -17,7 +17,6 @@ const TicketSchema = Type.Object({
   priority: Type.Number(),
   tags: Type.Array(Type.String()),
   deps: Type.Array(Type.String()),
-  links: Type.Array(Type.String()),
   assignee: Type.String(),
   body: Type.String(),
   filename: Type.String(),
@@ -35,7 +34,6 @@ const TicketUpdateSchema = Type.Object({
   priority: Type.Optional(Type.Number()),
   tags: Type.Optional(Type.Array(Type.String())),
   deps: Type.Optional(Type.Array(Type.String())),
-  links: Type.Optional(Type.Array(Type.String())),
   assignee: Type.Optional(Type.String()),
   body: Type.Optional(Type.String()),
   filename: Type.Optional(Type.String()),
@@ -57,7 +55,6 @@ function ensureProjectionTable(db: Database.Database) {
       priority INTEGER NOT NULL DEFAULT 2,
       tags TEXT NOT NULL DEFAULT '[]',
       deps TEXT NOT NULL DEFAULT '[]',
-      links TEXT NOT NULL DEFAULT '[]',
       assignee TEXT NOT NULL DEFAULT '',
       body TEXT NOT NULL DEFAULT '',
       filename TEXT NOT NULL DEFAULT '',
@@ -67,6 +64,7 @@ function ensureProjectionTable(db: Database.Database) {
       updated_at TEXT
     )
   `);
+
 }
 
 // -- Model definition --
@@ -123,8 +121,8 @@ export function createTicketLedger(db: Database.Database) {
     indexers: {
       upsertTicket: async (input) => {
         db.prepare(`
-          INSERT OR REPLACE INTO tickets (id, title, status, type, priority, tags, deps, links, assignee, body, filename, folder, created, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+          INSERT OR REPLACE INTO tickets (id, title, status, type, priority, tags, deps, assignee, body, filename, folder, created, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
         `).run(
           input.id,
           input.title,
@@ -133,7 +131,6 @@ export function createTicketLedger(db: Database.Database) {
           input.priority,
           JSON.stringify(input.tags),
           JSON.stringify(input.deps),
-          JSON.stringify(input.links),
           input.assignee,
           input.body,
           input.filename,
@@ -143,7 +140,7 @@ export function createTicketLedger(db: Database.Database) {
       },
       patchTicket: async (input) => {
         const ALLOWED_COLUMNS = new Set([
-          "title", "status", "type", "priority", "tags", "deps", "links",
+          "title", "status", "type", "priority", "tags", "deps",
           "assignee", "body", "filename", "folder", "created",
         ]);
 
@@ -229,7 +226,6 @@ function rowToTicket(row: Record<string, unknown>): Ticket {
     priority: row.priority as number,
     tags: JSON.parse(row.tags as string),
     deps: JSON.parse(row.deps as string),
-    links: JSON.parse(row.links as string),
     assignee: row.assignee as string,
     body: row.body as string,
     filename: row.filename as string,

@@ -69,7 +69,6 @@ export function createTestServer(port = 0) {
         priority: ticket.priority ?? 2,
         tags: ticket.tags || [],
         deps: ticket.deps || [],
-        links: ticket.links || [],
         assignee: ticket.assignee || "",
         body: ticket.body || "",
         filename: ticket.filename || `${ticket.title || "Untitled"} (${ticket.id}).md`,
