@@ -117,6 +117,18 @@ _iso_date() {
     date -u +%Y-%m-%dT%H:%M:%SZ
 }
 
+# Portable file mtime as YYYY-MM-DD (GNU: -d @ts, BSD: -r ts)
+_file_date() {
+    local file="$1"
+    local ts
+    ts=$(stat -f %m "$file" 2>/dev/null || stat -c %Y "$file" 2>/dev/null || echo "0")
+    if date --version &>/dev/null 2>&1; then
+        date -d "@$ts" +%Y-%m-%d
+    else
+        date -r "$ts" +%Y-%m-%d
+    fi
+}
+
 # Portable sed -i (BSD requires -i '', GNU uses -i)
 _sed_i() {
     local file="$1"
@@ -612,9 +624,9 @@ _archive_ticket_by_id() {
     local file
     file=$(ticket_path "$id") || return 1 # Ensure file exists
 
-    local today archive_dir
-    today=$(_iso_date | cut -d'T' -f1) # Get YYYY-MM-DD
-    archive_dir="$(dirname "$TICKETS_DIR")/archive/$today"
+    local file_date archive_dir
+    file_date=$(_file_date "$file")
+    archive_dir="$(dirname "$TICKETS_DIR")/archive/$file_date"
 
     mkdir -p "$archive_dir" # Ensure archive directory exists
     mv "$file" "$archive_dir/"
@@ -1373,9 +1385,8 @@ cmd_archive() {
         esac
     done
 
-    local today archive_dir
-    today=$(_iso_date | cut -d'T' -f1)
-    archive_dir="$(dirname "$TICKETS_DIR")/archive/$today"
+    local archive_base
+    archive_base="$(dirname "$TICKETS_DIR")/archive"
 
     local cutoff_ts=0
     if [[ $all_closed -eq 0 ]]; then
@@ -1413,16 +1424,19 @@ cmd_archive() {
         is_terminal_status "$status" || continue
 
         # Check age if not --all
+        local file_ts
+        file_ts=$(stat -f %m "$file" 2>/dev/null || stat -c %Y "$file" 2>/dev/null || echo "0")
         if [[ $all_closed -eq 0 ]]; then
-            local file_ts
-            file_ts=$(stat -f %m "$file" 2>/dev/null || stat -c %Y "$file" 2>/dev/null || echo "0")
             [[ $file_ts -gt $cutoff_ts ]] && continue
         fi
 
-        # Archive it
+        # Archive under folder named for ticket's last-change date
+        local file_date archive_dir
+        file_date=$(_file_date "$file")
+        archive_dir="$archive_base/$file_date"
         mkdir -p "$archive_dir"
         mv "$file" "$archive_dir/"
-        echo "Archived: $(basename "$file" .md)"
+        echo "Archived: $(basename "$file" .md) -> archive/$file_date/"
         ((archived++))
     done < "$tmp_file_list"
 
@@ -1432,7 +1446,7 @@ cmd_archive() {
     if [[ $archived -eq 0 ]]; then
         echo "No tickets to archive"
     else
-        echo "Archived $archived ticket(s) to archive/$today/"
+        echo "Archived $archived ticket(s)"
     fi
 }
 
