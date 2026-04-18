@@ -47,15 +47,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: `try{var s=localStorage.getItem('tix-theme');var d=s?s==='dark':window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark')}catch(e){}` }} />
-        {import.meta.env.DEV && (
-          <>
-            <script
-              suppressHydrationWarning
-              dangerouslySetInnerHTML={{ __html: `window.__WEB_DEV_MCP_ORIGIN__="http://localhost:3333";window.__WEB_DEV_MCP_SERVER__="${typeof process !== 'undefined' && process.pid ? String(process.pid) : ''}";` }}
-            />
-            <script src="http://localhost:3333/__web-dev-mcp.js" />
-          </>
-        )}
       </head>
       <body className="font-sans antialiased">
         {children}
