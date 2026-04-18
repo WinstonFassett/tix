@@ -1,6 +1,7 @@
 import chokidar from 'chokidar'
 import path from 'node:path'
-import { defineEventHandler } from 'h3'
+import { defineWebSocketHandler } from 'h3'
+import type { Peer } from 'crossws'
 import { getLedger, getTicketsDir } from '../../../src/lib/server/sledge/singleton'
 import { syncFileToLedger, removeFileFromLedger } from '../../../src/lib/server/sledge/sync'
 
@@ -11,13 +12,11 @@ function extractTicketId(filepath: string): string | null {
   return match ? match[1]! : null
 }
 
-type Listener = (eventType: string, ticketId: string) => void
-
 // globalThis survives HMR
 const _g = globalThis as unknown as {
-  __tixSSEListeners?: Set<Listener>
-  __tixSSEWatcherInit?: Promise<void> | null
-  __tixSSEShutdown?: boolean
+  __tixWSPeers?: Set<Peer>
+  __tixWSWatcherInit?: Promise<void> | null
+  __tixWSShutdown?: boolean
   __tixPendingDeletes?: Map<string, NodeJS.Timeout>
 }
 
@@ -26,22 +25,23 @@ function getPendingDeletes(): Map<string, NodeJS.Timeout> {
   return _g.__tixPendingDeletes
 }
 
-function getListeners(): Set<Listener> {
-  if (!_g.__tixSSEListeners) _g.__tixSSEListeners = new Set()
-  return _g.__tixSSEListeners
+function getPeers(): Set<Peer> {
+  if (!_g.__tixWSPeers) _g.__tixWSPeers = new Set()
+  return _g.__tixWSPeers
 }
 
 export function notifyTicketChange(eventType: 'ticket-upsert' | 'ticket-delete', ticketId: string) {
-  const ls = getListeners()
-  for (const l of ls) l(eventType, ticketId)
+  const msg = JSON.stringify({ event: eventType, id: ticketId })
+  for (const peer of getPeers()) {
+    try { peer.send(msg) } catch { /* peer may have disconnected */ }
+  }
 }
 
 function ensureWatcher() {
-  if (_g.__tixSSEWatcherInit) return _g.__tixSSEWatcherInit
-  _g.__tixSSEWatcherInit = (async () => {
+  if (_g.__tixWSWatcherInit) return _g.__tixWSWatcherInit
+  _g.__tixWSWatcherInit = (async () => {
     const ticketsDir = getTicketsDir()
     const ledger = await getLedger()
-    const listeners = getListeners()
 
     const watcher = chokidar.watch(ticketsDir, {
       ignoreInitial: true,
@@ -73,51 +73,28 @@ function ensureWatcher() {
         }, 200))
       })
 
-    if (!_g.__tixSSEShutdown) {
-      _g.__tixSSEShutdown = true
+    if (!_g.__tixWSShutdown) {
+      _g.__tixWSShutdown = true
       const shutdown = () => { watcher.close().catch(() => {}) }
       process.on('SIGINT', shutdown)
       process.on('SIGTERM', shutdown)
     }
   })()
-  return _g.__tixSSEWatcherInit
+  return _g.__tixWSWatcherInit
 }
 
-export default defineEventHandler(async (event) => {
-  // Start watcher (non-blocking — if not ready yet, events will arrive once it is)
-  ensureWatcher().catch(() => {})
+// Start watcher eagerly so file changes are detected even before first WS connection
+ensureWatcher().catch(() => {})
 
-  const res = event.node.res as any
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache, no-transform',
-    'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no',
-  })
-
-  res.write(`event: hello\ndata: {}\n\n`)
-
-  const listeners = getListeners()
-  const listener: Listener = (eventType, ticketId) => {
-    res.write(`event: ${eventType}\ndata: ${JSON.stringify({ id: ticketId })}\n\n`)
-  }
-  listeners.add(listener)
-
-  const heartbeat = setInterval(() => {
-    res.write(`: heartbeat\n\n`)
-  }, 20_000)
-  heartbeat.unref?.()
-
-  event.node.req.on('close', () => {
-    clearInterval(heartbeat)
-    listeners.delete(listener)
-  })
-  event.node.req.on('error', () => {
-    clearInterval(heartbeat)
-    listeners.delete(listener)
-  })
-
-  await new Promise<void>((resolve) => {
-    event.node.req.on('close', () => resolve())
-  })
+export default defineWebSocketHandler({
+  open(peer) {
+    getPeers().add(peer)
+    peer.send(JSON.stringify({ event: 'hello' }))
+  },
+  close(peer) {
+    getPeers().delete(peer)
+  },
+  error(peer) {
+    getPeers().delete(peer)
+  },
 })

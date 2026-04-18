@@ -22,7 +22,7 @@ export const queryClient = new QueryClient({
   },
 })
 
-// SSE + React Query invalidation for detail views is handled by the TanStack DB
+// WebSocket + React Query invalidation for detail views is handled by the TanStack DB
 // collection (ticket-collection.ts) which imports queryClient directly.
 
 export const Route = createRootRoute({

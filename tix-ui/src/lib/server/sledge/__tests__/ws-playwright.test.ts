@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { chromium, type Browser, type Page } from "playwright";
-import { createTestServer } from "./sse-server";
+import { createTestServer } from "./ws-server";
 
-describe("Sledge SSE via Playwright", () => {
+describe("Sledge WebSocket via Playwright", () => {
   let server: ReturnType<typeof createTestServer>;
   let port: number;
   let browser: Browser;
@@ -23,21 +23,18 @@ describe("Sledge SSE via Playwright", () => {
     await server?.stop();
   });
 
-  it("browser receives SSE events when tickets are created via API", async () => {
-    // Serve a minimal HTML page that connects to SSE and collects events
-    // We use a data: URL to avoid needing a file server
+  it("browser receives WebSocket events when tickets are created via API", async () => {
     const html = `
       <html><body>
       <div id="events"></div>
       <script>
         window.__events = [];
-        const source = new EventSource("${baseUrl}/events");
-        source.addEventListener("change", (e) => {
+        const ws = new WebSocket("ws://localhost:${port}");
+        ws.addEventListener("message", (e) => {
           const data = JSON.parse(e.data);
           window.__events.push({
             type: data.type,
             id: data.id,
-            lastEventId: e.lastEventId
           });
           document.getElementById("events").textContent = JSON.stringify(window.__events);
         });
@@ -46,7 +43,7 @@ describe("Sledge SSE via Playwright", () => {
     `;
     await page.setContent(html);
 
-    // Wait for SSE connection to be established
+    // Wait for WS connection to be established
     await page.waitForTimeout(300);
 
     // Create tickets via API from Node.js side
@@ -72,13 +69,11 @@ describe("Sledge SSE via Playwright", () => {
     expect(events).toHaveLength(2);
     expect(events[0].type).toBe("ticket.created");
     expect(events[0].id).toBe("pw01");
-    expect(events[0].lastEventId).toBeTruthy(); // has a cursor
     expect(events[1].type).toBe("ticket.created");
     expect(events[1].id).toBe("pw02");
   }, 15000);
 
-  it("browser receives update events via SSE", async () => {
-    // Reset event collection
+  it("browser receives update events via WebSocket", async () => {
     await page.evaluate(() => {
       (window as any).__events = [];
     });

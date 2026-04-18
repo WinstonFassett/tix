@@ -5,7 +5,7 @@ import crypto from 'node:crypto'
 import type { Ticket } from '../types'
 import { getLedger, getTicketsDir } from './sledge/singleton'
 import { projectTicketToFile, markAsProjected } from './sledge/sync'
-import { notifyTicketChange } from '../../../server/routes/api/tickets-events.get'
+import { notifyTicketChange } from '../../../server/routes/api/tickets-ws'
 
 const VALID_STATUSES = ['open', 'in-progress', 'review', 'on-hold', 'done', 'closed']
 

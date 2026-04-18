@@ -1,6 +1,6 @@
 /**
  * Client-side TanStack DB collection backed by the getTickets server function.
- * SSE events trigger a full refetch and diff against the collection.
+ * WebSocket events trigger a full refetch and diff against the collection.
  */
 import { createCollection, type CollectionImpl } from "@tanstack/db";
 import type { Ticket } from "../types";
@@ -10,7 +10,7 @@ import { queryClient } from "../../routes/__root";
 export type TicketCollection = CollectionImpl<Ticket, string, any, any, any>;
 
 let _collection: TicketCollection | null = null;
-let _eventSource: EventSource | null = null;
+let _ws: WebSocket | null = null;
 let _seedData: Ticket[] | null = null;
 
 /**
@@ -79,34 +79,49 @@ export function getTicketCollection(): TicketCollection {
 
             commit();
           } catch {
-            // Swallow — will retry on next SSE event
+            // Swallow — will retry on next WS event
           }
         };
 
-        // SSE listener — refresh collection + invalidate detail queries
-        if (typeof window !== "undefined" && typeof EventSource !== "undefined") {
+        // WebSocket listener — refresh collection + invalidate detail queries
+        if (typeof window !== "undefined") {
           let connected = false;
-          _eventSource = new EventSource("/api/tickets-events");
-          _eventSource.addEventListener("hello", () => {
-            if (connected) {
-              // Reconnected after a drop — full refresh to catch missed events
+          const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+          _ws = new WebSocket(`${protocol}://${location.host}/api/tickets-ws`);
+          _ws.addEventListener("message", (e) => {
+            const msg = JSON.parse(e.data);
+            if (msg.event === 'hello') {
+              if (connected) {
+                // Reconnected after a drop — full refresh to catch missed events
+                refresh();
+                queryClient.invalidateQueries({ queryKey: ['activity'] });
+              }
+              connected = true;
+              return;
+            }
+            if (msg.event === 'ticket-upsert') {
               refresh();
+              queryClient.invalidateQueries({ queryKey: ['ticket', msg.id] });
+              queryClient.invalidateQueries({ queryKey: ['activity'] });
+              queryClient.invalidateQueries({ queryKey: ['ticket-history', msg.id] });
+            } else if (msg.event === 'ticket-delete') {
+              refresh();
+              queryClient.removeQueries({ queryKey: ['ticket', msg.id] });
               queryClient.invalidateQueries({ queryKey: ['activity'] });
             }
-            connected = true;
           });
-          _eventSource.addEventListener("ticket-upsert", (e) => {
-            refresh();
-            const { id } = JSON.parse((e as MessageEvent).data);
-            queryClient.invalidateQueries({ queryKey: ['ticket', id] });
-            queryClient.invalidateQueries({ queryKey: ['activity'] });
-            queryClient.invalidateQueries({ queryKey: ['ticket-history', id] });
-          });
-          _eventSource.addEventListener("ticket-delete", (e) => {
-            refresh();
-            const { id } = JSON.parse((e as MessageEvent).data);
-            queryClient.removeQueries({ queryKey: ['ticket', id] });
-            queryClient.invalidateQueries({ queryKey: ['activity'] });
+          _ws.addEventListener("close", () => {
+            // Auto-reconnect after a delay
+            if (!disposed) {
+              setTimeout(() => {
+                if (!disposed) {
+                  // Force collection recreation on reconnect
+                  _collection = null;
+                  _ws = null;
+                  getTicketCollection();
+                }
+              }, 2000);
+            }
           });
         }
 
@@ -117,9 +132,9 @@ export function getTicketCollection(): TicketCollection {
         return {
           cleanup: () => {
             disposed = true;
-            if (_eventSource) {
-              _eventSource.close();
-              _eventSource = null;
+            if (_ws) {
+              _ws.close();
+              _ws = null;
             }
           },
         };
@@ -162,12 +177,12 @@ export function getTicketCollection(): TicketCollection {
   return _collection;
 }
 
-// Clean up on HMR — close leaked EventSource connections
+// Clean up on HMR — close leaked WebSocket connections
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
-    if (_eventSource) {
-      _eventSource.close();
-      _eventSource = null;
+    if (_ws) {
+      _ws.close();
+      _ws = null;
     }
     _collection = null;
     _seedData = null;

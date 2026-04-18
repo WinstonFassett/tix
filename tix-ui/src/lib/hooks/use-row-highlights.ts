@@ -12,7 +12,7 @@ function notify() {
 
 /**
  * Bump the highlight generation for a ticket ID.
- * Call from the SSE handler when a ticket changes.
+ * Call from the WebSocket handler when a ticket changes.
  */
 export function bumpHighlight(id: string) {
   highlights.set(id, (highlights.get(id) ?? 0) + 1)

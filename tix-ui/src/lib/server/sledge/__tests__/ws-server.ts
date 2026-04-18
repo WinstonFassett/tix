@@ -1,8 +1,9 @@
 /**
- * Minimal HTTP server that exposes Sledge events as SSE.
- * Used for Playwright testing of the SSE endpoint.
+ * Minimal HTTP + WebSocket server that exposes Sledge events via WS.
+ * Used for Playwright and direct Node.js testing.
  */
 import http from "node:http";
+import { WebSocketServer, WebSocket } from "ws";
 import Database from "better-sqlite3";
 import { createTicketLedger } from "../ticket-ledger";
 
@@ -10,9 +11,9 @@ export function createTestServer(port = 0) {
   const db = new Database(":memory:");
   const ledger = createTicketLedger(db);
 
-  const sseClients = new Set<http.ServerResponse>();
+  const wsClients = new Set<WebSocket>();
 
-  // Tail events in background → push to SSE clients
+  // Tail events in background → push to WS clients
   const controller = new AbortController();
   (async () => {
     for await (const item of ledger.tailEvents({
@@ -25,8 +26,10 @@ export function createTestServer(port = 0) {
         payload: item.event.payload,
         seq: item.cursor,
       });
-      for (const res of sseClients) {
-        res.write(`id: ${item.cursor}\nevent: change\ndata: ${data}\n\n`);
+      for (const ws of wsClients) {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(data);
+        }
       }
     }
   })().catch(() => {});
@@ -34,7 +37,7 @@ export function createTestServer(port = 0) {
   const server = http.createServer(async (req, res) => {
     // CORS
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     if (req.method === "OPTIONS") {
       res.writeHead(204);
@@ -43,19 +46,6 @@ export function createTestServer(port = 0) {
     }
 
     const url = new URL(req.url!, `http://localhost`);
-
-    // SSE endpoint
-    if (url.pathname === "/events" && req.method === "GET") {
-      res.writeHead(200, {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      });
-      res.write(":ok\n\n");
-      sseClients.add(res);
-      req.on("close", () => sseClients.delete(res));
-      return;
-    }
 
     // POST /tickets — create
     if (url.pathname === "/tickets" && req.method === "POST") {
@@ -103,8 +93,16 @@ export function createTestServer(port = 0) {
     res.end("Not found");
   });
 
+  const wss = new WebSocketServer({ server });
+  wss.on("connection", (ws) => {
+    wsClients.add(ws);
+    ws.on("close", () => wsClients.delete(ws));
+    ws.on("error", () => wsClients.delete(ws));
+  });
+
   return {
     server,
+    wss,
     ledger,
     db,
     start: () =>
@@ -116,8 +114,9 @@ export function createTestServer(port = 0) {
       }),
     stop: async () => {
       controller.abort();
-      for (const res of sseClients) res.end();
-      sseClients.clear();
+      for (const ws of wsClients) ws.close();
+      wsClients.clear();
+      wss.close();
       server.close();
       await ledger.close();
       db.close();
