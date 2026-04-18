@@ -8,7 +8,7 @@ import { StatusSelector } from './StatusSelector'
 import { PrioritySelector } from './PrioritySelector'
 import { TypeSelector } from './TypeSelector'
 import { useNavigate } from '@tanstack/react-router'
-import { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
 import { useRowHighlight } from '#/lib/hooks/use-row-highlights'
 import { motion, LayoutGroup, AnimatePresence } from 'framer-motion'
@@ -70,13 +70,19 @@ export function TicketTable({ grouped, groupBy, onUpdate, onRowClick, selectedId
     else navigate({ to: '/ticket/$ticketId', params: { ticketId: id } })
   }
 
-  // Suppress entry animations for the initial data load (be2c).
-  // Once rows have rendered at least once, allow subsequent additions to animate in.
-  const initialLoadDone = useRef(false)
+  // First-load behavior: rows fade in (staggered) with no layout tracking,
+  // so the hydration settle isn't visible. Once the stagger completes we
+  // flip `loaded` → true, which enables layoutId/layout so subsequent
+  // filter/sort/drag changes animate position.
   const totalRows = useMemo(() => Object.values(grouped).reduce((s, g) => s + g.length, 0), [grouped])
+  const [loaded, setLoaded] = useState(false)
   useEffect(() => {
-    if (totalRows > 0) initialLoadDone.current = true
-  }, [totalRows])
+    if (!loaded && totalRows > 0) {
+      const stagger = Math.min(totalRows, 20) * 20 // match row stagger
+      const t = setTimeout(() => setLoaded(true), stagger + 250)
+      return () => clearTimeout(t)
+    }
+  }, [loaded, totalRows])
 
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set())
 
@@ -126,15 +132,16 @@ export function TicketTable({ grouped, groupBy, onUpdate, onRowClick, selectedId
             )}
 
             <DroppableGroupBody groupKey={groupKey} groupBy={groupBy}>
-              <AnimatePresence initial={false}>
-                {!collapsed.has(groupKey) && (grouped[groupKey] || []).map(ticket => (
+              <AnimatePresence initial={!loaded}>
+                {!collapsed.has(groupKey) && (grouped[groupKey] || []).map((ticket, i) => (
                   <TicketRow
                     key={ticket.id}
                     ticket={ticket}
                     selected={selectedId === ticket.id}
                     onOpen={openTicket}
                     onUpdate={onUpdate}
-                    animate={initialLoadDone.current}
+                    loaded={loaded}
+                    index={i}
                   />
                 ))}
               </AnimatePresence>
@@ -212,11 +219,13 @@ interface TicketRowProps {
   selected: boolean
   onOpen: (id: string) => void
   onUpdate?: (ticketId: string, updates: Record<string, any>) => void
-  /** When false, skip entry/exit/layout animations (used for initial data load). */
-  animate?: boolean
+  /** True after initial staggered fade-in completes. Gates layout tracking. */
+  loaded: boolean
+  /** Row index within its group, for stagger delay on first load. */
+  index: number
 }
 
-function TicketRow({ ticket, selected, onOpen, onUpdate, animate = true }: TicketRowProps) {
+function TicketRow({ ticket, selected, onOpen, onUpdate, loaded, index }: TicketRowProps) {
   const highlightGen = useRowHighlight(ticket.id)
   const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
     id: ticket.id,
@@ -225,17 +234,18 @@ function TicketRow({ ticket, selected, onOpen, onUpdate, animate = true }: Ticke
 
   return (
     <motion.div
-      {...(animate ? { layoutId: `ticket-row-${ticket.id}`, layout: "position" as const } : {})}
+      layoutId={`ticket-row-${ticket.id}`}
+      layout="position"
       data-ticket-row={ticket.id}
-      className={`group relative w-full flex items-center justify-start h-11 px-6 cursor-pointer outline-none focus:outline-none ${selected ? 'bg-accent' : 'hover:bg-accent/50'} bg-background ${isDragging ? 'opacity-30' : ''}`}
+      className={`group relative w-full flex items-center justify-start h-11 px-6 cursor-pointer outline-none focus:outline-none ${selected ? 'bg-accent' : 'hover:bg-accent/50'} bg-background ${isDragging ? 'opacity-30' : ''} ${!loaded ? 'anim-row-enter' : ''}`}
       onClick={() => !activeTicket && onOpen(ticket.id)}
       role="button"
       transition={{
-        layout: { type: 'spring', stiffness: 350, damping: 30 },
+        layout: loaded ? { type: 'spring', stiffness: 350, damping: 30 } : { duration: 0 },
       }}
       whileHover={{ backgroundColor: undefined }}
-      style={{ zIndex: 1 }}
-      onLayoutAnimationStart={animate ? () => {
+      style={{ zIndex: 1, ...(!loaded ? { animationDelay: `${Math.min(index, 20) * 20}ms` } : {}) }}
+      onLayoutAnimationStart={loaded ? () => {
         const el = document.querySelector(`[data-ticket-row="${ticket.id}"]`) as HTMLElement | null
         if (el) {
           el.style.zIndex = '20'
@@ -243,7 +253,7 @@ function TicketRow({ ticket, selected, onOpen, onUpdate, animate = true }: Ticke
           el.style.borderRadius = '4px'
         }
       } : undefined}
-      onLayoutAnimationComplete={animate ? () => {
+      onLayoutAnimationComplete={loaded ? () => {
         const el = document.querySelector(`[data-ticket-row="${ticket.id}"]`) as HTMLElement | null
         if (el) {
           el.style.zIndex = '1'
@@ -251,9 +261,9 @@ function TicketRow({ ticket, selected, onOpen, onUpdate, animate = true }: Ticke
           el.style.borderRadius = ''
         }
       } : undefined}
-      initial={animate ? { opacity: 0, y: -4 } : false}
+      initial={loaded ? { opacity: 0, y: -4 } : false}
       animate={{ opacity: 1, y: 0 }}
-      exit={animate ? { opacity: 0, y: 4, transition: { duration: 0.15 } } : undefined}
+      exit={loaded ? { opacity: 0, y: 4, transition: { duration: 0.15 } } : undefined}
     >
       {highlightGen > 0 && (
         <div
