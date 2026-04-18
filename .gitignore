@@ -19,3 +19,5 @@ lib/jq
 
 node_modules
 disttest-tickets
+
+test-results
