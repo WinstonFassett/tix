@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import type { Ticket } from '#/lib/types'
 import { Button } from './ui'
 import { TicketDetailBody } from './TicketDetailBody'
-import { useConfig } from '#/lib/hooks/use-tickets'
 import { useSidebar } from '#/lib/AppContext'
 import { useNavigate } from '@tanstack/react-router'
-import { PanelLeft, ChevronLeft, Copy, ExternalLink, Folder, ChevronRight } from 'lucide-react'
+import { PanelLeft, ChevronLeft, ChevronRight } from 'lucide-react'
+import { TicketActions } from './TicketActions'
 
 interface PagerState {
   index: number
@@ -23,9 +23,6 @@ interface TicketDetailProps {
 export function TicketDetail({ ticket, onUpdate, pager }: TicketDetailProps) {
   const navigate = useNavigate()
   const { toggle: toggleSidebar } = useSidebar()
-  const { data: config } = useConfig()
-  const ticketsDir = config?.ticketsDir || ''
-  const filePath = ticketsDir && ticket.filename ? `${ticketsDir}/${ticket.filename}` : ''
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
   // Keyboard shortcuts for the ticket pager: J / K (vim-ish) and
@@ -50,10 +47,6 @@ export function TicketDetail({ ticket, onUpdate, pager }: TicketDetailProps) {
 
   function copyTicketId() {
     if (navigator.clipboard) navigator.clipboard.writeText(ticket.id)
-  }
-
-  function copyPath() {
-    if (filePath) navigator.clipboard.writeText(filePath)
   }
 
   return (
@@ -114,20 +107,9 @@ export function TicketDetail({ ticket, onUpdate, pager }: TicketDetailProps) {
           {saveState === 'saved' && <span className="text-xs text-muted-foreground ml-2">Saved</span>}
           {saveState === 'error' && <span className="text-xs text-destructive ml-2">Save failed</span>}
         </div>
-        {filePath && (
-          <div className="flex items-center gap-1 ml-auto">
-            <span className="text-xs text-muted-foreground font-mono truncate max-w-80" title={filePath}>{ticket.filename}</span>
-            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={copyPath} title="Copy file path">
-              <Copy className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => window.open(`vscode://file/${filePath}`)} title="Open in VS Code">
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => window.open(`vscode://file/${ticketsDir}`)} title="Reveal in Finder">
-              <Folder className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        )}
+        <div className="ml-auto">
+          <TicketActions ticket={ticket} />
+        </div>
       </div>
 
       {/* Detail content */}

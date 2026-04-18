@@ -14,6 +14,7 @@ import { useRowHighlight } from '#/lib/hooks/use-row-highlights'
 import { motion, LayoutGroup, AnimatePresence } from 'framer-motion'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { useDndState } from '#/lib/DndProvider'
+import { TicketActions } from './TicketActions'
 
 interface TicketTableProps {
   grouped: Record<string, Ticket[]>
@@ -227,7 +228,7 @@ function TicketRow({ ticket, selected, onOpen, onUpdate, animate = true }: Ticke
       layoutId={`ticket-row-${ticket.id}`}
       layout="position"
       data-ticket-row={ticket.id}
-      className={`relative w-full flex items-center justify-start h-11 px-6 cursor-pointer outline-none focus:outline-none ${selected ? 'bg-accent' : 'hover:bg-accent/50'} bg-background ${isDragging ? 'opacity-30' : ''}`}
+      className={`group relative w-full flex items-center justify-start h-11 px-6 cursor-pointer outline-none focus:outline-none ${selected ? 'bg-accent' : 'hover:bg-accent/50'} bg-background ${isDragging ? 'opacity-30' : ''}`}
       onClick={() => !activeTicket && onOpen(ticket.id)}
       role="button"
       transition={{
@@ -321,6 +322,9 @@ function TicketRow({ ticket, selected, onOpen, onUpdate, animate = true }: Ticke
             {new Date(ticket.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
         )}
+        <span className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+          <TicketActions ticket={ticket} />
+        </span>
       </div>
     </motion.div>
   )

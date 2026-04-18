@@ -6,6 +6,7 @@ import { useUpdateTicket, useTicket } from '#/lib/hooks/use-tickets'
 import { useDetailPanel } from '#/lib/AppContext'
 import { useNavigate } from '@tanstack/react-router'
 import { X, Maximize2, Loader2 } from 'lucide-react'
+import { TicketActions } from './TicketActions'
 
 interface TicketDetailPanelProps {
   ticket: Ticket
@@ -112,7 +113,8 @@ export function TicketDetailPanel({ ticket: listTicket }: TicketDetailPanelProps
           {saveState === 'saved' && <span>Saved</span>}
           {saveState === 'error' && <span className="text-destructive">Save failed</span>}
         </div>
-        <div className="ml-auto">
+        <div className="flex items-center gap-1 ml-auto">
+          <TicketActions ticket={ticket} />
           <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={openFull} title="Open full view">
             <Maximize2 className="h-3.5 w-3.5" />
             Open
