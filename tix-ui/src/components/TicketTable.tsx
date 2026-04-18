@@ -225,8 +225,7 @@ function TicketRow({ ticket, selected, onOpen, onUpdate, animate = true }: Ticke
 
   return (
     <motion.div
-      layoutId={`ticket-row-${ticket.id}`}
-      layout="position"
+      {...(animate ? { layoutId: `ticket-row-${ticket.id}`, layout: "position" as const } : {})}
       data-ticket-row={ticket.id}
       className={`group relative w-full flex items-center justify-start h-11 px-6 cursor-pointer outline-none focus:outline-none ${selected ? 'bg-accent' : 'hover:bg-accent/50'} bg-background ${isDragging ? 'opacity-30' : ''}`}
       onClick={() => !activeTicket && onOpen(ticket.id)}

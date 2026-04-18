@@ -152,14 +152,7 @@ export const TreeProvider = ({
         animateExpand,
       }}
     >
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        className={cn("w-full", className)}
-        initial={{ opacity: 0, y: 10 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-      >
-        {children}
-      </motion.div>
+      <div className={cn("w-full", className)}>{children}</div>
     </TreeContext.Provider>
   );
 };
@@ -324,7 +317,7 @@ export const TreeNodeContent = ({
   const isExpanded = expandedIds.has(nodeId);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {hasChildren && isExpanded && (
         <motion.div
           animate={{ height: "auto", opacity: 1 }}

@@ -12,6 +12,15 @@ export type TicketCollection = CollectionImpl<Ticket, string, any, any, any>;
 let _collection: TicketCollection | null = null;
 let _ws: WebSocket | null = null;
 let _seedData: Ticket[] | null = null;
+let _initialLoadComplete = false;
+
+/**
+ * True once the initial hydration (seed or fetch) has landed in the collection.
+ * Used to suppress row-highlight animations on first page load.
+ */
+export function isTicketInitialLoadComplete(): boolean {
+  return _initialLoadComplete;
+}
 
 /**
  * Seed the collection with data from SSR (avoids redundant fetch).
@@ -49,6 +58,7 @@ export function getTicketCollection(): TicketCollection {
           }
           commit();
           markReady();
+          _initialLoadComplete = true;
         };
 
         // Refresh: fetch all tickets and diff against current state
@@ -186,5 +196,6 @@ if (import.meta.hot) {
     }
     _collection = null;
     _seedData = null;
+    _initialLoadComplete = false;
   });
 }

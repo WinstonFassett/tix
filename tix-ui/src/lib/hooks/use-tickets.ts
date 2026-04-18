@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getTickets, getTicket, getConfig, searchTickets, updateTicket, createTicket, deleteTicket } from '../server/tickets'
 import type { Ticket } from '../types'
 
-import { getTicketCollection, seedTicketCollection } from '../client/ticket-collection'
+import { getTicketCollection, seedTicketCollection, isTicketInitialLoadComplete } from '../client/ticket-collection'
 import { bumpHighlight } from './use-row-highlights'
 
 function getCollection() {
@@ -44,8 +44,10 @@ export function useTickets() {
     }
 
     const sub = collection.subscribeChanges((changes) => {
-      for (const change of changes) {
-        if (change.key) bumpHighlight(String(change.key))
+      if (isTicketInitialLoadComplete()) {
+        for (const change of changes) {
+          if (change.key) bumpHighlight(String(change.key))
+        }
       }
       syncFromCollection()
     })
