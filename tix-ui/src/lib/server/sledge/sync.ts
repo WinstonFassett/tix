@@ -233,8 +233,12 @@ export async function removeFileFromLedger(
 
 /**
  * Compare DB rows to files on disk and fix any drift.
- * Re-projects DB rows missing files. Ingests files missing from DB.
- * Safety net for process crashes and failed projections.
+ * If a DB row's filename is missing but another file on disk has the same
+ * ticket id (e.g. user moved the .md file), sync the DB row to the new
+ * location instead of re-projecting to the stale path. Only re-projects
+ * when no file with that id exists anywhere under ticketsDir.
+ * Ingests files missing from DB. Safety net for process crashes and
+ * failed projections.
  */
 export async function reconcile(
   ledger: Ledger,
@@ -243,23 +247,45 @@ export async function reconcile(
   let projected = 0;
   let ingested = 0;
 
-  // 1. DB rows missing files → re-project
+  const files = walkTickets(ticketsDir);
+  const filesById = new Map<string, { filepath: string; filename: string; folder: string }>();
+  for (const f of files) {
+    const id = extractTicketId(f.filepath);
+    if (id) filesById.set(id, f);
+  }
+
   const allTickets = (await ledger.query("allTickets", {})) as Ticket[];
+  const dbIds = new Set(allTickets.map((t) => t.id));
+
+  // 1. DB rows whose filename path is missing → relocate if the file moved,
+  //    otherwise re-project.
   for (const ticket of allTickets) {
     const filepath = path.join(ticketsDir, ticket.filename);
-    if (!fs.existsSync(filepath)) {
+    if (fs.existsSync(filepath)) continue;
+
+    const moved = filesById.get(ticket.id);
+    if (moved) {
       try {
-        projectTicketToFile(ticket, ticketsDir);
-        projected++;
+        const parsed = parseTicketFile(moved.filepath, moved.filename, moved.folder);
+        const changed = diffTicket(ticket, parsed);
+        if (changed) {
+          await ledger.emit("ticket.updated", { id: ticket.id, ...changed });
+        }
       } catch (err) {
-        console.error(`[reconcile] failed to re-project ${ticket.id}:`, err);
+        console.error(`[reconcile] failed to relocate ${ticket.id}:`, err);
       }
+      continue;
+    }
+
+    try {
+      projectTicketToFile(ticket, ticketsDir);
+      projected++;
+    } catch (err) {
+      console.error(`[reconcile] failed to re-project ${ticket.id}:`, err);
     }
   }
 
   // 2. Files on disk missing from DB → ingest
-  const files = walkTickets(ticketsDir);
-  const dbIds = new Set(allTickets.map((t) => t.id));
   for (const { filepath, filename, folder } of files) {
     const id = extractTicketId(filepath);
     if (id && !dbIds.has(id)) {

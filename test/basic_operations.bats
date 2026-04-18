@@ -162,7 +162,7 @@ load test_helper
     [ "$status" = "in-progress" ]
 }
 
-@test "tix close changes status to closed and archives" {
+@test "tix close changes status to closed without archiving" {
     local ticket_id
     ticket_id=$(create_test_ticket "Task to close")
 
@@ -173,10 +173,10 @@ load test_helper
     local status=$(get_ticket_field "$ticket_id" "status")
     [ "$status" = "closed" ]
 
-    # Ticket should be archived (moved from tickets/)
+    # Ticket should remain in tickets/ (not auto-archived)
     local file
-    file=$(find tickets -name "*(${ticket_id}).md" 2>/dev/null | head -1)
-    [ -z "$file" ]
+    file=$(find tickets -not -path "*/archive/*" -name "*(${ticket_id}).md" 2>/dev/null | head -1)
+    [ -n "$file" ]
 }
 
 @test "tix status updates status" {
@@ -190,17 +190,21 @@ load test_helper
     [ "$status" = "in-progress" ]
 }
 
-@test "tix done marks ticket as done and archives" {
+@test "tix done marks ticket as done without archiving" {
     local ticket_id
     ticket_id=$(create_test_ticket "Task to finish")
 
     run ./tix done "$ticket_id"
     [ "$status" -eq 0 ]
 
-    # Should be archived (moved from tickets/)
+    # Status should be done
+    local status=$(get_ticket_field "$ticket_id" "status")
+    [ "$status" = "done" ]
+
+    # Ticket should remain in tickets/ (not auto-archived)
     local file
-    file=$(find tickets -name "*(${ticket_id}).md" 2>/dev/null | head -1)
-    [ -z "$file" ]
+    file=$(find tickets -not -path "*/archive/*" -name "*(${ticket_id}).md" 2>/dev/null | head -1)
+    [ -n "$file" ]
 }
 
 @test "tix status normalizes aliases" {
@@ -227,9 +231,11 @@ load test_helper
     [ "$status" -eq 0 ]
     [[ "$output" =~ "Archived" ]]
 
-    # Should be moved from tickets/
-    file=$(find tickets -name "*(${ticket_id}).md" 2>/dev/null | head -1)
+    # Should be moved into tickets/archive/
+    file=$(find tickets -not -path "*/archive/*" -name "*(${ticket_id}).md" 2>/dev/null | head -1)
     [ -z "$file" ]
+    file=$(find tickets/archive -name "*(${ticket_id}).md" 2>/dev/null | head -1)
+    [ -n "$file" ]
 }
 
 @test "tix ready excludes nested tickets by default and shows them with --deep" {
@@ -281,8 +287,9 @@ load test_helper
     [ "$status" -eq 0 ]
     [[ "$output" =~ "$ticket_id" ]]
 
-    # Now close properly (which archives)
+    # Now close and archive
     ./tix close "$ticket_id"
+    ./tix archive --all
 
     run ./tix closed --archived
     [ "$status" -eq 0 ]

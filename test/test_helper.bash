@@ -59,11 +59,11 @@ ticket_exists() {
     find tickets -name "*(${id}).md" | grep -q .
 }
 
-# Helper to get ticket field (searches tickets/ and archive/)
+# Helper to get ticket field (searches tickets/ including nested archive/)
 get_ticket_field() {
     local id="$1"
     local field="$2"
     local file
-    file=$(find tickets archive -name "*(${id}).md" 2>/dev/null | head -1)
+    file=$(find tickets -name "*(${id}).md" 2>/dev/null | head -1)
     [[ -n "$file" ]] && ./lib/yq -f extract ".$field" "$file"
 }

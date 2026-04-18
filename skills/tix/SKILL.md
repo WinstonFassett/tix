@@ -18,8 +18,8 @@ The `tix` CLI supports the following commands. For detailed usage and options, r
 *   **`create [title] [options]`**: Create a new ticket.
     *   Example: `tix create "Implement user authentication" --type feature --priority 0 --assignee winston`
 *   **`start <id>`**: Set ticket status to `in-progress`.
-*   **`done <id>`**: Set ticket status to `done` (completed work; auto-archives).
-*   **`close <id>`**: Set ticket status to `closed` (cancelled/won't-do).
+*   **`done <id>`**: Set ticket status to `done` (completed work). Ticket stays in `tickets/` for visibility; run `tix archive` later to move it.
+*   **`close <id>`**: Set ticket status to `closed` (cancelled/won't-do). Ticket stays in `tickets/`; run `tix archive` later to move it.
 *   **`hold <id>`** (alias: `pause`): Set ticket status to `on-hold`.
 *   **`reopen <id>`**: Set ticket status to `open`.
 *   **`status <id> <status>`**: Update status (open|in-progress|on-hold|done|closed).
@@ -56,7 +56,7 @@ The `tix` CLI supports the following commands. For detailed usage and options, r
 
 ### Utilities
 
-*   **`archive [--days=N] [--all]`**: Move old done/closed tickets to archive.
+*   **`archive [--days=N] [--all]`**: Move old done/closed tickets to `tickets/archive/YYYY-MM-DD/` (folder named by ticket's last-change date). Default `--days=3`.
 *   **`status`**: Show configuration and directory info.
 
 ## Detailed Help

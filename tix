@@ -506,11 +506,6 @@ cmd_status() {
 
     update_yaml_field "$file" "status" "$status"
     echo "Updated $(basename "$file" .md) -> $status"
-
-    # Auto-archive if terminal
-    if is_terminal_status "$status"; then
-        _archive_ticket_by_id "$id"
-    fi
 }
 
 cmd_start() {
@@ -547,7 +542,6 @@ cmd_done() {
     file=$(ticket_path "$id") || return 1
     update_yaml_field "$file" "status" "done"
     echo "Ticket $id done."
-    _archive_ticket_by_id "$id"
 }
 
 cmd_close() {
@@ -560,7 +554,6 @@ cmd_close() {
     file=$(ticket_path "$id") || return 1
     update_yaml_field "$file" "status" "closed"
     echo "Ticket $id closed."
-    _archive_ticket_by_id "$id"
 }
 
 cmd_reopen() {
@@ -626,7 +619,7 @@ _archive_ticket_by_id() {
 
     local file_date archive_dir
     file_date=$(_file_date "$file")
-    archive_dir="$(dirname "$TICKETS_DIR")/archive/$file_date"
+    archive_dir="$TICKETS_DIR/archive/$file_date"
 
     mkdir -p "$archive_dir" # Ensure archive directory exists
     mv "$file" "$archive_dir/"
@@ -1375,7 +1368,7 @@ cmd_ready() {
 cmd_archive() {
     [[ ! -d "$TICKETS_DIR" ]] && return 0
 
-    local days=30 all_closed=0
+    local days=3 all_closed=0
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --days=*) days="${1#--days=}"; shift ;;
@@ -1386,7 +1379,7 @@ cmd_archive() {
     done
 
     local archive_base
-    archive_base="$(dirname "$TICKETS_DIR")/archive"
+    archive_base="$TICKETS_DIR/archive"
 
     local cutoff_ts=0
     if [[ $all_closed -eq 0 ]]; then
@@ -1470,7 +1463,7 @@ cmd_closed() {
     if [[ $archived_mode -eq 1 ]]; then
         # Search archive directory
         local archive_base
-        archive_base="$(dirname "$TICKETS_DIR")/archive"
+        archive_base="$TICKETS_DIR/archive"
         if [[ -d "$archive_base" ]]; then
             while IFS= read -r -d '' file; do
                 if [[ -f "$file" ]] && grep -q "^---$" "$file" 2>/dev/null; then
@@ -2324,7 +2317,6 @@ Commands:
 
   status <id> <status>
     Update a ticket's status. Valid: open, in-progress, review, on-hold, done, closed.
-    Auto-archives if status is terminal (done/closed).
     Example: tix status w-abcd in-progress
 
   start <id>
@@ -2334,10 +2326,10 @@ Commands:
     Set ticket status to 'on-hold'. ⏸
 
   done <id>
-    Set ticket status to 'done' (completed) and move to archive.
+    Set ticket status to 'done' (completed). Run 'tix archive' later to move old done tickets.
 
   close <id>
-    Set ticket status to 'closed' (cancelled/won't-do) and move to archive.
+    Set ticket status to 'closed' (cancelled/won't-do). Run 'tix archive' later to move old closed tickets.
 
   reopen <id>
     Set ticket status to 'open'.
@@ -2395,8 +2387,8 @@ Commands:
         Use --archived to search the archive directory instead of tickets/.
 
   archive [--days=<num>] [--all]
-    Move done/closed tickets to archive/YYYY-MM-DD/.
-    --days: age in days (default 30). --all: archive all regardless of age.
+    Move done/closed tickets to tickets/archive/YYYY-MM-DD/ (folder named by ticket's last-change date).
+    --days: age in days (default 3). --all: archive all regardless of age.
 
   backup [output-path]
     Create a zip backup of the entire tickets directory.
