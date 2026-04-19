@@ -48,6 +48,8 @@ Files named `Title Case (4hex).md` in `tickets/`. Frontmatter fields: `id`, `tit
 - `TICKETS_DIR` — Direct override of tickets directory path
 - `PORTLESS` — Set to `0` to bypass portless proxy for tix-ui
 - `PORTLESS_PORT` — Override portless proxy port (default 1355)
+- `PORTLESS_NAME` — Override portless subdomain for tix-ui (default `$(basename $TIX_WORKSPACE)-tix`)
+- `TIX_UI_NAME` — Override the display label shown in tix-ui header/sidebar (default: workspace basename)
 - `TIX_UI_DEV` — Set to `1` to run tix-ui in vite dev mode with HMR
 
 ## Data Architecture (Sledge + TanStack DB)

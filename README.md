@@ -34,7 +34,8 @@ cd your-project && tix-ui                 # opens the dashboard
 With [portless](https://www.npmjs.com/package/portless) installed, each project
 gets a stable named URL — e.g. `http://my-project-tix.localhost:1355` instead of
 a random port. Without portless, falls back to an available port starting at 3000.
-Set `PORTLESS=0` to bypass.
+Set `PORTLESS=0` to bypass. Override the subdomain with `PORTLESS_NAME=foo tix-ui`
+(useful for dated/verbose directory names).
 
 ## How It Works
 

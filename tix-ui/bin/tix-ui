@@ -21,9 +21,10 @@ if [[ ! -d "$TIX_WORKSPACE/tickets" ]]; then
     exit 1
 fi
 
-# Derive project-scoped name for portless (e.g. talky-tix, web-dev-mcp-tix)
+# Derive project-scoped name for portless (e.g. talky-tix, web-dev-mcp-tix).
+# PORTLESS_NAME overrides the derived subdomain (useful for dated/verbose dir names).
 PROJECT_NAME="$(basename "$TIX_WORKSPACE")"
-APP_NAME="${PROJECT_NAME}-tix"
+APP_NAME="${PORTLESS_NAME:-${PROJECT_NAME}-tix}"
 
 # Detect portless availability (respect PORTLESS=0 bypass)
 if [[ "${PORTLESS:-1}" != "0" ]] && command -v portless >/dev/null 2>&1; then

@@ -95,7 +95,7 @@ export const getConfig = createServerFn({ method: 'GET' }).handler(async () => {
   const workspacePath = path.dirname(resolvedDir)
   return {
     ticketsDir: resolvedDir,
-    workspaceName: path.basename(workspacePath),
+    workspaceName: process.env.TIX_UI_NAME || path.basename(workspacePath),
     workspacePath,
   }
 })
