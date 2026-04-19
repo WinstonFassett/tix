@@ -109,4 +109,36 @@ describe("reconcile", () => {
     const got = (await ledger.query("ticketById", { id: "e5f6" })) as Ticket;
     expect(got.title).toBe("Disk Ticket");
   });
+
+  // 892f: unquoted all-digit deps (e.g. `deps: [1961]`) get parsed as numbers
+  // by YAML. Without coercion, TypeBox Value.Decode rejects the event and the
+  // ticket silently never reaches the DB.
+  it("ingests tickets whose deps are unquoted all-digit YAML numbers", async () => {
+    const filepath = path.join(ticketsDir, "Has Numeric Dep (0098).md");
+    fs.writeFileSync(
+      filepath,
+      [
+        "---",
+        'id: "0098"',
+        "title: Has Numeric Dep",
+        "status: open",
+        "type: task",
+        "priority: 2",
+        'assignee: ""',
+        "tags: []",
+        "deps: [1961]",
+        `created: '${new Date().toISOString()}'`,
+        "---",
+        "body",
+        "",
+      ].join("\n"),
+    );
+
+    const result = await reconcile(ledger, ticketsDir);
+
+    expect(result.ingested).toBe(1);
+    const got = (await ledger.query("ticketById", { id: "0098" })) as Ticket;
+    expect(got).not.toBeNull();
+    expect(got.deps).toEqual(["1961"]);
+  });
 });

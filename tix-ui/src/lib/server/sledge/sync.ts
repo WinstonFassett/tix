@@ -84,6 +84,10 @@ function parseTicketFile(
 ): Ticket & { created: string } {
   const raw = fs.readFileSync(filepath, "utf-8");
   const { data, content } = matter(raw);
+  // YAML parses unquoted all-digit scalars as numbers; coerce ref arrays to
+  // strings so TypeBox (Type.Array(Type.String())) accepts them on emit.
+  const toStringArr = (v: unknown): string[] =>
+    Array.isArray(v) ? v.map((x) => String(x)) : [];
   return {
     id: String(data.id || ""),
     title: data.title || "",
@@ -91,8 +95,8 @@ function parseTicketFile(
     type: data.type || "task",
     priority: data.priority ?? 2,
     assignee: data.assignee || "",
-    tags: data.tags || [],
-    deps: data.deps || [],
+    tags: toStringArr(data.tags),
+    deps: toStringArr(data.deps),
     created: data.created ? String(data.created) : "",
     body: content.trim(),
     folder,
