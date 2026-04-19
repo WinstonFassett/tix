@@ -2416,6 +2416,12 @@ main() {
     local cmd="$1"
     shift
 
+    # Subcommand help: `tix <cmd> -h` / `tix <cmd> --help` shows top-level help.
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+        main_help
+        return 0
+    fi
+
     case "$cmd" in
         help|-h|--help) main_help ;;
         create) cmd_create "$@" ;;
