@@ -10,7 +10,6 @@ import { useTickets, useDeleteTicket } from '#/lib/hooks/use-tickets'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, Folder, Trash2, ChevronDown, FilePlus, Pencil } from 'lucide-react'
-import { useFilters } from '#/lib/AppContext'
 import { TicketTagsField } from './TicketTagsField'
 import { getTicketEvents, type ActivityEvent } from '#/lib/server/activity'
 
@@ -30,7 +29,6 @@ function stripLeadingTitle(body: string): string {
 export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSaveStateChange }: TicketDetailBodyProps) {
   const navigate = useNavigate()
   const deleteMutation = useDeleteTicket()
-  const filters = useFilters()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -190,7 +188,7 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
             <button
               type="button"
               className="inline-flex items-center gap-1 rounded-md border border-border px-2 h-8 text-sm text-muted-foreground hover:bg-accent transition-colors"
-              onClick={() => filters.setFolderScope(ticket.folder)}
+              onClick={() => navigate({ to: '/', search: { folder: ticket.folder } })}
               title={`Filter to folder: ${ticket.folder}`}
             >
               <Folder className="h-3.5 w-3.5" />

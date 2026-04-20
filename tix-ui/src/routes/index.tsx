@@ -7,6 +7,7 @@ interface DashboardSearch {
   status?: string
   tag?: string
   type?: string
+  folder?: string
 }
 
 export const Route = createFileRoute('/')({
@@ -14,6 +15,7 @@ export const Route = createFileRoute('/')({
     status: typeof search.status === 'string' ? search.status : undefined,
     tag: typeof search.tag === 'string' ? search.tag : undefined,
     type: typeof search.type === 'string' ? search.type : undefined,
+    folder: typeof search.folder === 'string' ? search.folder : undefined,
   }),
   component: DashboardViewWrapper,
 })
@@ -27,7 +29,8 @@ function DashboardViewWrapper() {
     filters.setStatusFilter(search.status || '')
     filters.setTagFilter(search.tag || '')
     filters.setTypeFilter(search.type || '')
-  }, [search.status, search.tag, search.type]) // eslint-disable-line react-hooks/exhaustive-deps
+    filters.setFolderScope(search.folder || '')
+  }, [search.status, search.tag, search.type, search.folder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return <DashboardView />
 }

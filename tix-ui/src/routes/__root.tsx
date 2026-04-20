@@ -13,6 +13,7 @@ import { STATUS_LABELS, TYPE_LABELS, type TicketStatus } from '#/lib/types'
 import { Sun, Moon, Inbox, Activity } from 'lucide-react'
 import { FolderTree } from '#/components/FolderTree'
 import { useChangeHighlight } from '#/components/AnimatedCount'
+import { countsByStatus, countsByType, countsByTag, countsByFolder, countRootOnly } from '#/lib/filter'
 
 import appCss from '../styles.css?url'
 
@@ -126,50 +127,42 @@ function AppLayout() {
     }
   }, [titlePrefix, isTicketView, currentTicket, filters.statusFilter, filters.tagFilter])
 
-  // Tag counts
-  const tagCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    for (const t of tickets) {
-      for (const tag of t.tags) {
-        counts[tag] = (counts[tag] || 0) + 1
-      }
-    }
-    return Object.entries(counts).sort((a, b) => b[1] - a[1])
-  }, [tickets])
+  // Active filters bundled for count helpers. Folder scope lives in URL
+  // (synced into AppContext by index.tsx); read from filters for consistency.
+  const activeFilters = useMemo(() => ({
+    status: filters.statusFilter || undefined,
+    tag: filters.tagFilter || undefined,
+    type: filters.typeFilter || undefined,
+    folderScope: filters.folderScope || undefined,
+  }), [filters.statusFilter, filters.tagFilter, filters.typeFilter, filters.folderScope])
 
-  // Status counts
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { open: 0, 'in-progress': 0, review: 0, 'on-hold': 0, done: 0, closed: 0 }
-    for (const t of tickets) {
-      if (t.status in counts) counts[t.status]!++
-    }
-    return counts
-  }, [tickets])
-
-  // Type counts
-  const typeCounts = useMemo(() => {
-    const counts: Record<string, number> = { task: 0, bug: 0, feature: 0, epic: 0 }
-    for (const t of tickets) {
-      if (t.type in counts) counts[t.type]!++
-    }
-    return counts
-  }, [tickets])
+  // Sidebar facet counts. Each helper strips its own dim so clicking a value
+  // shows exactly that count (8c8b).
+  const statusCounts = useMemo(() => countsByStatus(tickets, activeFilters), [tickets, activeFilters])
+  const typeCounts = useMemo(() => countsByType(tickets, activeFilters), [tickets, activeFilters])
+  const tagCounts = useMemo(() => countsByTag(tickets, activeFilters), [tickets, activeFilters])
+  const folderCounts = useMemo(() => countsByFolder(tickets, activeFilters), [tickets, activeFilters])
+  const rootTotalCount = useMemo(() => countRootOnly(tickets, activeFilters), [tickets, activeFilters])
 
   const navigate = useNavigate()
 
   function toggleStatusFilter(status: string) {
     const next = filters.statusFilter === status ? undefined : status
-    navigate({ to: '/', search: next ? { status: next } : {} })
+    navigate({ to: '/', search: (prev) => ({ ...prev, status: next }) })
   }
 
   function toggleTagFilter(tag: string) {
     const next = filters.tagFilter === tag ? undefined : tag
-    navigate({ to: '/', search: next ? { tag: next } : {} })
+    navigate({ to: '/', search: (prev) => ({ ...prev, tag: next }) })
   }
 
   function toggleTypeFilter(type: string) {
     const next = filters.typeFilter === type ? undefined : type
-    navigate({ to: '/', search: next ? { type: next } : {} })
+    navigate({ to: '/', search: (prev) => ({ ...prev, type: next }) })
+  }
+
+  function setFolderScope(folder: string) {
+    navigate({ to: '/', search: (prev) => ({ ...prev, folder: folder || undefined }) })
   }
 
   const paletteCallbacks: PaletteCallbacks = {
@@ -251,15 +244,16 @@ function AppLayout() {
           {/* Folder tree — outer context, above All Issues */}
           <FolderTree
             tickets={tickets}
+            folderCounts={folderCounts}
             selectedFolder={filters.folderScope}
-            onSelect={filters.setFolderScope}
-            totalCount={tickets.filter(t => !t.folder).length}
+            onSelect={setFolderScope}
+            totalCount={rootTotalCount}
           />
 
           <div className="px-2 mt-3 mb-1">
             <div
               className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors ${!filters.statusFilter && !filters.tagFilter && !filters.typeFilter ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50 text-foreground'}`}
-              onClick={() => { filters.clearSubFilters(); navigate({ to: '/', search: {} }) }}
+              onClick={() => { filters.clearSubFilters(); navigate({ to: '/', search: (prev) => ({ folder: prev.folder }) }) }}
             >
               <Inbox className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span>{filters.folderScope ? <>All Issues in{' '}<span className="font-medium whitespace-nowrap">{filters.folderScope}</span></> : 'All Issues'}</span>

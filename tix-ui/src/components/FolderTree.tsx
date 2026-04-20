@@ -23,17 +23,22 @@ interface FolderNode {
   ignored: boolean
 }
 
-function buildFolderTree(tickets: Ticket[]): FolderNode[] {
-  const folderCounts = new Map<string, number>()
+/**
+ * Build the tree structure from the set of folder paths present in the
+ * ticket list. Node counts come from `folderCounts` (computed by caller with
+ * active filters applied — see 8c8b). Folder tree structure = set of paths
+ * that have *any* ticket, regardless of active facets, so the tree doesn't
+ * disappear when a facet narrows results.
+ */
+function buildFolderTree(tickets: Ticket[], folderCounts: Map<string, number>): FolderNode[] {
+  const paths = new Set<string>()
   for (const t of tickets) {
     if (!t.folder) continue
-    // Count ticket only in its direct folder
-    folderCounts.set(t.folder, (folderCounts.get(t.folder) || 0) + 1)
-    // Ensure ancestor folders exist in the tree (with 0 count if they have no direct items)
+    paths.add(t.folder)
+    // Ensure ancestor folders exist in the tree.
     const parts = t.folder.split('/')
     for (let i = 1; i < parts.length; i++) {
-      const ancestor = parts.slice(0, i).join('/')
-      if (!folderCounts.has(ancestor)) folderCounts.set(ancestor, 0)
+      paths.add(parts.slice(0, i).join('/'))
     }
   }
 
@@ -41,7 +46,7 @@ function buildFolderTree(tickets: Ticket[]): FolderNode[] {
   const root: FolderNode[] = []
   const nodeMap = new Map<string, FolderNode>()
 
-  const sortedPaths = Array.from(folderCounts.keys()).sort()
+  const sortedPaths = Array.from(paths).sort()
   for (const folderPath of sortedPaths) {
     const parts = folderPath.split('/')
     const name = parts[parts.length - 1]!
@@ -82,6 +87,8 @@ function buildFolderTree(tickets: Ticket[]): FolderNode[] {
 
 interface FolderTreeProps {
   tickets: Ticket[]
+  /** Per-folder counts under active facets (see 8c8b). Direct-match. */
+  folderCounts: Map<string, number>
   /** Currently selected folder path, or empty string for root. */
   selectedFolder: string
   onSelect: (folder: string) => void
@@ -89,8 +96,8 @@ interface FolderTreeProps {
   totalCount: number
 }
 
-export function FolderTree({ tickets, selectedFolder, onSelect, totalCount }: FolderTreeProps) {
-  const tree = useMemo(() => buildFolderTree(tickets), [tickets])
+export function FolderTree({ tickets, folderCounts, selectedFolder, onSelect, totalCount }: FolderTreeProps) {
+  const tree = useMemo(() => buildFolderTree(tickets, folderCounts), [tickets, folderCounts])
   const { activeTicket } = useDndState()
   const { setNodeRef: setRootRef, isOver: isRootOver } = useDroppable({ id: 'folder:', disabled: !activeTicket })
 
