@@ -19,6 +19,10 @@ const config = defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom'],
   },
+  server: {
+    host: true,
+    allowedHosts: true,
+  },
   optimizeDeps: {
     exclude: ['fsevents', 'better-sqlite3', '@torkbot/sledge'],
   },
