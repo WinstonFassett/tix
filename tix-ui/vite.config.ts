@@ -25,6 +25,7 @@ const config = defineConfig({
   },
   optimizeDeps: {
     exclude: ['fsevents', 'better-sqlite3', '@torkbot/sledge'],
+    include: ['@tanstack/router-core', '@tanstack/router-core/ssr/client'],
   },
   ssr: {
     external: ['better-sqlite3', '@torkbot/sledge', 'fsevents'],

@@ -74,13 +74,13 @@ if [[ "${TIX_UI_DEV:-}" == "1" ]]; then
     wait_then_open "$URL" &
     cd "$UI_DIR"
     if [[ "$USE_PORTLESS" == "1" ]]; then
-        exec portless "$APP_NAME" vite dev "$@"
+        exec portless "$APP_NAME" vite dev --config "$UI_DIR/vite.config.ts" "$@"
     elif command -v bun >/dev/null 2>&1; then
-        exec bun run dev --port "$PORT" "$@"
+        exec bun run dev --port "$PORT" --config "$UI_DIR/vite.config.ts" "$@"
     elif command -v pnpm >/dev/null 2>&1; then
-        exec pnpm dev --port "$PORT" "$@"
+        exec pnpm dev --port "$PORT" --config "$UI_DIR/vite.config.ts" "$@"
     else
-        exec npm run dev -- --port "$PORT" "$@"
+        exec npm run dev -- --port "$PORT" --config "$UI_DIR/vite.config.ts" "$@"
     fi
 fi
 
