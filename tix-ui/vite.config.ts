@@ -16,6 +16,7 @@ import { webDevMcp } from '@winstonfassett/web-dev-mcp-vite'
 // both dev and prod. No vite-plugin watcher needed.
 
 const config = defineConfig({
+  root: import.meta.dirname,
   resolve: {
     dedupe: ['react', 'react-dom'],
   },
