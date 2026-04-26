@@ -1,0 +1,299 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-04-25T00:00:00Z",
+  "title": "Design System: tix",
+  "extensions": {
+    "colorMeta": {
+      "void": {
+        "role": "neutral",
+        "displayName": "Void",
+        "canonical": "oklch(0.145 0 0)",
+        "tonalRamp": [
+          "oklch(0.08 0 0)",
+          "oklch(0.145 0 0)",
+          "oklch(0.20 0 0)",
+          "oklch(0.269 0 0)",
+          "oklch(0.35 0 0)",
+          "oklch(0.50 0 0)",
+          "oklch(0.70 0 0)",
+          "oklch(0.90 0 0)"
+        ]
+      },
+      "chalk": {
+        "role": "neutral",
+        "displayName": "Chalk",
+        "canonical": "oklch(0.985 0 0)",
+        "tonalRamp": [
+          "oklch(0.10 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.40 0 0)",
+          "oklch(0.55 0 0)",
+          "oklch(0.70 0 0)",
+          "oklch(0.82 0 0)",
+          "oklch(0.92 0 0)",
+          "oklch(0.985 0 0)"
+        ]
+      },
+      "lift": {
+        "role": "neutral",
+        "displayName": "Lift",
+        "canonical": "oklch(0.269 0 0)",
+        "tonalRamp": [
+          "oklch(0.08 0 0)",
+          "oklch(0.145 0 0)",
+          "oklch(0.20 0 0)",
+          "oklch(0.269 0 0)",
+          "oklch(0.35 0 0)",
+          "oklch(0.50 0 0)",
+          "oklch(0.70 0 0)",
+          "oklch(0.90 0 0)"
+        ]
+      },
+      "dim": {
+        "role": "neutral",
+        "displayName": "Dim",
+        "canonical": "oklch(0.708 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.28 0 0)",
+          "oklch(0.40 0 0)",
+          "oklch(0.52 0 0)",
+          "oklch(0.63 0 0)",
+          "oklch(0.708 0 0)",
+          "oklch(0.80 0 0)",
+          "oklch(0.92 0 0)"
+        ]
+      },
+      "signal-red": {
+        "role": "primary",
+        "displayName": "Signal Red",
+        "canonical": "oklch(0.577 0.245 27.325)",
+        "tonalRamp": [
+          "oklch(0.20 0.10 27)",
+          "oklch(0.28 0.14 27)",
+          "oklch(0.36 0.17 27)",
+          "oklch(0.44 0.20 27)",
+          "oklch(0.52 0.23 27)",
+          "oklch(0.577 0.245 27.325)",
+          "oklch(0.68 0.20 27)",
+          "oklch(0.82 0.10 27)"
+        ]
+      },
+      "live-amber": {
+        "role": "primary",
+        "displayName": "Live Amber",
+        "canonical": "oklch(0.85 0.12 85)",
+        "tonalRamp": [
+          "oklch(0.20 0.05 85)",
+          "oklch(0.28 0.07 85)",
+          "oklch(0.35 0.08 85)",
+          "oklch(0.45 0.09 85)",
+          "oklch(0.55 0.10 85)",
+          "oklch(0.65 0.11 85)",
+          "oklch(0.75 0.12 85)",
+          "oklch(0.85 0.12 85)"
+        ]
+      },
+      "status-open": {
+        "role": "semantic",
+        "displayName": "Status: Open",
+        "canonical": "#f97316",
+        "tonalRamp": ["#431407", "#7c2d12", "#9a3412", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fed7aa"]
+      },
+      "status-in-progress": {
+        "role": "semantic",
+        "displayName": "Status: In Progress",
+        "canonical": "#facc15",
+        "tonalRamp": ["#422006", "#713f12", "#854d0e", "#a16207", "#ca8a04", "#eab308", "#facc15", "#fef08a"]
+      },
+      "status-review": {
+        "role": "semantic",
+        "displayName": "Status: Review",
+        "canonical": "#22d3ee",
+        "tonalRamp": ["#083344", "#155e75", "#0e7490", "#0891b2", "#06b6d4", "#22d3ee", "#67e8f9", "#cffafe"]
+      },
+      "status-done": {
+        "role": "semantic",
+        "displayName": "Status: Done",
+        "canonical": "#8b5cf6",
+        "tonalRamp": ["#2e1065", "#4c1d95", "#5b21b6", "#6d28d9", "#7c3aed", "#8b5cf6", "#a78bfa", "#ddd6fe"]
+      },
+      "type-bug": {
+        "role": "semantic",
+        "displayName": "Type: Bug",
+        "canonical": "#ef4444",
+        "tonalRamp": ["#450a0a", "#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fca5a5"]
+      },
+      "type-feature": {
+        "role": "semantic",
+        "displayName": "Type: Feature",
+        "canonical": "#3b82f6",
+        "tonalRamp": ["#172554", "#1e3a8a", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"]
+      },
+      "type-epic": {
+        "role": "semantic",
+        "displayName": "Type: Epic",
+        "canonical": "#d946ef",
+        "tonalRamp": ["#4a044e", "#701a75", "#86198f", "#a21caf", "#c026d3", "#d946ef", "#e879f9", "#f5d0fe"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Panel headings, dialog titles, ticket title in detail view." },
+      "title": { "displayName": "Title", "purpose": "Ticket titles in list and kanban rows. Section headings in sidebar." },
+      "body": { "displayName": "Body", "purpose": "Ticket descriptions, markdown body, prose content. Max 65ch." },
+      "label": { "displayName": "Label", "purpose": "Command palette group headings, column headers, field labels. All-caps, tracked." },
+      "mono": { "displayName": "Mono", "purpose": "Ticket IDs, keyboard shortcut hints, inline code. Machine-readable signals." }
+    },
+    "shadows": [
+      {
+        "name": "focus-ring",
+        "value": "0 0 0 2px oklch(0.439 0 0)",
+        "purpose": "Focus ring on interactive controls in dark mode. 2px, offset 2px."
+      },
+      {
+        "name": "focus-ring-light",
+        "value": "0 0 0 2px oklch(0.708 0 0)",
+        "purpose": "Focus ring in light mode."
+      },
+      {
+        "name": "overlay-ambient",
+        "value": "0 8px 32px rgba(0,0,0,0.4)",
+        "purpose": "Command palette and dialog floating panels. Diffuse, structural."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-expo-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Default easing for overlays, palette entry, dialog entry. Fast settle, no bounce."
+      },
+      {
+        "name": "ease-out-standard",
+        "value": "ease-out",
+        "purpose": "Row hover, ghost button backgrounds, simple state transitions."
+      },
+      {
+        "name": "duration-fast",
+        "value": "150ms",
+        "purpose": "Background color transitions, hover states."
+      },
+      {
+        "name": "duration-standard",
+        "value": "180ms",
+        "purpose": "Overlay and palette entry animations."
+      },
+      {
+        "name": "duration-enter",
+        "value": "250ms",
+        "purpose": "Row stagger entry animation."
+      },
+      {
+        "name": "duration-flash",
+        "value": "2000ms",
+        "purpose": "Live update row highlight fade. Long enough to register, quick enough to clear."
+      }
+    ],
+    "breakpoints": [
+      { "name": "tag-sm", "value": "500px", "purpose": "Container query: tag cell flex shrink reduces." },
+      { "name": "tag-md", "value": "800px", "purpose": "Container query: tag cell flex shrink reduces further." },
+      { "name": "tag-lg", "value": "1100px", "purpose": "Container query: tag cell stops shrinking." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "High-emphasis action. Chalk on dark, inverted in light. No decoration.",
+      "html": "<button class=\"ds-btn-primary\">Create ticket</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: oklch(0.985 0 0); color: oklch(0.145 0 0); font-family: system-ui, -apple-system, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1; padding: 6px 12px; border-radius: 0.5rem; border: none; cursor: pointer; transition: background 150ms ease-out; } .ds-btn-primary:hover { background: oklch(0.708 0 0); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px oklch(0.439 0 0); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Low-emphasis action. Transparent at rest, Lift tint on hover. Used in toolbars and sidebar.",
+      "html": "<button class=\"ds-btn-ghost\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"/><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/></svg> New</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: transparent; color: oklch(0.985 0 0); font-family: system-ui, -apple-system, sans-serif; font-size: 0.875rem; font-weight: 400; line-height: 1; padding: 6px 12px; border-radius: 0.5rem; border: none; cursor: pointer; transition: background 150ms ease-out; } .ds-btn-ghost:hover { background: oklch(0.269 0 0); } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 2px oklch(0.439 0 0); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Standard text field. Seam border at rest, primary border + focus ring on focus.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search tickets…\" />",
+      "css": ".ds-input { display: block; width: 100%; background: oklch(0.145 0 0); color: oklch(0.985 0 0); font-family: system-ui, -apple-system, sans-serif; font-size: 0.875rem; font-weight: 400; line-height: 1.5; padding: 8px 12px; border-radius: 0.5rem; border: 1px solid oklch(0.269 0 0); box-sizing: border-box; transition: border-color 150ms ease-out, box-shadow 150ms ease-out; } .ds-input::placeholder { color: oklch(0.708 0 0); } .ds-input:focus { outline: none; border-color: oklch(0.985 0 0); box-shadow: 0 0 0 2px oklch(0.439 0 0); }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge-status",
+      "description": "Read-only status indicator. Icon + label. Color from STATUS_COLORS map.",
+      "html": "<span class=\"ds-badge-status\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#f97316\" stroke-width=\"2.5\"><circle cx=\"12\" cy=\"12\" r=\"10\"/></svg> open</span>",
+      "css": ".ds-badge-status { display: inline-flex; align-items: center; gap: 5px; background: oklch(0.269 0 0); color: oklch(0.708 0 0); font-family: system-ui, -apple-system, sans-serif; font-size: 0.75rem; font-weight: 500; line-height: 1; padding: 3px 7px; border-radius: 0.375rem; white-space: nowrap; }"
+    },
+    {
+      "name": "Ticket Row",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Core list unit. Horizontal flex row: status icon, mono ID, title, metadata. Full-row hover.",
+      "html": "<div class=\"ds-ticket-row\"><svg class=\"ds-ticket-row__status\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#f97316\" stroke-width=\"2.5\"><circle cx=\"12\" cy=\"12\" r=\"10\"/></svg><span class=\"ds-ticket-row__id\">1a2b</span><span class=\"ds-ticket-row__title\">Sync chokidar file events to SSE stream</span><span class=\"ds-ticket-row__meta\">2h ago</span></div>",
+      "css": ".ds-ticket-row { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-radius: 0.375rem; cursor: pointer; transition: background 150ms ease-out; } .ds-ticket-row:hover { background: oklch(0.269 0 0); } .ds-ticket-row__status { flex-shrink: 0; } .ds-ticket-row__id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8125rem; color: oklch(0.708 0 0); flex-shrink: 0; } .ds-ticket-row__title { font-family: system-ui, -apple-system, sans-serif; font-size: 0.9375rem; font-weight: 500; color: oklch(0.985 0 0); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-ticket-row__meta { font-family: system-ui, -apple-system, sans-serif; font-size: 0.75rem; color: oklch(0.708 0 0); flex-shrink: 0; }"
+    },
+    {
+      "name": "Command Palette Item",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Single item inside the command palette. Full-width, instant hover.",
+      "html": "<div class=\"ds-palette-item\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><line x1=\"9\" y1=\"9\" x2=\"15\" y2=\"9\"/><line x1=\"9\" y1=\"13\" x2=\"15\" y2=\"13\"/><line x1=\"9\" y1=\"17\" x2=\"12\" y2=\"17\"/></svg>Fix SSE reconnect on client refresh<span class=\"ds-palette-item__hint\">1a2b</span></div>",
+      "css": ".ds-palette-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 0.375rem; color: oklch(0.985 0 0); font-family: system-ui, -apple-system, sans-serif; font-size: 0.875rem; font-weight: 400; cursor: pointer; transition: background 100ms ease-out; } .ds-palette-item:hover, .ds-palette-item[data-selected] { background: oklch(0.269 0 0); } .ds-palette-item__hint { margin-left: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.75rem; color: oklch(0.708 0 0); }"
+    },
+    {
+      "name": "Nav Item",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Sidebar navigation link. Ghost at rest, Lift fill when active. No side-stripe accent.",
+      "html": "<a class=\"ds-nav-item ds-nav-item--active\" href=\"#\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/></svg>All Issues<span class=\"ds-nav-item__count\">12</span></a>",
+      "css": ".ds-nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 0.5rem; color: oklch(0.708 0 0); font-family: system-ui, -apple-system, sans-serif; font-size: 0.875rem; font-weight: 400; text-decoration: none; transition: background 150ms ease-out, color 150ms ease-out; } .ds-nav-item:hover { background: oklch(0.269 0 0); color: oklch(0.985 0 0); } .ds-nav-item--active { background: oklch(0.269 0 0); color: oklch(0.985 0 0); font-weight: 500; } .ds-nav-item__count { margin-left: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.75rem; color: oklch(0.708 0 0); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Informed Workbench",
+    "overview": "tix is a tool for people who think in tickets. Its surfaces are dark by default, not because dark is fashionable, but because this tool lives beside terminal windows under dim office light, at the edge of a working session. The UI makes itself small. The ticket title, the status icon, the agent diff: these are what deserve attention. The chrome recedes.\n\nThe system is monochromatic by conviction. Every surface is a shade of the same cold gray spectrum. The only chromatic color is signal-red, reserved for the one state that demands immediate action. When a brand accent arrives later, it will land with contrast precisely because the ground is this quiet. The silence is structural.\n\nProgressive disclosure is the governing architecture: a list row shows what's needed to scan, a click surfaces what's needed to act, the detail panel opens what's needed to decide. Nothing else appears. Density without clutter is not an accident here — it's the result of constant subtraction.",
+    "keyCharacteristics": [
+      "Dark-primary, monochromatic, zero chroma except signal-red and live-amber flash",
+      "System sans-serif: weight and scale carry all hierarchy; color is secondary",
+      "Flat surfaces with tonal layering — depth via lightness delta, not shadow",
+      "Keyboard-first with instant visual feedback (150–250ms, expo-out easing)",
+      "Progressive disclosure: rows scan, panels act, nothing decorates"
+    ],
+    "rules": [
+      { "name": "The One Signal Rule", "body": "Signal-red is the only chromatic color permitted in the neutral surface range. It appears on destructive actions and error states only. Its rarity is the point. Nothing competes for chromatic attention.", "section": "colors" },
+      { "name": "The Colorize-Ready Rule", "body": "The neutral palette is intentionally chroma-free. When a brand accent is introduced via $impeccable colorize, it will arrive into a system calibrated to receive it. Do not add speculative accent colors before that pass.", "section": "colors" },
+      { "name": "The Weight-First Rule", "body": "Color is absent; weight creates hierarchy. 600 on 400 is the contrast that makes a list scannable. Never use the same weight at adjacent hierarchy levels.", "section": "typography" },
+      { "name": "The Mono-for-Machine Rule", "body": "Monospace signals machine-generated or machine-readable content. Ticket IDs are mono. Human titles are not. This boundary is maintained without exception.", "section": "typography" },
+      { "name": "The Tonal-Depth Rule", "body": "Elevation is communicated by lightness delta, not box-shadow. If you need to show something is above something else, use a lighter background surface. A shadow layered on top of this tonal stair is redundant.", "section": "elevation" },
+      { "name": "The Flat-at-Rest Rule", "body": "Surfaces are flat at rest. State-responsive shadows (drag operations, focused floating panels) are permitted in narrow cases but must be diffuse and brief, never structural.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use tonal layering (Void → Lift) to communicate surface elevation.",
+      "Do use weight contrast (400 → 500 → 600) as the primary hierarchy signal across adjacent levels.",
+      "Do use monospace type for ticket IDs and machine-readable values, consistently and without exception.",
+      "Do reserve signal-red for destructive actions and error states only.",
+      "Do animate with opacity and transform only. Use cubic-bezier(0.16, 1, 0.3, 1) at 150–250ms.",
+      "Do make interactive targets full-row or full-area. Never target just the text inside a row.",
+      "Do apply progressive disclosure: a row shows what's needed to scan, not everything that exists."
+    ],
+    "donts": [
+      "Don't use border-left or border-right greater than 1px as a colored accent stripe on rows, cards, or nav items.",
+      "Don't introduce chromatic colors in the neutral range before $impeccable colorize.",
+      "Don't apply glassmorphism outside command palette and dialog overlays.",
+      "Don't use gradient text (background-clip: text).",
+      "Don't use box-shadow at rest on any surface.",
+      "Don't animate layout properties (width, height, padding, margin).",
+      "Don't use the same font weight at adjacent hierarchy levels.",
+      "Don't build SaaS dashboard patterns: hero metric blocks, gradient accent bars, identical card grids.",
+      "Don't soften toward Notion-style whitespace or Jira-style badge proliferation."
+    ]
+  }
+}
