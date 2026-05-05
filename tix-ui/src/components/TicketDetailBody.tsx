@@ -168,7 +168,7 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
               e.target.style.height = '0'
               e.target.style.height = e.target.scrollHeight + 'px'
             }}
-            onBlur={() => { setTitleDirty(false); if (saveTimerRef.current) clearTimeout(saveTimerRef.current); saveImmediate({ title: localTitle }) }}
+            onBlur={() => { setTitleDirty(false); if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; if (localTitle !== ticket.title) saveImmediate({ title: localTitle }) } }}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) e.currentTarget.blur() }}
             placeholder="Ticket title"
             title="Click to edit title"
