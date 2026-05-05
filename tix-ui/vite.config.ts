@@ -47,6 +47,16 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
+  ...(IS_VITEST ? {
+    test: {
+      exclude: [
+        'node_modules/**',
+        'e2e/**', // Exclude E2E tests from Vitest
+        '.output/**',
+        'dist/**'
+      ],
+    },
+  } : {}),
 })
 
 export default config
