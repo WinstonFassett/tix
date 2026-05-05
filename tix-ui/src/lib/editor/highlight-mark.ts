@@ -26,7 +26,7 @@ export const highlightSchema = $markSchema('highlight', (ctx) => ({
         if (typeof node === 'string') return {}
         const bg = (node as HTMLElement).style.backgroundColor
         // Try to match back to a named color
-        const color = bg ? null : null // TODO: reverse lookup from CSS value
+        const color = bg ? null : null // TODO: reverse lookup from CSS value to named color
         return { color }
       },
     },
