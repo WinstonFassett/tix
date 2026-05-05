@@ -171,11 +171,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Detail panel
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [panelWidth, setPanelWidthState] = useState<number>(() => {
-    if (typeof window === 'undefined') return 520
+  const [panelWidth, setPanelWidthState] = useState<number>(520)
+  useEffect(() => {
     const saved = Number(localStorage.getItem('tix-detail-panel-width'))
-    return Number.isFinite(saved) && saved > 280 ? saved : 520
-  })
+    if (Number.isFinite(saved) && saved > 280) setPanelWidthState(saved)
+  }, [])
   const setPanelWidth = useCallback((w: number) => {
     const clamped = Math.max(320, Math.min(900, w))
     setPanelWidthState(clamped)
