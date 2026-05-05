@@ -271,7 +271,7 @@ function AppLayout() {
           </div>
 
           <div className="px-3 mt-4 mb-1">
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Status</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</span>
           </div>
           <div className="px-2">
             {Object.entries(statusCounts).map(([status, count]) => (
@@ -290,7 +290,7 @@ function AppLayout() {
           </div>
 
           <div className="px-3 mt-4 mb-1">
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Type</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</span>
           </div>
           <div className="px-2">
             {Object.entries(typeCounts).map(([type, count]) => (
@@ -311,7 +311,7 @@ function AppLayout() {
           {tagCounts.length > 0 && (
             <>
               <div className="px-3 mt-4 mb-1">
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Tags</span>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tags</span>
               </div>
               <div className="px-2">
                 {tagCounts.slice(0, 12).map(([tag, count]) => (

@@ -238,7 +238,7 @@ export function DashboardView() {
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            className="h-7 inline-flex items-center gap-2 rounded-md border border-border bg-background hover:bg-accent transition-colors px-2 text-xs text-muted-foreground"
+            className="h-7 inline-flex items-center gap-2 rounded-md hover:bg-accent transition-colors px-2 text-xs text-muted-foreground"
             title="Open command palette"
           >
             <Search className="h-3.5 w-3.5" />
@@ -248,7 +248,7 @@ export function DashboardView() {
           <button
             type="button"
             onClick={() => setShowCreate(true)}
-            className="h-7 inline-flex items-center gap-2 rounded-md border border-border bg-background hover:bg-accent transition-colors px-2 text-xs"
+            className="h-7 inline-flex items-center gap-2 rounded-md hover:bg-accent transition-colors px-2 text-xs"
             title="Create a new ticket"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -263,7 +263,6 @@ export function DashboardView() {
         <div className="flex items-center gap-2 flex-wrap">
           {(filters.statusFilter || filters.tagFilter || filters.typeFilter) && (
             <>
-              <span className="text-xs text-muted-foreground">Filtered by:</span>
               <span className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs font-medium">
                 {filters.statusFilter || filters.tagFilter || filters.typeFilter}
                 <button className="ml-0.5 hover:text-foreground" onClick={() => { filters.clearSubFilters(); navigate({ to: '/', search: {} }) }} aria-label="Clear filter">

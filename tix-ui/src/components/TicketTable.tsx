@@ -1,5 +1,5 @@
 import type { Ticket, GroupBy, TicketStatus } from '#/lib/types'
-import { STATUS_LABELS, STATUS_COLORS } from '#/lib/types'
+import { STATUS_LABELS } from '#/lib/types'
 import { Badge } from './ui'
 import { StatusIcon } from './icons/StatusIcon'
 import { PriorityIcon } from './icons/PriorityIcon'
@@ -36,11 +36,6 @@ function groupLabel(key: string, groupBy: GroupBy): string {
   if (groupBy === 'type') return key.charAt(0).toUpperCase() + key.slice(1)
   if (groupBy === 'folder') return key || '(root)'
   return key
-}
-
-function groupColor(key: string, groupBy: GroupBy): string {
-  if (groupBy === 'status') return STATUS_COLORS[key as TicketStatus] || '#94a3b8'
-  return '#94a3b8'
 }
 
 // Persist collapsed group keys per-groupBy in localStorage so the state
@@ -175,7 +170,6 @@ function DroppableGroupHeader({ groupKey, groupBy, count, collapsed, onToggle }:
       className={`sticky top-0 z-10 w-full h-10 flex items-center justify-between px-6 bg-background cursor-pointer select-none transition-colors ${
         highlighted ? 'ring-1 ring-primary/40 bg-primary/10' : ''
       }`}
-      style={!highlighted ? { backgroundColor: `color-mix(in srgb, ${groupColor(groupKey, groupBy)} 6%, var(--background))` } : undefined}
       onClick={onToggle}
       role="button"
       tabIndex={0}
@@ -273,7 +267,7 @@ function TicketRow({ ticket, selected, onOpen, onUpdate, loaded, index }: Ticket
       )}
       <span
         ref={setDragRef}
-        className="w-6 shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground"
+        className="w-6 shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing text-muted-foreground/0 group-hover:text-muted-foreground transition-colors duration-150"
         {...listeners}
         {...attributes}
         onClick={e => e.stopPropagation()}
@@ -297,7 +291,7 @@ function TicketRow({ ticket, selected, onOpen, onUpdate, loaded, index }: Ticket
           compact
         />
       </span>
-      <span className="min-w-0 truncate text-xs sm:text-sm font-medium sm:font-semibold" style={{ flex: '1 1 auto', minWidth: '4rem' }}>
+      <span className="min-w-0 truncate text-xs sm:text-sm font-medium" style={{ flex: '1 1 auto', minWidth: '4rem' }}>
         {ticket.title}
       </span>
       {/* Tags — overlap like stacked cards when space is tight */}
@@ -305,7 +299,7 @@ function TicketRow({ ticket, selected, onOpen, onUpdate, loaded, index }: Ticket
         <div className="hidden sm:flex items-center ml-2 overflow-visible tix-tag-cell">
           {ticket.tags.slice(0, 3).map((tag, i) => (
             <Badge key={tag} variant="outline"
-              className="text-[10px] px-1.5 py-0 rounded-md bg-background border-border truncate max-w-20 shrink"
+              className="text-[10px] px-1.5 py-0 rounded-md bg-muted/50 border-border/40 truncate max-w-20 shrink"
               style={{ marginLeft: i > 0 ? '-8px' : 0, zIndex: i + 1 }}
             >{tag}</Badge>
           ))}
@@ -324,7 +318,7 @@ function TicketRow({ ticket, selected, onOpen, onUpdate, loaded, index }: Ticket
             {ticket.assignee.charAt(0).toUpperCase()}
           </span>
         ) : (
-          <span className="w-6 h-6 rounded-full border border-dashed border-muted-foreground/30 shrink-0" />
+          <span className="w-6 h-6 shrink-0" />
         )}
         {ticket.created && (
           <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline-block text-right">
