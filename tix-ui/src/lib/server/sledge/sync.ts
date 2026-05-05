@@ -13,6 +13,8 @@ const TICKET_PATTERN = /\(([0-9a-f]{4})\)\.md$/i;
 // Content-hash loop guard: stores sha256 of files we recently projected.
 // Chokidar changes matching a stored hash are skipped (we wrote them).
 const projectedHashes = new Map<string, string>();
+// Tracks files we deleted ourselves so chokidar unlink events are skipped.
+const ownDeletes = new Set<string>();
 
 function sha256(content: string): string {
   return crypto.createHash("sha256").update(content).digest("hex");
@@ -26,9 +28,21 @@ export function markAsProjected(filepath: string, content: string): void {
 }
 
 /**
- * Check if a file change should be skipped (we wrote it).
+ * Mark a file as deleted by us so chokidar unlink is skipped.
+ */
+export function markAsDeleted(filepath: string): void {
+  ownDeletes.add(filepath);
+}
+
+/**
+ * Check if a file change should be skipped (we wrote or deleted it).
  */
 export function isOwnProjection(filepath: string): boolean {
+  // Own-delete: clear the flag and skip the unlink event
+  if (ownDeletes.has(filepath)) {
+    ownDeletes.delete(filepath);
+    return true;
+  }
   const stored = projectedHashes.get(filepath);
   if (!stored) return false;
   try {
@@ -218,15 +232,14 @@ export async function removeFileFromLedger(
     const existing = (await ledger.query("ticketById", {
       id: ticketId,
     })) as Ticket | null;
-    if (existing) {
-      // If the ticket's filename differs from the deleted file, it was renamed — don't delete
-      const deletedBasename = path.basename(filepath);
-      const currentBasename = path.basename(existing.filename);
-      if (deletedBasename !== currentBasename) {
-        return null;
-      }
-      await ledger.emit("ticket.deleted", { id: ticketId });
+    if (!existing) return null;
+    // If the ticket's filename differs from the deleted file, it was renamed — don't delete
+    const deletedBasename = path.basename(filepath);
+    const currentBasename = path.basename(existing.filename);
+    if (deletedBasename !== currentBasename) {
+      return null;
     }
+    await ledger.emit("ticket.deleted", { id: ticketId });
     return ticketId;
   } catch {
     return null;

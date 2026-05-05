@@ -4,7 +4,7 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import type { Ticket } from '../types'
 import { getLedger, getTicketsDir } from './sledge/singleton'
-import { projectTicketToFile, markAsProjected } from './sledge/sync'
+import { projectTicketToFile, markAsProjected, markAsDeleted } from './sledge/sync'
 import { notifyTicketChange } from '../../../server/routes/api/tickets-ws'
 
 const VALID_STATUSES = ['open', 'in-progress', 'review', 'on-hold', 'done', 'closed']
@@ -226,7 +226,7 @@ export const updateTicket = createServerFn({ method: 'POST' })
           // Clean up old file if renamed — mark it so chokidar skips the unlink
           if (updatedTicket.filename !== oldFilename) {
             const oldPath = path.join(ticketsDir, oldFilename)
-            markAsProjected(oldPath, '__deleted__')
+            markAsDeleted(oldPath)
             try { fs.unlinkSync(oldPath) } catch { /* may not exist */ }
           }
         } catch (err) {
@@ -262,7 +262,7 @@ export const deleteTicket = createServerFn({ method: 'POST' })
 
     // Delete file
     const filepath = path.join(ticketsDir, existing.filename)
-    markAsProjected(filepath, '__deleted__')
+    markAsDeleted(filepath)
     try { fs.unlinkSync(filepath) } catch { /* may not exist */ }
 
     notifyTicketChange('ticket-delete', data.ticketId)
