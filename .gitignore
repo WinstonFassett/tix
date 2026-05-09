@@ -18,7 +18,15 @@ lib/yq
 lib/jq
 
 node_modules
-disttest-tickets
+dist
+dist-go
+test-tickets
+
+# Go build artifacts
+bin/
+tix-server/ui/*
+!tix-server/ui/.gitkeep
+tix-server/go.sum
 
 test-results
 

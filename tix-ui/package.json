@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
+    "build:go": "vite build --config vite.config.go-mode.ts",
     "preview": "vite preview",
     "test": "vitest run"
   },
@@ -64,6 +65,9 @@
     "vitest": "^3.0.5",
     "ws": "^8.20.0",
     "youch": "^4.1.1"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
