@@ -11,6 +11,14 @@ if ! command -v node >/dev/null 2>&1; then
     exit 0
 fi
 
+# tix-ui requires Node >= 24 (due to @torkbot/sledge dependency)
+NODE_MAJOR=$(node -e 'console.log(process.versions.node.split(".")[0])')
+if [[ "$NODE_MAJOR" -lt 24 ]]; then
+    echo "Error: tix-ui requires Node.js >= 24 (found $(node --version))"
+    echo "Install Node 24+: https://nodejs.org or use nvm/fnm"
+    exit 1
+fi
+
 # Install deps
 echo "Installing tix-ui dependencies..."
 if command -v bun >/dev/null 2>&1; then

@@ -60,7 +60,7 @@ YAML scientific notation by downstream tools.
 
 The body is freeform Markdown — description, design notes, acceptance criteria.
 
-When a ticket is marked `done` or `closed`, it moves to `archive/YYYY-MM-DD/` automatically.
+Run `tix archive` periodically to move old done/closed tickets into `tickets/archive/YYYY-MM-DD/`.
 
 ## Install
 
@@ -108,8 +108,8 @@ tix delete <id>             Permanently delete a ticket
 ```
 tix start <id>              Set status to in-progress
 tix hold <id>               Set status to on-hold (alias: pause)
-tix done <id>               Mark done and archive
-tix close <id>              Mark closed (won't-do) and archive
+tix done <id>               Mark done (completed)
+tix close <id>              Mark closed (won't-do)
 tix reopen <id>             Reopen a ticket
 tix status <id> <status>    Set explicit status
 ```
@@ -129,14 +129,13 @@ tix closed                  Recently completed tickets
 
 Filter any list with `--status`, `-a <assignee>`, `-T <tag>`.
 
-### Dependencies and Links
+### Dependencies
 
 ```
 tix dep <id> <dep-id>       Add a dependency
 tix undep <id> <dep-id>     Remove a dependency
 tix dep tree                Show full dependency tree
 tix dep cycle               Detect cycles
-tix link <id1> <id2>        Bidirectional link between tickets
 ```
 
 ### Notes and Acceptance Criteria

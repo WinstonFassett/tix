@@ -24,9 +24,9 @@ test-tickets
 
 # Go build artifacts
 bin/
+tix-server/tix-server
 tix-server/ui/*
 !tix-server/ui/.gitkeep
-tix-server/go.sum
 
 test-results
 
