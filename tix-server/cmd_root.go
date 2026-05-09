@@ -18,6 +18,10 @@ With no subcommand, lists open tickets in the current workspace.
 Run "tix ui" to launch the web dashboard.`,
 	SilenceUsage:  true,
 	SilenceErrors: false,
+	// No-args default: list open tickets (delegates to ls).
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runLs(cmd, args)
+	},
 }
 
 // resolveTicketsDir returns the workspace's tickets directory.

@@ -22,6 +22,7 @@ type Ticket struct {
 	Priority int      `json:"priority" yaml:"priority"`
 	Tags     []string `json:"tags" yaml:"tags"`
 	Deps     []string `json:"deps" yaml:"deps"`
+	Links    []string `json:"links" yaml:"links"`
 	Assignee string   `json:"assignee" yaml:"assignee"`
 	Body     string   `json:"body" yaml:"-"`
 	Filename string   `json:"filename" yaml:"-"`
@@ -76,6 +77,7 @@ func ParseTicketFile(path, ticketsDir string) (*Ticket, string, error) {
 		Priority: fm.Priority,
 		Tags:     defaultSlice(fm.Tags),
 		Deps:     defaultSlice(fm.Deps),
+		Links:    defaultSlice(fm.Links),
 		Assignee: fm.Assignee,
 		Body:     strings.TrimSpace(body),
 		Filename: filepath.ToSlash(rel),
@@ -96,6 +98,7 @@ func ProjectTicketToFile(t Ticket, ticketsDir string) (string, error) {
 		Priority: t.Priority,
 		Tags:     t.Tags,
 		Deps:     t.Deps,
+		Links:    t.Links,
 		Assignee: t.Assignee,
 		Created:  t.Created,
 	}
