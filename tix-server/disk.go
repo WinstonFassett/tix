@@ -119,3 +119,94 @@ func WriteNewTicketFile(ticketsDir string, t Ticket) (string, error) {
 	}
 	return filepath.Join(ticketsDir, filename), nil
 }
+
+// LoadTicket finds + parses a single ticket by ID.
+func LoadTicket(ticketsDir, id string) (*Ticket, string, error) {
+	path, err := FindTicketFile(ticketsDir, id)
+	if err != nil {
+		return nil, "", err
+	}
+	t, _, err := ParseTicketFile(path, ticketsDir)
+	if err != nil || t == nil {
+		return nil, path, fmt.Errorf("could not parse ticket file: %s", path)
+	}
+	return t, path, nil
+}
+
+// SaveTicket writes a ticket back to disk. If the title changed such that
+// the sanitized filename differs from the existing one, renames the file.
+// Pass curPath as the path returned by LoadTicket.
+func SaveTicket(ticketsDir string, t Ticket, curPath string) (string, error) {
+	cleanTitle := SanitizeTitle(t.Title)
+	dir := filepath.Dir(curPath)
+	want := filepath.Join(dir, fmt.Sprintf("%s (%s).md", cleanTitle, t.ID))
+
+	if curPath != want {
+		if _, err := os.Stat(want); err == nil {
+			return "", fmt.Errorf("target file already exists: %s", filepath.Base(want))
+		}
+		if err := os.Rename(curPath, want); err != nil {
+			return "", err
+		}
+		curPath = want
+	}
+
+	rel, err := filepath.Rel(ticketsDir, curPath)
+	if err != nil {
+		rel = filepath.Base(curPath)
+	}
+	t.Filename = filepath.ToSlash(rel)
+	if _, err := ProjectTicketToFile(t, ticketsDir); err != nil {
+		return "", err
+	}
+	return curPath, nil
+}
+
+// ArchiveTicket moves the ticket file under archive/YYYY-MM-DD/ using the
+// file's mtime as the date.
+func ArchiveTicket(ticketsDir string, curPath string) (string, error) {
+	info, err := os.Stat(curPath)
+	if err != nil {
+		return "", err
+	}
+	date := info.ModTime().Format("2006-01-02")
+	archDir := filepath.Join(ticketsDir, "archive", date)
+	if err := os.MkdirAll(archDir, 0755); err != nil {
+		return "", err
+	}
+	dst := filepath.Join(archDir, filepath.Base(curPath))
+	if err := os.Rename(curPath, dst); err != nil {
+		return "", err
+	}
+	return dst, nil
+}
+
+// DeleteTicketFile removes a ticket file (no archive).
+func DeleteTicketFile(curPath string) error {
+	return os.Remove(curPath)
+}
+
+// NormalizeStatus maps user-supplied aliases to canonical status values.
+// Mirrors bash normalize_status.
+func NormalizeStatus(s string) (string, bool) {
+	switch s {
+	case "open":
+		return "open", true
+	case "in-progress", "in_progress":
+		return "in-progress", true
+	case "review", "in-review", "in_review", "pr", "pending-review":
+		return "review", true
+	case "on-hold", "on_hold", "paused", "hold":
+		return "on-hold", true
+	case "done", "completed", "finished", "resolved":
+		return "done", true
+	case "closed", "cancelled", "canceled", "wontfix":
+		return "closed", true
+	}
+	return "", false
+}
+
+// IsTerminalStatus returns true for done/closed (post-normalization).
+func IsTerminalStatus(s string) bool {
+	return s == "done" || s == "closed"
+}
