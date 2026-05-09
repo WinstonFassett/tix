@@ -81,9 +81,12 @@ function AppLayout() {
   const currentFilePath = ticketsDir && currentTicket?.filename ? `${ticketsDir}/${currentTicket.filename}` : ''
 
   const titlePrefix = config?.workspaceName || 'tix'
+  const isActivityView = routerState.location.pathname === '/activity'
   useEffect(() => {
     if (isTicketView && currentTicket) {
       document.title = `${titlePrefix} | ${currentTicket.id} ${currentTicket.title}`
+    } else if (isActivityView) {
+      document.title = `${titlePrefix} | Activity`
     } else if (filters.statusFilter) {
       document.title = `${titlePrefix} | ${STATUS_LABELS[filters.statusFilter as TicketStatus] ?? filters.statusFilter}`
     } else if (filters.tagFilter) {
@@ -91,7 +94,7 @@ function AppLayout() {
     } else {
       document.title = `${titlePrefix} | All Issues`
     }
-  }, [titlePrefix, isTicketView, currentTicket, filters.statusFilter, filters.tagFilter])
+  }, [titlePrefix, isTicketView, isActivityView, currentTicket, filters.statusFilter, filters.tagFilter])
 
   const activeFilters = useMemo(() => ({
     status: filters.statusFilter || undefined,
