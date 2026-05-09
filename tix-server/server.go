@@ -246,6 +246,7 @@ func (s *Server) handleTicket(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		oldFilename := existing.Filename
 		applyUpdates(existing, updates)
 		content, err := ProjectTicketToFile(*existing, s.ticketsDir)
 		if err != nil {
@@ -255,6 +256,11 @@ func (s *Server) handleTicket(w http.ResponseWriter, r *http.Request) {
 		hash := fileHash(content)
 		fullPath := filepath.Join(s.ticketsDir, filepath.FromSlash(existing.Filename))
 		s.watcher.MarkProjected(fullPath, hash)
+		if existing.Filename != oldFilename {
+			oldPath := filepath.Join(s.ticketsDir, filepath.FromSlash(oldFilename))
+			s.watcher.MarkDeleted(oldPath)
+			_ = os.Remove(oldPath)
+		}
 
 		if err := s.db.UpsertTicket(*existing, hash); err != nil {
 			jsonErr(w, err, http.StatusInternalServerError)
