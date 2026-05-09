@@ -457,44 +457,8 @@ func generateID() string {
 	return hex.EncodeToString(b)
 }
 
-// acronyms that should stay fully uppercase in filenames (matches tix bash CLI)
-var acronyms = map[string]bool{
-	"API": true, "UI": true, "URL": true, "SQL": true, "HTML": true,
-	"CSS": true, "CLI": true, "ID": true, "DB": true, "CI": true,
-	"CD": true, "PR": true, "MR": true, "SSH": true, "HTTP": true,
-	"HTTPS": true, "AWS": true, "GCP": true, "JWT": true, "SPA": true,
-	"SSR": true, "SSE": true, "WS": true, "DX": true, "UX": true,
-}
-
-func sanitizeTitle(title string) string {
-	// Title Case with acronym preservation; strip non-alphanumeric except spaces/hyphens; max 50 chars.
-	words := strings.Fields(title)
-	for i, w := range words {
-		upper := strings.ToUpper(w)
-		if acronyms[upper] {
-			words[i] = upper
-		} else if len(w) > 0 {
-			words[i] = strings.ToUpper(w[:1]) + strings.ToLower(w[1:])
-		}
-	}
-	clean := strings.Join(words, " ")
-	// Strip invalid chars
-	var sb strings.Builder
-	for _, r := range clean {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
-			(r >= '0' && r <= '9') || r == ' ' || r == '-' {
-			sb.WriteRune(r)
-		}
-	}
-	result := strings.TrimSpace(sb.String())
-	if len(result) > 50 {
-		result = strings.TrimSpace(result[:50])
-	}
-	if result == "" {
-		result = "Untitled-Ticket"
-	}
-	return result
-}
+// sanitizeTitle is now in sanitize.go (SanitizeTitle).
+func sanitizeTitle(title string) string { return SanitizeTitle(title) }
 
 func nowISO() string {
 	return time.Now().UTC().Format(time.RFC3339)
