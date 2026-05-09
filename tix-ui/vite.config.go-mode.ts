@@ -15,17 +15,48 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 const root = import.meta.dirname
 const src = path.resolve(root, 'src')
 
+const SERVER_ONLY_PKGS = [
+  '@tanstack/react-start',
+  '@tanstack/start-',
+  'better-sqlite3',
+  '@torkbot/sledge',
+  'chokidar',
+]
+
+/** Replace server-only bare package imports with empty virtual modules. */
+function emptyServerModules(): Plugin {
+  const PREFIX = '\0empty:'
+  return {
+    name: 'empty-server-modules',
+    enforce: 'pre',
+    resolveId(id) {
+      // Bare package stubs (e.g. @tanstack/react-start, better-sqlite3)
+      if (SERVER_ONLY_PKGS.some(p => id === p || id.startsWith(p + '/'))) {
+        return PREFIX + id
+      }
+    },
+    load(id) {
+      if (id.startsWith(PREFIX)) {
+        return { code: 'export default {}', syntheticNamedExports: true }
+      }
+    },
+  }
+}
+
 /**
  * Redirect server-module imports to their go-client fetch equivalents.
  * Matches by resolved absolute path so relative AND #/ imports are caught.
  */
 function goModeRedirects(): Plugin {
+  const serverSrcDir = path.resolve(src, 'lib/server')
+  const EMPTY = '\0empty-server-local:'
+
   const redirects: Array<[RegExp, string]> = [
     [/\/lib\/server\/tickets(\.ts)?$/, path.resolve(src, 'lib/go-client/tickets.ts')],
     [/\/lib\/server\/activity(\.ts)?$/, path.resolve(src, 'lib/go-client/activity.ts')],
     [/\/lib\/client\/ticket-collection(\.ts)?$/, path.resolve(src, 'lib/go-client/ticket-collection.ts')],
-    // __root (without .go suffix) → SPA-safe root
-    [/\/routes\/__root(?!\.go)(\.tsx)?$/, path.resolve(src, 'routes/__root.go.tsx')],
+    // __root → SPA-safe root (file lives outside routes/ to avoid router discovery)
+    [/\/routes\/__root(\.tsx)?$/, path.resolve(src, '__root.go.tsx')],
   ]
 
   return {
@@ -39,10 +70,12 @@ function goModeRedirects(): Plugin {
       if (source.startsWith('.')) {
         absPath = path.resolve(path.dirname(importer), source)
       } else if (source.startsWith('#/')) {
-        // package.json imports field: #/* → ./src/*
         absPath = path.resolve(src, source.slice(2))
+      } else if (path.isAbsolute(source)) {
+        // Vite's alias plugin may have already resolved #/ to an absolute path.
+        absPath = source
       } else {
-        return // third-party module — leave alone
+        return // third-party bare specifier — leave alone
       }
       // Strip extension for matching.
       const noExt = absPath.replace(/\.(tsx?|jsx?)$/, '')
@@ -50,6 +83,16 @@ function goModeRedirects(): Plugin {
         if (pattern.test(noExt) || pattern.test(absPath)) {
           return target
         }
+      }
+      // Catch-all: any remaining lib/server/** (Sledge, sync, etc.)
+      // that was NOT redirected above must not reach the browser bundle.
+      if (absPath.startsWith(serverSrcDir + '/') || absPath === serverSrcDir) {
+        return EMPTY + absPath
+      }
+    },
+    load(id) {
+      if (id.startsWith(EMPTY)) {
+        return { code: 'export default {}', syntheticNamedExports: true }
       }
     },
   }
@@ -62,14 +105,6 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: path.resolve(root, 'index.go.html'),
-      // These packages appear only as type-only imports (routeTree.gen.ts) or are
-      // redirected away. Mark external so Rollup doesn't try to bundle their
-      // Node.js-only internals (AsyncLocalStorage, node:crypto, etc.).
-      external: (id) =>
-        id.startsWith('@tanstack/react-start') ||
-        id.startsWith('@tanstack/start-') ||
-        id === 'better-sqlite3' ||
-        id.startsWith('@torkbot/sledge'),
     },
   },
   resolve: {
@@ -77,18 +112,14 @@ export default defineConfig({
     alias: [{ find: '#/', replacement: src + '/' }],
   },
   optimizeDeps: {
-    exclude: [
-      '@tanstack/react-start',
-      'better-sqlite3',
-      '@torkbot/sledge',
-      'chokidar',
-    ],
+    exclude: SERVER_ONLY_PKGS,
   },
   server: {
     host: true,
     allowedHosts: true,
   },
   plugins: [
+    emptyServerModules(),
     goModeRedirects(),
     tsconfigPaths({ projects: ['./tsconfig.json'] }),
     tailwindcss(),

@@ -4,7 +4,8 @@
  */
 import { useMemo, useEffect, useCallback } from 'react'
 import { Outlet, createRootRoute, useNavigate, useRouterState } from '@tanstack/react-router'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from '#/lib/go-client/query-client'
 import { AppProvider, useFilters, useViewSettings, useSidebar, useTheme, useCreateDialog, usePalette } from '#/lib/AppContext'
 import { useTickets, useUpdateTicket, useConfig } from '#/lib/hooks/use-tickets'
 import { TicketDndProvider, useDndState } from '#/lib/DndProvider'
@@ -19,13 +20,8 @@ import { FolderTree } from '#/components/FolderTree'
 import { useChangeHighlight } from '#/components/AnimatedCount'
 import { countsByStatus, countsByType, countsByTag, countsByFolder, countRootOnly } from '#/lib/filter'
 
-import '../styles.css'
+import './styles.css'
 
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { refetchOnWindowFocus: false },
-  },
-})
 
 export const Route = createRootRoute({
   component: RootComponent,
