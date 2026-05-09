@@ -13,10 +13,6 @@ archive
 
 .vite
 
-# Vendored binaries (downloaded by setup-deps)
-lib/yq
-lib/jq
-
 node_modules
 dist
 dist-go

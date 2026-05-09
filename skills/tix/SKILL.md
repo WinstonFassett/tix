@@ -7,7 +7,7 @@ description: Manage tasks, bugs, features, and epics with the `tix` CLI. Use for
 
 ## Overview
 
-This skill provides comprehensive access to the `tix` command-line interface for managing a lightweight ticket system. It enables creation, status updates, dependency tracking, listing, and detailed viewing of tickets.
+`tix` is a single Go binary ticket tracker. Tickets are Markdown files with YAML frontmatter stored in `./tickets/` (like `.git/`). The binary handles both the CLI and the web dashboard (`tix ui`).
 
 ## Commands
 
@@ -56,8 +56,10 @@ The `tix` CLI supports the following commands. For detailed usage and options, r
 
 ### Utilities
 
-*   **`archive [--days=N] [--all]`**: Move old done/closed tickets to `tickets/archive/YYYY-MM-DD/` (folder named by ticket's last-change date). Default `--days=3`.
-*   **`status`**: Show configuration and directory info.
+*   **`archive [--days=N] [--all]`**: Move old done/closed tickets to `tickets/archive/YYYY-MM-DD/`. Default `--days=3`.
+*   **`backup [output.zip]`**: Zip the tickets directory.
+*   **`version`**: Print build version.
+*   **`ui`**: Launch the React web dashboard and open browser.
 
 ## Detailed Help
 

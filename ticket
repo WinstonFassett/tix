@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-echo "WARNING: 'ticket' is deprecated, use 'tix' instead" >&2
-exec "$(dirname "$0")/tix" "$@"

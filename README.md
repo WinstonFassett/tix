@@ -1,45 +1,57 @@
 # tix
 
-A Markdown ticket tracker in a shell script.
+A minimal ticket tracker shipped as a single Go binary.
 
-- Tickets are Markdown files with YAML frontmatter in `./tickets/`
-- No server, no database — just files that diff, merge, and grep like code
+- Tickets are Markdown files with YAML frontmatter in `./tickets/` — like `.git/`, but for tasks
+- No server, no database — files that diff, merge, and grep like code
 - Works in any editor: Vim, VS Code, Obsidian
 - Dependency tracking, kanban views, auto-archiving
-- Versioned with your code in Git
+- `tix ui` launches a full React dashboard with live updates
 
-## Tix Web UI
+## Install
+
+```sh
+# curl — no dependencies required
+curl -fsSL https://raw.githubusercontent.com/WinstonFassett/tix/main/install.sh | bash
+
+# npm — if you're already in the Node ecosystem
+npm install -g @winstonfassett/tix
+
+# one-off, no install
+npx @winstonfassett/tix
+```
+
+Both paths install the same binary. Pick whichever fits your workflow.
+
+## Quick Start
+
+```sh
+cd your-project
+tix create "Fix the login bug"
+tix ls
+tix start a1b2
+tix done a1b2
+tix ui                        # open the web dashboard
+```
+
+## Web Dashboard
 
 ![List view](tix-ui/screenshots/list-dark.png)
 
-A local React + TanStack Start dashboard for browsing, editing, and creating
-tickets. Lives in [`tix-ui/`](tix-ui/). Highlights:
+`tix ui` starts a local React + TanStack Start server and opens your browser.
 
-- Reactive live updates — a chokidar file watcher pushes changes over
-  Server-Sent Events, so edits made by the CLI, your editor, or another
-  agent appear instantly.
-- Linear-style list and board views with grouping (status / priority /
-  type), collapsible sticky group headers, and URL-driven filters.
-- Detail view with inline editing (Milkdown markdown editor), a prev/next
-  pager (J/K or Alt+←/→), and a chip-based tag input with autocomplete.
-- Command palette (⌘K) with cyclical arrow nav and ticket search.
-
-Install and launch:
-
-```bash
-./install-tix-ui                          # builds and symlinks `tix-ui`
-cd your-project && tix-ui                 # opens the dashboard
-```
+- Live updates via SSE — CLI edits and file changes appear instantly
+- Linear-style list and board views, collapsible group headers, URL-driven filters
+- Detail view with inline Markdown editing, prev/next pager, tag autocomplete
+- Command palette (⌘K) with ticket search
 
 With [portless](https://www.npmjs.com/package/portless) installed, each project
-gets a stable named URL — e.g. `http://my-project-tix.localhost:1355` instead of
-a random port. Without portless, falls back to an available port starting at 3000.
-Set `PORTLESS=0` to bypass. Override the subdomain with `PORTLESS_NAME=foo tix-ui`
-(useful for dated/verbose directory names).
+gets a stable named URL like `http://my-project-tix.localhost:1355` instead of a
+random port.
 
-## How It Works
+## Ticket Format
 
-Each ticket is a Markdown file named like `Fix The Login Bug (a1b2).md`. The 4-character hex ID is embedded in the filename.
+Each ticket is a Markdown file named like `Fix The Login Bug (a1b2).md`.
 
 ```yaml
 ---
@@ -55,41 +67,10 @@ created: 2026-03-29T12:00:00Z
 ---
 ```
 
-The `id` is quoted so that 4-char hex values like `0e48` aren't parsed as
-YAML scientific notation by downstream tools.
-
 The body is freeform Markdown — description, design notes, acceptance criteria.
+IDs are quoted so values like `0e48` aren't parsed as scientific notation.
 
-Run `tix archive` periodically to move old done/closed tickets into `tickets/archive/YYYY-MM-DD/`.
-
-## Install
-
-One-liner:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/WinstonFassett/tix/main/install.sh | bash
-```
-
-Or clone and install manually:
-
-```bash
-git clone https://github.com/WinstonFassett/tix.git ~/.tix
-~/.tix/setup-deps && ~/.tix/install-tix
-```
-
-Both clone to `~/.tix`, download vendored dependencies (yq, jq), and symlink `tix` into your PATH.
-
-## Quick Start
-
-```bash
-cd your-project
-tix create "Fix the login bug"
-tix ls
-tix start a1b2
-tix done a1b2
-```
-
-## Usage
+## Commands
 
 ### Tickets
 
@@ -99,16 +80,17 @@ tix show <id>               Display full ticket details
 tix file <id>               Print path to ticket file
 tix rename <id> <title>     Rename a ticket
 tix delete <id>             Permanently delete a ticket
+tix edit <id>               Open ticket in $EDITOR
 ```
 
-`create` accepts flags: `--description`, `--priority 0-4`, `--type`, `--assignee`, `--tags`, `--folder` (e.g. `backlog`).
+`create` accepts flags: `--description`, `--priority 0-4`, `--type`, `--assignee`, `--tags`, `--folder`.
 
 ### Workflow
 
 ```
 tix start <id>              Set status to in-progress
-tix hold <id>               Set status to on-hold (alias: pause)
-tix done <id>               Mark done (completed)
+tix hold <id>               Set status to on-hold
+tix done <id>               Mark done
 tix close <id>              Mark closed (won't-do)
 tix reopen <id>             Reopen a ticket
 tix status <id> <status>    Set explicit status
@@ -134,7 +116,7 @@ Filter any list with `--status`, `-a <assignee>`, `-T <tag>`.
 ```
 tix dep <id> <dep-id>       Add a dependency
 tix undep <id> <dep-id>     Remove a dependency
-tix dep tree                Show full dependency tree
+tix dep tree                Show dependency tree
 tix dep cycle               Detect cycles
 ```
 
@@ -143,38 +125,25 @@ tix dep cycle               Detect cycles
 ```
 tix add-note <id> "text"    Add a timestamped note
 tix add-ac <id> "criterion" Add an acceptance criterion
-tix check <id> <n>          Toggle AC checkbox
+tix check <id> <n>          Toggle AC checkbox (1-indexed)
 ```
 
-### Obsidian
+### Maintenance
 
 ```
-tix vault open              Open workspace as an Obsidian vault
-tix vault init              Set up .obsidian config for tickets
+tix archive                 Move old done/closed tickets to archive/YYYY-MM-DD/
+tix backup                  Zip the tickets/ directory
+tix version                 Print build version
 ```
 
 ## Configuration
 
 | Variable | Purpose |
 |----------|---------|
-| `TIX_WORKSPACE` | Override workspace root (tickets dir = `$TIX_WORKSPACE/tickets/`) |
+| `TIX_WORKSPACE` | Override workspace root (`$TIX_WORKSPACE/tickets/`) |
 | `TICKETS_DIR` | Point directly at a tickets directory |
-| `TICKET_WORKSPACE` | Legacy fallback for `TIX_WORKSPACE` |
-
-## Development
-
-```bash
-./setup-deps              # Download vendored yq + jq into lib/
-bats test/                # Run the test suite (requires bats-core)
-```
 
 ## See Also
 
-- [tix-ui](tix-ui/) — Web dashboard for browsing tickets (React + TanStack Start)
-- [skills/tix](skills/tix/) — Agent skill definition for AI-assisted ticket management
-
-## Uninstall
-
-```bash
-~/.tix/uninstall-tix
-```
+- [docs/release-pipeline.md](docs/release-pipeline.md) — how the binary is built and distributed
+- [skills/tix](skills/tix/) — agent skill for AI-assisted ticket management
