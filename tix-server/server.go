@@ -99,6 +99,8 @@ func (s *Server) hydrate() {
 		}
 		if err := s.db.UpsertTicket(*t, hash); err != nil {
 			log.Printf("[hydrate] %s: %v", t.ID, err)
+		} else {
+			s.db.LogEvent("ticket.created", t.ID, t)
 		}
 		n++
 		return nil
@@ -455,11 +457,23 @@ func generateID() string {
 	return hex.EncodeToString(b)
 }
 
+// acronyms that should stay fully uppercase in filenames (matches tix bash CLI)
+var acronyms = map[string]bool{
+	"API": true, "UI": true, "URL": true, "SQL": true, "HTML": true,
+	"CSS": true, "CLI": true, "ID": true, "DB": true, "CI": true,
+	"CD": true, "PR": true, "MR": true, "SSH": true, "HTTP": true,
+	"HTTPS": true, "AWS": true, "GCP": true, "JWT": true, "SPA": true,
+	"SSR": true, "SSE": true, "WS": true, "DX": true, "UX": true,
+}
+
 func sanitizeTitle(title string) string {
-	// Title Case, strip non-alphanumeric except spaces/hyphens, max 50 chars.
+	// Title Case with acronym preservation; strip non-alphanumeric except spaces/hyphens; max 50 chars.
 	words := strings.Fields(title)
 	for i, w := range words {
-		if len(w) > 0 {
+		upper := strings.ToUpper(w)
+		if acronyms[upper] {
+			words[i] = upper
+		} else if len(w) > 0 {
 			words[i] = strings.ToUpper(w[:1]) + strings.ToLower(w[1:])
 		}
 	}

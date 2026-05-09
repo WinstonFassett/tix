@@ -5,12 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // ~/.tix/workspaces.json registry for daemon mode.
@@ -191,7 +193,16 @@ func cmdOpen(args []string, port int) {
 		}
 	}
 
-	// Re-exec as serve for the resolved workspace, opening browser
+	addr := "http://localhost:" + strconv.Itoa(port)
+
+	// If a server is already listening on this port, just open it.
+	if isListening(addr) {
+		fmt.Println("server already running →", addr)
+		openBrowser(addr)
+		return
+	}
+
+	// Otherwise start one for the resolved workspace.
 	exe, _ := os.Executable()
 	c := exec.Command(exe, "--workspace", wsPath, "--port", strconv.Itoa(port))
 	c.Stdout = os.Stdout
@@ -199,6 +210,17 @@ func cmdOpen(args []string, port int) {
 	if err := c.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func isListening(addr string) bool {
+	// addr is http://...; extract host:port
+	hostPort := strings.TrimPrefix(addr, "http://")
+	conn, err := net.DialTimeout("tcp", hostPort, 300*time.Millisecond)
+	if err != nil {
+		return false
+	}
+	conn.Close()
+	return true
 }
 
 func cmdServe(workspace string, port int, noBrowser bool) {
