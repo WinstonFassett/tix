@@ -1,0 +1,27 @@
+{
+  "name": "@winstonfassett/tix",
+  "version": "0.0.0",
+  "description": "tix — minimal Git-like ticket/issue tracker (single Go binary)",
+  "license": "MIT",
+  "homepage": "https://github.com/WinstonFassett/tix",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WinstonFassett/tix.git"
+  },
+  "bin": {
+    "tix": "bin/tix.js"
+  },
+  "files": [
+    "bin/tix.js",
+    "install.js",
+    "README.md"
+  ],
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "os": ["darwin", "linux"],
+  "cpu": ["x64", "arm64"]
+}

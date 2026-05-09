@@ -41,6 +41,26 @@ cross:
 	GOOS=linux   GOARCH=arm64 go build -o $(BIN_DIR)/$(BINARY)-linux-arm64   .
 	@ls -lh $(BIN_DIR)/$(BINARY)-*
 
+## release-local — produce dist/tix-<os>-<arch>.tar.gz for all platforms (matches CI naming)
+##                Use TAG=vX.Y.Z to embed a build version (default: vlocal).
+TAG ?= vlocal
+DIST_DIR := ../dist
+release-local:
+	@mkdir -p $(DIST_DIR)
+	@rm -f $(DIST_DIR)/tix-*.tar.gz $(DIST_DIR)/SHA256SUMS
+	@for target in darwin-arm64 darwin-amd64 linux-arm64 linux-amd64; do \
+		os=$${target%-*}; arch=$${target#*-}; \
+		echo "→ $$os/$$arch ($(TAG))…"; \
+		GOOS=$$os GOARCH=$$arch go build -trimpath \
+			-ldflags "-s -w -X main.buildVersion=$(TAG)" \
+			-o $(BIN_DIR)/tix . || exit 1; \
+		COPYFILE_DISABLE=1 tar --no-xattrs -czf $(DIST_DIR)/tix-$$os-$$arch.tar.gz -C $(BIN_DIR) tix 2>/dev/null \
+			|| COPYFILE_DISABLE=1 tar -czf $(DIST_DIR)/tix-$$os-$$arch.tar.gz -C $(BIN_DIR) tix; \
+		rm $(BIN_DIR)/tix; \
+	done
+	@cd $(DIST_DIR) && shasum -a 256 tix-*.tar.gz > SHA256SUMS
+	@ls -lh $(DIST_DIR)/
+
 ## install — install binary to ~/.local/bin
 install: build
 	@mkdir -p ~/.local/bin
