@@ -5,7 +5,7 @@
 import { createCollection, type CollectionImpl } from "@tanstack/db";
 import type { Ticket } from "../types";
 import { getTickets, createTicket, updateTicket, deleteTicket } from "../server/tickets";
-import { queryClient } from "../../routes/__root";
+import { queryClient } from "../query-client";
 
 export type TicketCollection = CollectionImpl<Ticket, string, any, any, any>;
 

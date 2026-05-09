@@ -15,7 +15,7 @@ import { getTicketEvents, type ActivityEvent } from '#/lib/server/activity'
 
 interface TicketDetailBodyProps {
   ticket: Ticket
-  onUpdate: (updates: Record<string, any>) => Promise<void> | void
+  onUpdate: (updates: Partial<Ticket>) => Promise<void> | void
   /** When true, omit the outer max-w wrapper so the body fills its container (panel mode). */
   fillContainer?: boolean
   /** Saving status indicator slot — rendered above the body when provided (panel mode shows this in its own header). */
@@ -70,7 +70,7 @@ export function TicketDetailBody({ ticket, onUpdate, fillContainer = false, onSa
     onSaveStateChange?.(saveState)
   }, [saveState, onSaveStateChange])
 
-  const saveImmediate = useCallback(async (updates: Record<string, any>) => {
+  const saveImmediate = useCallback(async (updates: Partial<Ticket>) => {
     setSaveState('saving')
     if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
     try {

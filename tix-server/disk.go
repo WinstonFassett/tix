@@ -142,8 +142,13 @@ func SaveTicket(ticketsDir string, t Ticket, curPath string) (string, error) {
 	want := filepath.Join(dir, fmt.Sprintf("%s (%s).md", cleanTitle, t.ID))
 
 	if curPath != want {
-		if _, err := os.Stat(want); err == nil {
-			return "", fmt.Errorf("target file already exists: %s", filepath.Base(want))
+		if wantInfo, err := os.Stat(want); err == nil {
+			// Block only if it's a genuinely different file; allow case-only
+			// renames on case-insensitive filesystems (e.g. macOS HFS+).
+			curInfo, cerr := os.Stat(curPath)
+			if cerr != nil || !os.SameFile(curInfo, wantInfo) {
+				return "", fmt.Errorf("target file already exists: %s", filepath.Base(want))
+			}
 		}
 		if err := os.Rename(curPath, want); err != nil {
 			return "", err

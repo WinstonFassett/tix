@@ -30,7 +30,7 @@ type Ticket struct {
 	Created  string   `json:"created" yaml:"created"`
 }
 
-// frontmatter is the raw YAML shape in .md files.
+// frontmatter is the raw YAML shape parsed from .md files.
 type frontmatter struct {
 	ID       string   `yaml:"id"`
 	Title    string   `yaml:"title"`
@@ -42,6 +42,61 @@ type frontmatter struct {
 	Links    []string `yaml:"links"`
 	Assignee string   `yaml:"assignee"`
 	Created  string   `yaml:"created"`
+}
+
+// marshalFrontmatter serializes ticket fields to YAML with:
+//   - id always double-quoted (prevents hex values like 0e48 parsing as floats)
+//   - tags/deps/links as flow sequences [a, b] when non-empty, omitted when empty
+//   - assignee omitted when empty
+func marshalFrontmatter(t Ticket) (string, error) {
+	doc := &yaml.Node{Kind: yaml.MappingNode}
+
+	scalar := func(val string) *yaml.Node {
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: val}
+	}
+	quoted := func(val string) *yaml.Node {
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: val, Tag: "!!str", Style: yaml.DoubleQuotedStyle}
+	}
+	flow := func(vals []string) *yaml.Node {
+		n := &yaml.Node{Kind: yaml.SequenceNode, Style: yaml.FlowStyle}
+		for _, v := range vals {
+			n.Content = append(n.Content, scalar(v))
+		}
+		return n
+	}
+	add := func(key string, val *yaml.Node) {
+		doc.Content = append(doc.Content, scalar(key), val)
+	}
+
+	add("id", quoted(t.ID))
+	add("title", scalar(t.Title))
+	add("status", scalar(t.Status))
+	add("type", scalar(t.Type))
+	add("priority", &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprintf("%d", t.Priority)})
+	if len(t.Tags) > 0 {
+		add("tags", flow(t.Tags))
+	}
+	if len(t.Deps) > 0 {
+		add("deps", flow(t.Deps))
+	}
+	if len(t.Links) > 0 {
+		add("links", flow(t.Links))
+	}
+	if t.Assignee != "" {
+		add("assignee", scalar(t.Assignee))
+	}
+	add("created", scalar(t.Created))
+
+	out, err := yaml.Marshal(&yaml.Node{Kind: yaml.DocumentNode, Content: []*yaml.Node{doc}})
+	if err != nil {
+		return "", err
+	}
+	// yaml.Marshal adds a trailing newline; strip the leading "---\n" that
+	// DocumentNode emits so our caller can wrap it consistently.
+	s := string(out)
+	s = strings.TrimPrefix(s, "---\n")
+	s = strings.TrimSuffix(s, "...\n")
+	return s, nil
 }
 
 // ParseTicketFile parses a .md file into a Ticket.
@@ -90,30 +145,24 @@ func ParseTicketFile(path, ticketsDir string) (*Ticket, string, error) {
 // ProjectTicketToFile writes a Ticket back to its .md file.
 // Returns the file content (for hash computation).
 func ProjectTicketToFile(t Ticket, ticketsDir string) (string, error) {
-	fm := frontmatter{
-		ID:       t.ID,
-		Title:    t.Title,
-		Status:   t.Status,
-		Type:     t.Type,
-		Priority: t.Priority,
-		Tags:     t.Tags,
-		Deps:     t.Deps,
-		Links:    t.Links,
-		Assignee: t.Assignee,
-		Created:  t.Created,
-	}
-
-	fmBytes, err := yaml.Marshal(fm)
+	fmStr, err := marshalFrontmatter(t)
 	if err != nil {
 		return "", fmt.Errorf("marshal frontmatter: %w", err)
 	}
 
 	body := t.Body
-	if !strings.HasPrefix(body, "# ") {
+	if strings.HasPrefix(body, "# ") {
+		newline := strings.Index(body, "\n")
+		if newline < 0 {
+			body = "# " + t.Title
+		} else {
+			body = "# " + t.Title + body[newline:]
+		}
+	} else {
 		body = "# " + t.Title + "\n" + body
 	}
 
-	content := "---\n" + string(fmBytes) + "---\n" + body + "\n"
+	content := "---\n" + fmStr + "---\n" + body + "\n"
 	path := filepath.Join(ticketsDir, filepath.FromSlash(t.Filename))
 
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {

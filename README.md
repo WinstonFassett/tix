@@ -131,7 +131,9 @@ tix check <id> <n>          Toggle AC checkbox (1-indexed)
 ### Maintenance
 
 ```
-tix archive                 Move old done/closed tickets to archive/YYYY-MM-DD/
+tix archive                 Move done/closed tickets ≥3 days old to archive/YYYY-MM-DD/
+tix archive --days=N        Override the age cutoff (default: 3)
+tix archive --all           Archive all done/closed regardless of age
 tix backup                  Zip the tickets/ directory
 tix version                 Print build version
 ```

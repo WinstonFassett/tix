@@ -17,7 +17,7 @@ export interface PaletteCallbacks {
   setGroupBy: (groupBy: GroupBy) => void
   setSortBy: (sortBy: SortBy) => void
   toggleSortDir: () => void
-  updateTicket?: (updates: Record<string, any>) => void
+  updateTicket?: (updates: Partial<Ticket>) => void
   copyFilePath?: () => void
   openInVSCode?: () => void
   revealInFinder?: () => void

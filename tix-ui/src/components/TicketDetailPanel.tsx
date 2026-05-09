@@ -25,7 +25,7 @@ export function TicketDetailPanel({ ticket: listTicket }: TicketDetailPanelProps
   const startWidthRef = useRef(0)
 
   const handleUpdate = useCallback(
-    async (updates: Record<string, any>) => {
+    async (updates: Partial<Ticket>) => {
       await updateMutation.mutateAsync({ ticketId: ticket.id, updates })
     },
     [ticket.id, updateMutation],

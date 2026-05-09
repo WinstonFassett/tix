@@ -231,13 +231,13 @@ func runShow(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(blockers) > 0 {
-		fmt.Println("\n## Blockers\n")
+		fmt.Print("\n## Blockers\n\n")
 		for _, t := range blockers {
 			fmt.Printf("- %s [%s] %s\n", t.ID, t.Status, t.Title)
 		}
 	}
 	if len(blocking) > 0 {
-		fmt.Println("\n## Blocking\n")
+		fmt.Print("\n## Blocking\n\n")
 		for _, t := range blocking {
 			fmt.Printf("- %s [%s] %s\n", t.ID, t.Status, t.Title)
 		}

@@ -63,7 +63,7 @@ export function TicketView({ ticketId }: TicketViewProps) {
   const { data: fullTicket } = useTicket(ticketId)
   const ticket = fullTicket ?? listTicket
 
-  const handleUpdate = useCallback(async (updates: Record<string, any>) => {
+  const handleUpdate = useCallback(async (updates: Partial<Ticket>) => {
     await updateMutation.mutateAsync({ ticketId, updates })
   }, [ticketId, updateMutation])
 

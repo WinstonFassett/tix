@@ -16,7 +16,7 @@ interface PagerState {
 
 interface TicketDetailProps {
   ticket: Ticket
-  onUpdate: (updates: Record<string, any>) => Promise<void> | void
+  onUpdate: (updates: Partial<Ticket>) => Promise<void> | void
   pager?: PagerState
 }
 

@@ -181,7 +181,7 @@ export function DashboardView() {
 
   const isDisplayChanged = view.groupBy !== 'status' || view.sortBy !== 'priority' || view.sortDir !== 'asc'
 
-  const handleUpdate = useCallback((ticketId: string, updates: Record<string, any>) => {
+  const handleUpdate = useCallback((ticketId: string, updates: Partial<Ticket>) => {
     updateMutation.mutate({ ticketId, updates })
   }, [updateMutation])
 

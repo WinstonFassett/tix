@@ -19,7 +19,7 @@ import { TicketActions } from './TicketActions'
 interface TicketTableProps {
   grouped: Record<string, Ticket[]>
   groupBy: GroupBy
-  onUpdate?: (ticketId: string, updates: Record<string, any>) => void
+  onUpdate?: (ticketId: string, updates: Partial<Ticket>) => void
   /** When provided, called instead of navigating to the full route on row click. */
   onRowClick?: (ticketId: string) => void
   /** Currently selected row id (highlighted when shown in side panel). */
@@ -212,7 +212,7 @@ interface TicketRowProps {
   ticket: Ticket
   selected: boolean
   onOpen: (id: string) => void
-  onUpdate?: (ticketId: string, updates: Record<string, any>) => void
+  onUpdate?: (ticketId: string, updates: Partial<Ticket>) => void
   /** True after initial staggered fade-in completes. Gates layout tracking. */
   loaded: boolean
   /** Row index within its group, for stagger delay on first load. */
