@@ -93,7 +93,19 @@ main() {
   info "Installed: $("$install_dir/tix" version 2>/dev/null || echo 'tix')"
   case ":$PATH:" in
     *":$install_dir:"*) ;;
-    *) info "Note: $install_dir is not on your PATH. Add it to your shell profile." ;;
+    *)
+      info ""
+      info "⚠️  ${install_dir} is not on your PATH."
+      info ""
+      info "    Add this to your ~/.zshrc (or ~/.bash_profile):"
+      info ""
+      info "      export PATH=\"${install_dir}:\$PATH\""
+      info ""
+      info "    Then reload your shell:"
+      info ""
+      info "      source ~/.zshrc"
+      info ""
+      ;;
   esac
 }
 

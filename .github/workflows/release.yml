@@ -48,6 +48,7 @@ jobs:
           if [ -f ../tix-server/ui/index.go.html ]; then
             mv ../tix-server/ui/index.go.html ../tix-server/ui/index.html
           fi
+          [ -f ../tix-server/ui/index.html ] || { echo "ERROR: index.html missing from ui/ after build"; exit 1; }
 
       - name: Cross-compile binary
         env:
@@ -60,6 +61,9 @@ jobs:
           go build -trimpath \
             -ldflags "-s -w -X main.buildVersion=${TAG}" \
             -o tix .
+          if [ "${GOOS}" = "darwin" ]; then
+            codesign --force --sign - tix
+          fi
           tar -czf "../dist/tix-${GOOS}-${GOARCH}.tar.gz" tix
           rm tix
 

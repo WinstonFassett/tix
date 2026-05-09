@@ -1,6 +1,6 @@
 {
   "name": "@winstonfassett/tix",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "tix — minimal Git-like ticket/issue tracker (single Go binary)",
   "license": "MIT",
   "homepage": "https://github.com/WinstonFassett/tix",
