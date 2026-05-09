@@ -99,8 +99,6 @@ func (s *Server) hydrate() {
 		}
 		if err := s.db.UpsertTicket(*t, hash); err != nil {
 			log.Printf("[hydrate] %s: %v", t.ID, err)
-		} else {
-			s.db.LogEvent("ticket.created", t.ID, t)
 		}
 		n++
 		return nil
@@ -154,7 +152,11 @@ func (s *Server) handleTickets(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		id := generateID()
+		id, err := NextTicketID(s.ticketsDir)
+		if err != nil {
+			jsonErr(w, err, http.StatusInternalServerError)
+			return
+		}
 		cleanTitle := sanitizeTitle(body.Title)
 		filename := cleanTitle + " (" + id + ").md"
 		prio := 2

@@ -151,7 +151,7 @@ func ProjectTicketToFile(t Ticket, ticketsDir string) (string, error) {
 	}
 
 	body := t.Body
-	if strings.HasPrefix(body, "# ") {
+	if strings.HasPrefix(body, "# ") && !strings.HasPrefix(body, "## ") {
 		newline := strings.Index(body, "\n")
 		if newline < 0 {
 			body = "# " + t.Title

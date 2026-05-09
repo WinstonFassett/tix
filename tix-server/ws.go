@@ -28,12 +28,12 @@ func (h *WSHub) ServeWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Send hello so client knows connection is live (and can detect reconnects).
+	_ = conn.WriteJSON(map[string]string{"event": "hello"})
+
 	h.mu.Lock()
 	h.clients[conn] = struct{}{}
 	h.mu.Unlock()
-
-	// Send hello so client knows connection is live (and can detect reconnects).
-	_ = conn.WriteJSON(map[string]string{"event": "hello"})
 
 	// Drain incoming messages; close on disconnect.
 	go func() {

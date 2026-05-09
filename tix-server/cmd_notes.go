@@ -165,7 +165,11 @@ func toggleAC(s string) string {
 	if strings.Contains(s, "- [ ]") {
 		return strings.Replace(s, "- [ ]", "- [x]", 1)
 	}
-	return strings.Replace(s, "- [x]", "- [ ]", 1)
+	// Handle both lowercase and uppercase X
+	if strings.Contains(s, "- [x]") || strings.Contains(s, "- [X]") {
+		return strings.ReplaceAll(strings.Replace(s, "- [x]", "- [ ]", 1), "- [X]", "- [ ]")
+	}
+	return s
 }
 
 func modifyACSection(id string, fn func([]string) ([]string, error)) error {

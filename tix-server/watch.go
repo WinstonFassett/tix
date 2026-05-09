@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -169,6 +170,12 @@ func (w *Watcher) handleDelete(path string) {
 		w.pendingMu.Lock()
 		delete(w.pendingDeletes, id)
 		w.pendingMu.Unlock()
+		// Check if the ticket file still exists on disk before deleting from DB
+		// (handles rename race where delete fires after upsert)
+		if _, err := os.Stat(path); err == nil {
+			// File still exists, likely a rename - skip delete
+			return
+		}
 		if err := w.db.DeleteTicket(id); err != nil {
 			log.Printf("[watcher] delete %s: %v", id, err)
 			return

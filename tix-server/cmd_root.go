@@ -24,6 +24,14 @@ Run "tix ui" to launch the web dashboard.`,
 	},
 }
 
+func init() {
+	// Register ls flags on rootCmd so they work when root delegates to ls
+	rootCmd.Flags().StringVar(&lsStatus, "status", "", "filter by status (open, in-progress, done, closed, ...)")
+	rootCmd.Flags().BoolVar(&lsAll, "all", false, "include done/closed tickets")
+	rootCmd.Flags().StringVarP(&lsAssignee, "assignee", "a", "", "filter by assignee")
+	rootCmd.Flags().StringVarP(&lsTag, "tag", "T", "", "filter by tag")
+}
+
 // resolveTicketsDir returns the workspace's tickets directory.
 // Resolution order matches bash tix:
 //  1. TICKETS_DIR (explicit override)
