@@ -171,26 +171,89 @@ func runUiServe(cmd *cobra.Command, args []string) error {
 	}
 	dbPath := filepath.Join(dbDir, "tix-server.db")
 
-	srv, err := NewServer(wsPath, ticketsDir, dbPath, uiPort)
+	wsName := filepath.Base(wsPath)
+	appName := wsName + "-tix"
+
+	port, err := findFreePort(uiPort)
+	if err != nil {
+		return err
+	}
+
+	// If portless is available and we're not already running inside it, re-exec via portless.
+	portlessPath, _ := exec.LookPath("portless")
+	if portlessPath != "" && os.Getenv("PORTLESS") != "0" && os.Getenv("TIX_UI_PORTLESS") == "" {
+		portlessURL := fmt.Sprintf("http://%s.localhost:%s", appName, portlessPort())
+		fmt.Printf("tix ui      %s  (%s)\n", portlessURL, wsName)
+		fmt.Printf("workspace   %s\n", wsPath)
+		fmt.Printf("tickets     %s\n", ticketsDir)
+		fmt.Println("(press ^C to stop)")
+		if !uiNoBrowser {
+			go waitAndOpen(fmt.Sprintf("localhost:%d", port), portlessURL)
+		}
+		exe, _ := os.Executable()
+		c := exec.Command(portlessPath, appName, exe, "ui",
+			"--workspace", wsPath,
+			"--port", strconv.Itoa(port),
+			"--no-browser",
+		)
+		c.Env = append(os.Environ(), "TIX_UI_PORTLESS=1")
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+		return c.Run()
+	}
+
+	srv, err := NewServer(wsPath, ticketsDir, dbPath, port)
 	if err != nil {
 		return fmt.Errorf("failed to create server: %w", err)
 	}
 
-	addr := fmt.Sprintf("http://localhost:%d", uiPort)
-	wsName := filepath.Base(wsPath)
+	addr := fmt.Sprintf("http://localhost:%d", port)
 	fmt.Printf("tix ui      %s  (%s)\n", addr, wsName)
 	fmt.Printf("workspace   %s\n", wsPath)
 	fmt.Printf("tickets     %s\n", ticketsDir)
 	fmt.Println("(press ^C to stop)")
 
 	if !uiNoBrowser {
-		openBrowser(addr)
+		go waitAndOpen(fmt.Sprintf("localhost:%d", port), addr)
 	}
 
 	if err := srv.Start(); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
 	return nil
+}
+
+func findFreePort(start int) (int, error) {
+	for port := start; port < 65535; port++ {
+		ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+		if err == nil {
+			ln.Close()
+			return port, nil
+		}
+	}
+	return 0, fmt.Errorf("no free port found starting from %d", start)
+}
+
+func portlessPort() string {
+	if p := os.Getenv("PORTLESS_PORT"); p != "" {
+		return p
+	}
+	return "1355"
+}
+
+// waitAndOpen polls hostPort (e.g. "localhost:4151") until the server is up,
+// then opens openURL in the browser.
+func waitAndOpen(hostPort, openURL string) {
+	deadline := time.Now().Add(60 * time.Second)
+	for time.Now().Before(deadline) {
+		conn, err := net.DialTimeout("tcp", hostPort, 300*time.Millisecond)
+		if err == nil {
+			conn.Close()
+			openBrowser(openURL)
+			return
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 // --- Workspace registry helpers (moved from main.go) ---
