@@ -98,4 +98,5 @@ jobs:
           files: |
             dist/tix-*.tar.gz
             dist/SHA256SUMS
+            install.sh
           generate_release_notes: true
