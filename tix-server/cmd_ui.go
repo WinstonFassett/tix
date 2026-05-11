@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -174,12 +175,8 @@ func runUiServe(cmd *cobra.Command, args []string) error {
 	wsName := filepath.Base(wsPath)
 	appName := wsName + "-tix"
 
-	port, err := findFreePort(uiPort)
-	if err != nil {
-		return err
-	}
-
 	// If portless is available and we're not already running inside it, re-exec via portless.
+	// Portless picks a free port, sets PORT env var, and proxies subdomain → that port.
 	portlessPath, _ := exec.LookPath("portless")
 	if portlessPath != "" && os.Getenv("PORTLESS") != "0" && os.Getenv("TIX_UI_PORTLESS") == "" {
 		portlessURL := fmt.Sprintf("http://%s.localhost:%s", appName, portlessPort())
@@ -188,18 +185,31 @@ func runUiServe(cmd *cobra.Command, args []string) error {
 		fmt.Printf("tickets     %s\n", ticketsDir)
 		fmt.Println("(press ^C to stop)")
 		if !uiNoBrowser {
-			go waitAndOpen(fmt.Sprintf("localhost:%d", port), portlessURL)
+			go waitAndOpenHTTP(portlessURL)
 		}
 		exe, _ := os.Executable()
 		c := exec.Command(portlessPath, appName, exe, "ui",
 			"--workspace", wsPath,
-			"--port", strconv.Itoa(port),
 			"--no-browser",
 		)
 		c.Env = append(os.Environ(), "TIX_UI_PORTLESS=1")
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
 		return c.Run()
+	}
+
+	// When portless re-execs us it sets PORT — use that; otherwise scan for a free port.
+	port := uiPort
+	if envPort := os.Getenv("PORT"); envPort != "" {
+		if p, err2 := strconv.Atoi(envPort); err2 == nil {
+			port = p
+		}
+	} else {
+		var err2 error
+		port, err2 = findFreePort(uiPort)
+		if err2 != nil {
+			return err2
+		}
 	}
 
 	srv, err := NewServer(wsPath, ticketsDir, dbPath, port)
@@ -253,6 +263,24 @@ func waitAndOpen(hostPort, openURL string) {
 			return
 		}
 		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+// waitAndOpenHTTP polls url via HTTP until it returns a non-502/non-000 response,
+// then opens it. Used for portless URLs where we can't TCP-dial the backend directly.
+func waitAndOpenHTTP(url string) {
+	client := &http.Client{Timeout: time.Second}
+	deadline := time.Now().Add(60 * time.Second)
+	for time.Now().Before(deadline) {
+		resp, err := client.Get(url)
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode >= 200 && resp.StatusCode < 400 {
+				openBrowser(url)
+				return
+			}
+		}
+		time.Sleep(200 * time.Millisecond)
 	}
 }
 
