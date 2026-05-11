@@ -20,6 +20,8 @@ test-tickets
 
 # Go build artifacts
 bin/
+!npm/bin/
+!npm/bin/tix.js
 tix-server/tix-server
 tix-server/ui/*
 !tix-server/ui/.gitkeep
