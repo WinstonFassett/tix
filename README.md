@@ -1,6 +1,6 @@
 # tix
 
-A minimal ticket tracker shipped as a single Go binary.
+Tickets in Markdown, indexed in SQLite. CLI for agents, rich realtime UI for humans.
 
 ![List view](tix-ui/screenshots/list-dark.png)
 
