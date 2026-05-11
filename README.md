@@ -2,61 +2,69 @@
 
 A minimal ticket tracker shipped as a single Go binary.
 
+![List view](tix-ui/screenshots/list-dark.png)
+
 - Tickets are Markdown files with YAML frontmatter in `./tickets/` — like `.git/`, but for tasks
-- No server, no database — files that diff, merge, and grep like code
+- CLI needs no server or database — files that diff, merge, and grep like code
 - Works in any editor: Vim, VS Code, Obsidian
 - Dependency tracking, kanban views, auto-archiving
 - `tix ui` launches a full React dashboard with live updates
 
-## Install
-
-```sh
-# curl — no dependencies required
-curl -fsSL https://raw.githubusercontent.com/WinstonFassett/tix/main/install.sh | bash
-
-# npm — if you're already in the Node ecosystem
-npm install -g @winstonfassett/tix
-
-# one-off, no install
-npx @winstonfassett/tix
-```
-
-| Method | First run | Subsequent |
-|--------|-----------|------------|
-| `curl \| bash` or `npm install -g` | ~300ms | **~50ms** |
-| `npx` | ~1.8s | ~1.5s |
-
-`npm install -g` and `curl \| bash` both install the same Go binary — `npx` re-invokes Node on every run and is noticeably slower. Use `npx` for one-offs only.
-
 ## Quick Start
 
 ```sh
-cd your-project
-tix create "Fix the login bug"
-tix ls
-tix start a1b2
-tix done a1b2
-tix ui                        # open the web dashboard
+$ cd your-project
+$ tix create "Fix the login bug" --type bug
+Created ticket a1b2 at:
+tickets/Fix The Login Bug (a1b2).md
+
+$ tix ls
+a1b2     [open bug] - Fix the login bug
+
+$ tix start a1b2
+$ tix ls
+a1b2     [in-progress bug] - Fix the login bug
+
+$ tix done a1b2
+$ tix ui
 ```
 
 ## Web Dashboard
 
-![List view](tix-ui/screenshots/list-dark.png)
+`tix ui` starts a local Go HTTP server with an embedded React SPA and opens your browser.
 
-`tix ui` starts a local React + TanStack Start server and opens your browser.
-
-- Live updates via SSE — CLI edits and file changes appear instantly
+- Live updates via WebSocket — CLI edits and file changes appear instantly
 - Linear-style list and board views, collapsible group headers, URL-driven filters
 - Detail view with inline Markdown editing, prev/next pager, tag autocomplete
 - Command palette (⌘K) with ticket search
 
-**Optional:** install [portless](https://www.npmjs.com/package/portless) for stable named URLs per project:
+## Architecture
 
-```sh
-npm install -g portless
+```mermaid
+flowchart LR
+    MD[("tickets/*.md")]
+
+    subgraph cli ["tix &lt;cmd&gt;"]
+        CLI["Go CLI"]
+    end
+
+    subgraph ui ["tix ui"]
+        SRV["Go HTTP server"]
+        DB[("SQLite index")]
+        Watch["file watcher"]
+    end
+
+    Browser["Browser\n(React SPA)"]
+
+    CLI <-->|read/write| MD
+    MD <-->|sync| Watch
+    Watch <--> DB
+    SRV <-->|project| MD
+    SRV <--> DB
+    Browser <-->|REST + WebSocket| SRV
 ```
 
-With portless, `tix ui` automatically serves at `http://my-project-tix.localhost:1355` instead of a random port — bookmarkable and collision-free across projects.
+`tix` CLI reads and writes `.md` files directly — no server needed. `tix ui` runs a persistent server that keeps a SQLite index in sync with those same files: UI mutations write through to both, and the file watcher picks up external edits (CLI, editor) and syncs them back.
 
 ## Ticket Format
 
@@ -78,6 +86,34 @@ created: 2026-03-29T12:00:00Z
 
 The body is freeform Markdown — description, design notes, acceptance criteria.
 IDs are quoted so values like `0e48` aren't parsed as scientific notation.
+
+## Install
+
+```sh
+# curl — no dependencies required
+curl -fsSL https://raw.githubusercontent.com/WinstonFassett/tix/main/install.sh | bash
+
+# npm — if you're already in the Node ecosystem
+npm install -g @winstonfassett/tix
+
+# one-off, no install
+npx @winstonfassett/tix
+```
+
+| Method | First run | Subsequent |
+|--------|-----------|------------|
+| `curl \| bash` or `npm install -g` | ~300ms | **~50ms** |
+| `npx` | ~1.8s | ~1.5s |
+
+`npm install -g` and `curl \| bash` both install the same Go binary — `npx` re-invokes Node on every run and is noticeably slower. Use `npx` for one-offs only.
+
+**Optional:** install [portless](https://www.npmjs.com/package/portless) for stable named URLs when using `tix ui`:
+
+```sh
+npm install -g portless
+```
+
+With portless, `tix ui` automatically serves at `http://my-project-tix.localhost:1355` instead of a random port — bookmarkable and collision-free across projects.
 
 ## Commands
 

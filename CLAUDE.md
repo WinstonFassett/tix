@@ -4,29 +4,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-`tix` is a minimal, Git-like ticket/issue tracker CLI written entirely in Bash. Tickets are Markdown files with YAML frontmatter stored in `./tickets/` (relative to cwd, like `.git/`). It was recently extracted from `ticket-workspace-template` and renamed from `ticket` to `tix`. The old `ticket` command is a deprecated compat wrapper.
+`tix` is a minimal, Git-like ticket/issue tracker CLI written in Go. Tickets are Markdown files with YAML frontmatter stored in `./tickets/` (relative to cwd, like `.git/`). It was originally a Bash script, then extracted from `ticket-workspace-template` and rewritten in Go.
 
 ## Commands
 
 ```bash
-# Run tests (requires bats - https://github.com/bats-core/bats-core)
-bats test/              # all tests
-bats test/basic_operations.bats   # single test file
+# Build the Go CLI
+cd tix-server && go build -o tix .
 
-# Install globally (symlinks into ~/.local/bin or /usr/local/bin)
-./install-tix
+# Run Go tests
+cd tix-server && go test ./...
 
-# Bootstrap vendored deps (yq, jq) into lib/
-./setup-deps
+# Install globally (downloads pre-built binary)
+./install.sh
+
+# Run the web UI dev server
+cd tix-server && TIX_UI_DEV=1 go run . ui
 ```
 
 ## Architecture
 
-- **`tix`** (~2400 lines) — Single monolithic Bash script. All commands dispatched via `main()` case statement at the bottom. Each command is a `cmd_*` function.
-- **`lib/yaml_ops.sh`** — YAML read/write using vendored `lib/yq`. Extracts frontmatter with awk, pipes to yq.
-- **`lib/display_ops.sh`** — Output formatting (column alignment, dep trees) using awk.
-- **`lib/yq`, `lib/jq`** — Vendored binaries (not checked in; downloaded by `setup-deps`).
-- **`ticket`** — Deprecated compat wrapper that exec's `tix`.
+- **`tix-server/`** — Go CLI + embedded web server. Entry point: `main.go`. Commands implemented via Cobra in `cmd_*.go` files. Key files:
+  - `cmd_root.go` — root Cobra command, `resolveTicketsDir()`, default `ls` behavior
+  - `cmd_create.go`, `cmd_lifecycle.go`, `cmd_ls.go`, `cmd_dep.go`, `cmd_notes.go`, `cmd_query.go` — CLI subcommands
+  - `cmd_ui.go` — launches the tix-ui web server
+  - `db.go` / `disk.go` — ticket read/write, YAML frontmatter parsing
+  - `sync.go` / `watch.go` — file-system watcher and sync logic
+  - `server.go` / `ws.go` — embedded HTTP/WebSocket server for `tix ui`
+  - `sanitize.go` — Title Case filename normalization with acronym fixup
+- **`bin/`** — Pre-built release binaries (darwin/linux × amd64/arm64)
+- **`npm/`** — npm wrapper package (`@winstonfassett/tix`); `install.js` downloads the correct binary at `postinstall`
+- **`install.sh`** — Shell installer that detects platform and downloads from GitHub Releases
 - **`tix-vault`** — Obsidian vault integration wrapper.
 - **`tix-ui/`** — React + TanStack Start web dashboard. Data layer is **Sledge** (`@torkbot/sledge`, better-sqlite3 event-sourced SQLite) on server + **TanStack DB** for client-side reactivity. Server functions query the store; .md files are projected as a side-effect. Chokidar SSE endpoint at `tix-ui/server/routes/api/tickets-events.get.ts` syncs external file edits back into the store and pushes granular events to browsers. Built and symlinked by `./install-tix-ui`. Uses portless when available for named `.localhost` URLs (e.g. `project-tix.localhost:1355`). Playwright e2e tests in `tix-ui/e2e/`.
 - **`tix-ui/src/lib/server/sledge/`** — Sledge integration:
@@ -68,6 +76,6 @@ tix-ui uses Sledge (`@torkbot/sledge`) as a server-side event-sourced data layer
 
 ## Key Conventions
 
-- Portable Bash: macOS + Linux compat (custom `_sed_i`, `_sha256`, `_iso_date` wrappers instead of GNU-specific flags).
-- Filenames use Title Case with acronym fixup (API, UI, SQL, etc.) via `sanitize_title_for_filename`.
-- Tests use bats with a `test_helper.bash` that creates temp dirs per test and cleans up in teardown.
+- Go CLI targets macOS + Linux (darwin/linux × amd64/arm64).
+- Filenames use Title Case with acronym fixup (API, UI, SQL, etc.) via `sanitize.go`.
+- Go tests in `tix-server/` use standard `testing` package with `testhelper_test.go` for temp dir setup.
