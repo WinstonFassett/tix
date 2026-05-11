@@ -50,9 +50,13 @@ tix ui                        # open the web dashboard
 - Detail view with inline Markdown editing, prev/next pager, tag autocomplete
 - Command palette (⌘K) with ticket search
 
-With [portless](https://www.npmjs.com/package/portless) installed, each project
-gets a stable named URL like `http://my-project-tix.localhost:1355` instead of a
-random port.
+**Optional:** install [portless](https://www.npmjs.com/package/portless) for stable named URLs per project:
+
+```sh
+npm install -g portless
+```
+
+With portless, `tix ui` automatically serves at `http://my-project-tix.localhost:1355` instead of a random port — bookmarkable and collision-free across projects.
 
 ## Ticket Format
 
