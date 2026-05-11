@@ -8,7 +8,7 @@ import type { createTicketLedger } from "./ticket-ledger";
 
 type Ledger = ReturnType<typeof createTicketLedger>;
 
-const TICKET_PATTERN = /\(([0-9a-f]{4})\)\.md$/i;
+const TICKET_PATTERN = /\(([^)/]+)\)\.md$/;
 
 // Content-hash loop guard: stores sha256 of files we recently projected.
 // Chokidar changes matching a stored hash are skipped (we wrote them).

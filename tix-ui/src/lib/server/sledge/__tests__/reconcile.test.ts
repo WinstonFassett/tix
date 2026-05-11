@@ -141,4 +141,57 @@ describe("reconcile", () => {
     expect(got).not.toBeNull();
     expect(got.deps).toEqual(["1961"]);
   });
+
+  // IDs are arbitrary — the only real constraint is no `)` or `/` in the ID.
+  // The 4-char hex convention was always arbitrary; TICKET_PATTERN is now \(([^)/]+)\)\.md$.
+  it("ingests tickets with non-hex or variable-length IDs (e.g. ampb, my-ticket, 1)", async () => {
+    const filepath = path.join(ticketsDir, "Amp Backend (ampb).md");
+    fs.writeFileSync(
+      filepath,
+      [
+        "---",
+        'id: "ampb"',
+        "title: Amp Backend",
+        "status: open",
+        "type: feature",
+        "priority: 2",
+        'assignee: ""',
+        "tags: []",
+        "deps: []",
+        `created: '${new Date().toISOString()}'`,
+        "---",
+        "body",
+        "",
+      ].join("\n"),
+    );
+
+    const fp2 = path.join(ticketsDir, "Long Id Ticket (my-custom-id).md");
+    fs.writeFileSync(
+      fp2,
+      [
+        "---",
+        'id: "my-custom-id"',
+        "title: Long Id Ticket",
+        "status: open",
+        "type: task",
+        "priority: 2",
+        'assignee: ""',
+        "tags: []",
+        "deps: []",
+        `created: '${new Date().toISOString()}'`,
+        "---",
+        "",
+      ].join("\n"),
+    );
+
+    const result = await reconcile(ledger, ticketsDir);
+
+    expect(result.ingested).toBe(2);
+    const got1 = (await ledger.query("ticketById", { id: "ampb" })) as Ticket;
+    expect(got1).not.toBeNull();
+    expect(got1.title).toBe("Amp Backend");
+    const got2 = (await ledger.query("ticketById", { id: "my-custom-id" })) as Ticket;
+    expect(got2).not.toBeNull();
+    expect(got2.title).toBe("Long Id Ticket");
+  });
 });

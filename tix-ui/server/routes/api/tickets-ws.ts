@@ -5,7 +5,7 @@ import type { Peer } from 'crossws'
 import { getLedger, getTicketsDir } from '../../../src/lib/server/sledge/singleton'
 import { syncFileToLedger, removeFileFromLedger } from '../../../src/lib/server/sledge/sync'
 
-const TICKET_PATTERN = /\(([0-9a-f]{4})\)\.md$/i
+const TICKET_PATTERN = /\(([^)/]+)\)\.md$/
 
 function extractTicketId(filepath: string): string | null {
   const match = path.basename(filepath).match(TICKET_PATTERN)

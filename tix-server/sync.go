@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var ticketPattern = regexp.MustCompile(`\(([0-9a-f]{4})\)\.md$`)
+var ticketPattern = regexp.MustCompile(`\(([^)/]+)\)\.md$`)
 
 // Ticket mirrors the tix-ui Ticket type.
 type Ticket struct {
