@@ -21,7 +21,12 @@ npm install -g @winstonfassett/tix
 npx @winstonfassett/tix
 ```
 
-Both paths install the same binary. Pick whichever fits your workflow.
+| Method | First run | Subsequent |
+|--------|-----------|------------|
+| `curl \| bash` or `npm install -g` | ~300ms | **~50ms** |
+| `npx` | ~1.8s | ~1.5s |
+
+`npm install -g` and `curl \| bash` both install the same Go binary — `npx` re-invokes Node on every run and is noticeably slower. Use `npx` for one-offs only.
 
 ## Quick Start
 
