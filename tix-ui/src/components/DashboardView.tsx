@@ -80,6 +80,11 @@ export function DashboardView() {
   const sorted = useMemo(() => {
     const dir = view.sortDir === 'asc' ? 1 : -1
     return [...filtered].sort((a, b) => {
+      if (view.sortBy === 'created') {
+        const at = new Date(a.created).getTime()
+        const bt = new Date(b.created).getTime()
+        return (at - bt) * dir
+      }
       const av = a[view.sortBy as keyof Ticket]
       const bv = b[view.sortBy as keyof Ticket]
       if (av < bv) return -1 * dir
