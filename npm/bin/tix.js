@@ -4,7 +4,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 
-const binPath = path.join(__dirname, 'tix-bin');
+const binPath = path.join(__dirname, process.platform === 'win32' ? 'tix-bin.exe' : 'tix-bin');
 if (!fs.existsSync(binPath)) {
   console.error(
     `tix binary not found at ${binPath}.\n` +

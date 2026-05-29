@@ -25,6 +25,8 @@ jobs:
             arch: arm64
           - os: linux
             arch: amd64
+          - os: windows
+            arch: amd64
     steps:
       - uses: actions/checkout@v4
 
@@ -60,17 +62,25 @@ jobs:
         run: |
           cd tix-server
           mkdir -p ../dist
-          go build -trimpath \
-            -ldflags "-s -w -X main.buildVersion=${TAG}" \
-            -o tix .
-          tar -czf "../dist/tix-${GOOS}-${GOARCH}.tar.gz" tix
-          rm tix
+          if [ "$GOOS" = "windows" ]; then
+            go build -trimpath \
+              -ldflags "-s -w -X main.buildVersion=${TAG}" \
+              -o tix.exe .
+            zip "../dist/tix-${GOOS}-${GOARCH}.zip" tix.exe
+            rm tix.exe
+          else
+            go build -trimpath \
+              -ldflags "-s -w -X main.buildVersion=${TAG}" \
+              -o tix .
+            tar -czf "../dist/tix-${GOOS}-${GOARCH}.tar.gz" tix
+            rm tix
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: tix-${{ matrix.os }}-${{ matrix.arch }}
-          path: dist/tix-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+          path: dist/tix-${{ matrix.os }}-${{ matrix.arch }}.*
           if-no-files-found: error
 
   release:
@@ -90,13 +100,14 @@ jobs:
       - name: Generate checksums
         run: |
           cd dist
-          sha256sum tix-*.tar.gz > SHA256SUMS
+          sha256sum tix-*.tar.gz tix-*.zip > SHA256SUMS 2>/dev/null || sha256sum tix-* > SHA256SUMS
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             dist/tix-*.tar.gz
+            dist/tix-*.zip
             dist/SHA256SUMS
             install.sh
           generate_release_notes: true

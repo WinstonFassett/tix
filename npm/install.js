@@ -22,7 +22,7 @@ if (process.env.TIX_SKIP_DOWNLOAD) {
 
 const pkg = require('./package.json');
 
-const PLATFORM_MAP = { darwin: 'darwin', linux: 'linux' };
+const PLATFORM_MAP = { darwin: 'darwin', linux: 'linux', win32: 'windows' };
 const ARCH_MAP = { x64: 'amd64', arm64: 'arm64' };
 
 const platform = PLATFORM_MAP[process.platform];
@@ -33,15 +33,19 @@ if (!platform || !arch) {
   process.exit(1);
 }
 
+const isWindows = platform === 'windows';
+
 const baseUrl =
   process.env.TIX_RELEASE_BASE_URL ||
   `https://github.com/WinstonFassett/tix/releases/download/v${pkg.version}`;
 
-const assetName = `tix-${platform}-${arch}.tar.gz`;
+const assetName = isWindows
+  ? `tix-${platform}-${arch}.zip`
+  : `tix-${platform}-${arch}.tar.gz`;
 const url = `${baseUrl.replace(/\/$/, '')}/${assetName}`;
 
 const binDir = path.join(__dirname, 'bin');
-const binPath = path.join(binDir, 'tix-bin');
+const binPath = path.join(binDir, isWindows ? 'tix-bin.exe' : 'tix-bin');
 
 async function readToBuffer(stream) {
   const chunks = [];
@@ -81,18 +85,49 @@ function extractTixFromTar(tarBuf) {
   return null;
 }
 
+// Minimal zip extractor for "tix.exe" entry. Avoids native deps.
+// Reads the local file header for each entry and extracts "tix.exe".
+function extractTixFromZip(zipBuf) {
+  let offset = 0;
+  while (offset + 30 <= zipBuf.length) {
+    const sig = zipBuf.readUInt32LE(offset);
+    if (sig !== 0x04034b50) break; // local file header signature
+    const compression = zipBuf.readUInt16LE(offset + 8);
+    const compressedSize = zipBuf.readUInt32LE(offset + 18);
+    const fnLen = zipBuf.readUInt16LE(offset + 26);
+    const extraLen = zipBuf.readUInt16LE(offset + 28);
+    const name = zipBuf.subarray(offset + 30, offset + 30 + fnLen).toString('utf8');
+    const dataStart = offset + 30 + fnLen + extraLen;
+    if (name === 'tix.exe') {
+      const compressed = zipBuf.subarray(dataStart, dataStart + compressedSize);
+      return compression === 0 ? compressed : zlib.inflateRawSync(compressed);
+    }
+    offset = dataStart + compressedSize;
+  }
+  return null;
+}
+
 (async () => {
   console.log(`tix: downloading ${url}`);
-  const gz = await fetchTarball(url);
-  const tar = zlib.gunzipSync(gz);
-  const bin = extractTixFromTar(tar);
-  if (!bin) {
-    console.error(`tix: archive did not contain a 'tix' entry`);
-    process.exit(1);
+  const data = await fetchTarball(url);
+  let bin;
+  if (isWindows) {
+    bin = extractTixFromZip(data);
+    if (!bin) {
+      console.error(`tix: archive did not contain a 'tix.exe' entry`);
+      process.exit(1);
+    }
+  } else {
+    const tar = zlib.gunzipSync(data);
+    bin = extractTixFromTar(tar);
+    if (!bin) {
+      console.error(`tix: archive did not contain a 'tix' entry`);
+      process.exit(1);
+    }
   }
   fs.mkdirSync(binDir, { recursive: true });
   fs.writeFileSync(binPath, bin);
-  fs.chmodSync(binPath, 0o755);
+  if (!isWindows) fs.chmodSync(binPath, 0o755);
   try {
     const ver = execFileSync(binPath, ['version'], { encoding: 'utf8' }).trim();
     console.log(`tix: installed ${ver} → ${binPath}`);
