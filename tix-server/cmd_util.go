@@ -87,7 +87,10 @@ var editCmd = &cobra.Command{
 	Short: "Open ticket in $EDITOR",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		editor := os.Getenv("EDITOR")
+		editor := os.Getenv("VISUAL")
+		if editor == "" {
+			editor = os.Getenv("EDITOR")
+		}
 		if editor == "" {
 			editor = "vi"
 		}
@@ -99,7 +102,12 @@ var editCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		c := exec.Command(editor, path)
+		fields := strings.Fields(editor)
+		if len(fields) == 0 {
+			fields = []string{"vi"}
+		}
+		cmdArgs := append(fields[1:], path)
+		c := exec.Command(fields[0], cmdArgs...)
 		c.Stdin = os.Stdin
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
