@@ -23,6 +23,7 @@ bin/
 !npm/bin/
 !npm/bin/tix.js
 tix-server/tix-server
+tix-server/tix
 tix-server/ui/*
 !tix-server/ui/.gitkeep
 
